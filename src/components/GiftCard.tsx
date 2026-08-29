@@ -171,71 +171,75 @@ export default function GiftCard({
     const config = themeConfigs[theme] || themeConfigs.gold;
     const displayTitle = cardTitle || config.title;
     const displayDescription = cardDescription || config.description;
+    const voucherLogoUrl = logoUrl || '/assets/brand/voucher-logo.svg';
+    const isSage = ['green', 'easter', 'mothers-day', 'childrens-day'].includes(theme);
+    const isRose = ['valentines', 'wedding'].includes(theme);
+    const isBlue = ['blue', 'wosp', 'birthday', 'halloween'].includes(theme);
+    const panelClass = isSage ? 'bg-[#dfeae3]' : isRose ? 'bg-[#f0dfdc]' : isBlue ? 'bg-[#dfe9ed]' : 'bg-[#eadfe5]';
+    const accentClass = isSage ? 'text-[#5f7e70]' : isRose ? 'text-[#a96860]' : isBlue ? 'text-[#607f8b]' : 'text-[#80677a]';
 
     return (
         <motion.div
-            className={`relative w-full overflow-hidden rounded-[2cqw] border ${config.borderClass} ${isPrint ? '' : 'shadow-2xl shadow-black/40'}`}
+            className={`relative w-full overflow-hidden rounded-[2cqw] border border-stone-900/10 bg-[#f6f1eb] ${isPrint ? '' : 'shadow-2xl shadow-stone-900/15'}`}
             style={{ aspectRatio: '1.586 / 1', containerType: 'inline-size', maxWidth: isPrint ? 'none' : '800px' }}
             whileHover={isPrint ? undefined : { y: -3 }}
             transition={{ duration: 0.25 }}
         >
-            <Image
-                src={config.backgroundImage}
-                alt=""
-                fill
-                sizes="(max-width: 768px) 92vw, 640px"
-                className="object-cover"
-                style={{ objectPosition: config.objectPosition }}
-                aria-hidden="true"
-                priority={false}
-            />
-            <div className={`absolute inset-0 ${config.overlayClass}`} />
+            <div className="grid h-full grid-cols-[43%_57%]">
+                <div className="relative h-full border-r border-white/70">
+                    <Image
+                        src={config.backgroundImage}
+                        alt=""
+                        fill
+                        sizes="(max-width: 768px) 40vw, 340px"
+                        className="object-cover"
+                        style={{ objectPosition: config.objectPosition }}
+                        aria-hidden="true"
+                        priority={false}
+                    />
+                    <div className="absolute inset-0 bg-white/10" />
+                </div>
 
-            <div className={`relative z-10 flex h-full flex-col justify-between p-[5cqw] ${config.textClass}`}>
-                <div className="flex items-start justify-between gap-[3cqw]">
-                    {logoUrl ? (
-                        <div className="relative h-[10cqw] w-[18cqw]">
-                            <Image src={logoUrl} alt="Właśniewski Fotografia" fill className="object-contain object-left" />
+                <div className={`flex h-full min-w-0 flex-col p-[4cqw] text-[#2f2927] ${panelClass}`}>
+                    <div className="flex items-start justify-between gap-[2cqw]">
+                        <div className="relative h-[7cqw] w-[23cqw]">
+                            <Image src={voucherLogoUrl} alt="Przemysław Właśniewski Fotografia" fill className="object-contain object-left" />
                         </div>
-                    ) : (
-                        <div className="text-[1.9cqw] font-semibold uppercase tracking-[0.28em]">Właśniewski Fotografia</div>
-                    )}
-                    <div className={`text-right text-[1.65cqw] uppercase tracking-[0.28em] ${config.mutedClass}`}>Karta podarunkowa</div>
-                </div>
+                        <div className="text-right text-[1.3cqw] font-semibold uppercase tracking-[0.2em] text-[#554c48]">Karta podarunkowa</div>
+                    </div>
 
-                <div className="max-w-[72%]">
-                    <div className="font-display text-[6.3cqw] font-medium leading-[0.98] tracking-[-0.02em]">{displayTitle}</div>
-                    <p className={`mt-[1.6cqw] text-[2.25cqw] leading-relaxed ${config.mutedClass}`}>{displayDescription}</p>
-                    {recipientName && (
-                        <p className={`mt-[2cqw] text-[1.9cqw] ${config.mutedClass}`}>
-                            Dla <span className="font-semibold">{recipientName}</span>
-                        </p>
-                    )}
-                    {message && <p className={`mt-[1cqw] line-clamp-2 text-[1.7cqw] italic ${config.mutedClass}`}>{message}</p>}
-                </div>
-
-                <div className="flex items-end justify-between gap-[3cqw]">
-                    <div>
-                        {showPrice ? (
-                            <>
-                                <div className={`text-[1.45cqw] uppercase tracking-[0.24em] ${config.mutedClass}`}>Wartość</div>
-                                <div className="mt-[0.4cqw] text-[5.8cqw] font-semibold leading-none">{Math.round(value)} zł</div>
-                            </>
-                        ) : (
-                            <>
-                                <div className={`text-[1.45cqw] uppercase tracking-[0.24em] ${config.mutedClass}`}>Prezent</div>
-                                <div className="mt-[0.6cqw] font-display text-[4.1cqw] font-medium leading-none">Sesja fotograficzna</div>
-                            </>
+                    <div className="mt-[4.2cqw] min-w-0">
+                        <div className={`text-[1.4cqw] font-bold uppercase tracking-[0.24em] ${accentClass}`}>{displayDescription}</div>
+                        <div className="mt-[1.4cqw] font-display text-[5.4cqw] font-bold leading-[1.02] tracking-[-0.02em]">{displayTitle}</div>
+                        {recipientName && (
+                            <p className={`mt-[2.2cqw] font-serif text-[2.9cqw] font-bold italic ${accentClass}`}>Dla {recipientName}</p>
                         )}
+                        {message && <p className="mt-[2cqw] line-clamp-2 border-t border-[#2f2927]/20 pt-[1.7cqw] font-serif text-[1.8cqw] font-semibold leading-relaxed text-[#554c48]">{message}</p>}
                     </div>
-                    <div className={`rounded-full border ${config.borderClass} bg-black/10 px-[2.7cqw] py-[1.35cqw] text-right backdrop-blur-sm`}>
-                        <div className={`text-[1.25cqw] uppercase tracking-[0.2em] ${config.mutedClass}`}>{hideCode ? 'Kod po opłaceniu' : 'Kod karty'}</div>
-                        {!hideCode && <div className="mt-[0.35cqw] font-mono text-[2.15cqw] font-semibold tracking-[0.12em]">{code}</div>}
-                    </div>
-                </div>
 
-                {senderName && <span className="sr-only">Od: {senderName}</span>}
-                {orderId && <span className="sr-only">Numer zamówienia: {orderId}</span>}
+                    <div className="mt-auto flex items-end justify-between gap-[2cqw]">
+                        <div>
+                            {showPrice ? (
+                                <>
+                                    <div className="text-[1.05cqw] uppercase tracking-[0.22em] text-[#766c67]">Wartość</div>
+                                    <div className="mt-[0.4cqw] font-serif text-[3.8cqw] leading-none">{Math.round(value)} zł</div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="text-[1.05cqw] uppercase tracking-[0.22em] text-[#766c67]">Prezent</div>
+                                    <div className="mt-[0.6cqw] font-display text-[2.6cqw] font-medium leading-none">Sesja fotograficzna</div>
+                                </>
+                            )}
+                        </div>
+                        <div className="rounded-full border border-[#514844]/20 bg-white/25 px-[2cqw] py-[1.05cqw] text-right">
+                            <div className="text-[.9cqw] uppercase tracking-[0.2em] text-[#766c67]">{hideCode ? 'Kod po opłaceniu' : 'Kod karty'}</div>
+                            {!hideCode && <div className="mt-[0.3cqw] font-mono text-[1.55cqw] font-semibold tracking-[0.1em]">{code}</div>}
+                        </div>
+                    </div>
+
+                    {senderName && <span className="sr-only">Od: {senderName}</span>}
+                    {orderId && <span className="sr-only">Numer zamówienia: {orderId}</span>}
+                </div>
             </div>
         </motion.div>
     );

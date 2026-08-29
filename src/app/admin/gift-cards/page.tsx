@@ -18,9 +18,9 @@ const THEMES = [
     { id: 'childrens-day', label: 'Dzień Dziecka', icon: '🎈' },
     { id: 'wedding', label: 'Ślub', icon: '💒' },
     { id: 'birthday', label: 'Urodziny', icon: '🎂' },
-    { id: 'gold', label: 'Nocturne Gold — premium', icon: '✨' },
-    { id: 'blue', label: 'Celebration — uroczysta', icon: '🌟' },
-    { id: 'green', label: 'Rodzinna — jasna', icon: '🌿' }
+    { id: 'gold', label: 'Pastel Mauve — premium', icon: '✨' },
+    { id: 'blue', label: 'Powder Blue — uroczysta', icon: '🌟' },
+    { id: 'green', label: 'Sage Family — jasna', icon: '🌿' }
 ] as const;
 
 interface GiftCard {

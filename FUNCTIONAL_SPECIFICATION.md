@@ -8,6 +8,7 @@ Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej pl
 - Administrator może wybrać kontrolowany wzór, zmienić kod, wartość rozliczeniową, odbiorcę, nadawcę, tytuł, rodzaj sesji, dedykację i datę ważności oraz zdecydować, czy kwota ma być widoczna.
 - Akcja `Zapisz i drukuj / PDF` najpierw utrwala voucher, a dopiero potem otwiera wersję wydruku. Dzięki temu kod widoczny na kartce zawsze istnieje w bazie.
 - Wyłączenie ceny działa spójnie w podglądzie administratora, wydruku, e-mailu i publicznym widoku odbiorcy. Nie usuwa wartości vouchera wykorzystywanej przy rezerwacji.
+- Wydruk jest gotowym prezentem, a nie ekranem sprzedażowym: zawiera pastelową identyfikację, znak fotografa i dane realizacyjne, ale nie renderuje przycisku ani adresu `/rezerwacja` na voucherze.
 
 ## Aktualizacja 2026-08-28 — niezależna dostępność robots.txt
 

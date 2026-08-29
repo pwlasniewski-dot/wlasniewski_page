@@ -7,7 +7,7 @@ Total output lines: 2270
 
 - Istniejący moduł `/admin/gift-cards` przebudowano na czytelne Studio voucherów dostępne z menu `Vouchery / prezenty`. Administrator korzysta z wzorów rodzinnego, dla dwojga, urodzinowego i ślubnego, a następnie edytuje odbiorcę, nadawcę, treść, wzór, kod, wartość rozliczeniową i ważność.
 - E-mail odbiorcy jest opcjonalny przy wydruku i odbiorze osobistym. Cena może pozostać ukryta na grafice oraz w wiadomości e-mail, ale wartość nadal istnieje w systemie i służy prawidłowemu rozliczeniu kodu.
-- Nowy wydruk Nocturne Gold używa tych samych pól co podgląd, ucieka dane edytowalne i wspiera natywny druk przeglądarki lub zapis do PDF bez zewnętrznego generatora.
+- Wydruk i podgląd korzystają z jasnej palety pastelowej dopasowanej do okazji, firmowego znaku aparatu i spokojnej typografii. Na samym voucherze nie ma przycisku ani adresu rezerwacji; pozostaje dyskretny kontakt telefoniczny, kod i data ważności.
 - Dodano addytywne pole `GiftCard.show_price`, zgodny odczyt publicznej karty oraz testy ceny, bezpieczeństwa HTML, wydruku i kontraktu panelu.
 - Testy celowane przeszły 5/5, pełny zestaw 234/235 (jedyny zastany test galerii wymaga `DATABASE_URL`), a build wygenerował 253/253 trasy.
 

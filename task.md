@@ -8,6 +8,7 @@
 - [x] Spójny podgląd, zapis przed drukiem, natywny druk lub PDF oraz bezpieczna wysyłka e-mail.
 - [x] Addytywna migracja `GiftCard.show_price` i zgodność publicznego widoku odbiorcy.
 - [x] Testy celowane generatora i kontraktu Studio voucherów.
+- [x] Pastelowy redesign wydruku i podglądu: firmowe logo, bez przycisku i adresu rezerwacji na voucherze.
 - [x] Build produkcyjny 253/253; testy celowane 5/5; pełny zestaw 234/235 z jednym zastanym testem wymagającym `DATABASE_URL`.
 - [ ] Deploy Preview, migracja produkcyjna, scalenie oraz smoke test produkcji.
 

@@ -27,6 +27,10 @@ test('print layout supports a service voucher without disclosing its internal va
     assert.match(html, /RODZINA26/);
     assert.doesNotMatch(html, /500 zł/);
     assert.match(html, /Drukuj \/ zapisz PDF/);
+    assert.match(html, /voucher-logo\.svg/);
+    assert.match(html, /WWW\.WLASNIEWSKI\.PL/);
+    assert.doesNotMatch(html, /wlasniewski\.pl\/rezerwacja/);
+    assert.doesNotMatch(html, /background:#090909/);
 });
 
 test('print layout shows the amount only when administrator enables it', () => {

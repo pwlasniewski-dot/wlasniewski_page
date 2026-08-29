@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 160" role="img" aria-labelledby="title desc">
+  <title id="title">Przemysław Właśniewski Fotografia</title>
+  <desc id="desc">Pastelowy znak aparatu i logotyp fotografa</desc>
+  <g fill="none" stroke="#5F7E70" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke-width="8" d="M18 53h34l12-20h71l12 20h26v77H18z"/>
+    <circle cx="96" cy="91" r="34" stroke-width="8"/>
+    <circle cx="96" cy="91" r="19" stroke-width="6"/>
+    <path stroke-width="7" d="M31 37h23M149 70h11"/>
+  </g>
+  <g fill="#2F2927">
+    <text x="205" y="70" font-family="Georgia, 'Times New Roman', serif" font-size="34" letter-spacing="1">Przemysław Właśniewski</text>
+    <text x="208" y="108" font-family="Arial, sans-serif" font-size="17" letter-spacing="8">FOTOGRAFIA</text>
+  </g>
+</svg>
