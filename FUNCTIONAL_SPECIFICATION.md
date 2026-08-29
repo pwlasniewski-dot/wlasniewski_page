@@ -2,6 +2,11 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-29 — upload zdjęć galerii bez limitu żądania Netlify
+
+- Administrator wybiera zdjęcia jak dotychczas. Każdy plik do 30 MB trafia bezpośrednio do magazynu, a następnie jest rejestrowany i przetwarzany przez istniejący proces galerii.
+- Panel nadal pokazuje postęp per plik, duplikaty i czytelny powód błędu; plik tymczasowy jest usuwany po zakończeniu lub nieudanym przetwarzaniu.
+
 ## Aktualizacja 2026-08-29 — Studio voucherów
 
 - Panel `Vouchery / prezenty → Studio voucherów` pozwala przygotować voucher do odbioru osobistego bez adresu e-mail albo do wysyłki na podany adres.

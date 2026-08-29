@@ -2,6 +2,11 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-29 — dwuetapowy ingest galerii
+
+- Chroniony endpoint `upload/presigned` waliduje galerię, MIME i rozmiar, po czym podpisuje PUT ograniczony do klucza `gallery-ingest/{galleryId}/...`.
+- Finalizacja przyjmuje mały JSON, odrzuca klucze spoza wybranej galerii, pobiera obiekt z prywatnego S3, uruchamia dotychczasowe przetwarzanie i bezwarunkowo sprząta obiekt tymczasowy.
+
 ## Aktualizacja 2026-08-29 — architektura Studio voucherów
 
 - `GiftCard.show_price` jest addytywną, domyślnie zgodną wstecz flagą prezentacji. `value` i `amount` pozostają serwerowym źródłem wartości rozliczeniowej niezależnie od widoczności ceny.

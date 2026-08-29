@@ -3,6 +3,11 @@ Total output lines: 2270
 
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## 2026-08-29 — bezpośredni upload dużych zdjęć galerii
+
+- Produkcja zwracała `413 Content Too Large`, ponieważ zdjęcia do 30 MB przechodziły jako binarny `FormData` przez funkcję Netlify, której efektywny limit dla danych binarnych jest niższy.
+- Panel pobiera teraz krótko ważny, autoryzowany adres PUT i wysyła zdjęcie bezpośrednio do prywatnego prefiksu S3. Funkcja otrzymuje wyłącznie mały JSON, pobiera obiekt do dotychczasowego procesu galerii, zapisuje miniatury i usuwa plik tymczasowy.
+
 ## 2026-08-29 — Studio voucherów prezentowych
 
 - Istniejący moduł `/admin/gift-cards` przebudowano na czytelne Studio voucherów dostępne z menu `Vouchery / prezenty`. Administrator korzysta z wzorów rodzinnego, dla dwojga, urodzinowego i ślubnego, a następnie edytuje odbiorcę, nadawcę, treść, wzór, kod, wartość rozliczeniową i ważność.

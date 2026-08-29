@@ -177,6 +177,30 @@ export async function getPrivateS3DownloadUrl(fileName: string, expiresIn = 15 *
     );
 }
 
+/**
+ * Create a short-lived PUT URL so large browser uploads bypass the serverless
+ * request-body limit. The caller must authenticate before requesting this URL.
+ */
+export async function getPrivateS3UploadUrl(
+    fileName: string,
+    mimeType: string,
+    contentLength: number,
+    expiresIn = 15 * 60,
+): Promise<string> {
+    const bucketName = process.env.S3_BUCKET || 'wlasniewski-photo-storage';
+    return getSignedUrl(
+        s3Client,
+        new PutObjectCommand({
+            Bucket: bucketName,
+            Key: ownedS3Key(fileName),
+            ContentType: mimeType,
+            ContentLength: contentLength,
+            CacheControl: 'no-store',
+        }),
+        { expiresIn },
+    );
+}
+
 export async function putPrivateJson(fileName: string, value: unknown): Promise<void> {
     const bucketName = process.env.S3_BUCKET || 'wlasniewski-photo-storage';
     await s3Client.send(new PutObjectCommand({

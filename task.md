@@ -1,5 +1,11 @@
 # Aktualny plan prac
 
+## 2026-08-29 — produkcyjny błąd 413 przy zdjęciach galerii
+
+- [x] Potwierdzono, że żądania binarne są odrzucane przez Netlify przed wejściem do API galerii.
+- [x] Zastąpiono transport zdjęcia dwuetapowym uploadem: bezpośredni PUT do S3 oraz autoryzowana finalizacja JSON.
+- [ ] Deploy Preview i produkcyjny smoke test na rzeczywistym pliku powyżej 4,5 MB.
+
 ## 2026-08-29 — Studio voucherów prezentowych
 
 - [x] Audyt istniejących kart, wydruku, e-maila, panelu, API i modelu Prisma.
