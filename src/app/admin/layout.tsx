@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Sidebar from '@/components/admin/Sidebar';
+import AdminDownloadDiagnostics from '@/components/admin/AdminDownloadDiagnostics';
 import { Toaster } from 'react-hot-toast';
 import { Menu } from 'lucide-react';
 
@@ -79,6 +80,7 @@ export default function AdminLayout({
     return (
         <div className="min-h-screen bg-zinc-950">
             <Toaster position="top-right" />
+            <AdminDownloadDiagnostics />
 
             <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
