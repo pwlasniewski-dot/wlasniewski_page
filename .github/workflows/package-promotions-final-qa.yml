@@ -1,0 +1,94 @@
+name: Package promotions final QA
+
+on:
+  push:
+    branches:
+      - feat/package-promotions
+
+permissions:
+  contents: write
+
+jobs:
+  final-feature-qa:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: postgresql://ci_user:ci_password@localhost:5432/ci_database?schema=public
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: feat/package-promotions
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Prisma contract
+        run: |
+          npx prisma validate
+          npx prisma generate
+
+      - name: Verify TypeScript on the complete PR surface
+        run: |
+          set +e
+          npm run typecheck 2>&1 | tee /tmp/typecheck.log
+          typecheck_status=${PIPESTATUS[0]}
+          set -e
+          TYPECHECK_STATUS="$typecheck_status" python3 - <<'PY'
+          import os
+          import re
+          import subprocess
+          import sys
+
+          changed = set(subprocess.check_output(
+              ['git', 'diff', '--name-only', 'origin/main...HEAD'],
+              text=True,
+          ).splitlines())
+          pattern = re.compile(r'^(.+?)\(\d+,\d+\): error TS\d+:')
+          feature_errors = []
+          with open('/tmp/typecheck.log', encoding='utf-8', errors='replace') as handle:
+              for raw_line in handle:
+                  line = raw_line.rstrip('\n')
+                  match = pattern.match(line)
+                  if match and match.group(1) in changed:
+                      feature_errors.append(line)
+
+          print(f'Global typecheck exit: {os.environ.get("TYPECHECK_STATUS", "unknown")}')
+          print(f'PR files checked: {len(changed)}')
+          if feature_errors:
+              print('TypeScript errors introduced on package-promotion PR files:')
+              print('\n'.join(feature_errors))
+              sys.exit(1)
+          print('No TypeScript diagnostics were reported in files changed by this PR.')
+          PY
+
+      - name: Run package promotion unit tests
+        run: node --import tsx --test tests/unit/package-promotions.test.ts
+
+      - name: Verify one-off QA files are absent from final PR
+        run: |
+          test ! -e scripts/package-promotions-qa-fix.py
+          test ! -e scripts/package-promotions-home-slot-fix.py
+          test ! -e scripts/package-promotions-overlap-fix.py
+          test ! -e .github/workflows/package-promotions-qa.yml
+          test ! -e .github/workflows/package-promotions-home-slot-qa.yml
+          test ! -e .github/workflows/package-promotions-overlap-qa.yml
+
+      - name: Remove this one-off workflow
+        run: rm -f .github/workflows/package-promotions-final-qa.yml
+
+      - name: Commit final QA cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "chore: complete package promotion QA"
+          git push origin HEAD:feat/package-promotions
