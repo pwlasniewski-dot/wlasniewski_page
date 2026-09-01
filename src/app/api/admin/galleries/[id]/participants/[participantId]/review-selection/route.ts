@@ -17,11 +17,21 @@ export async function POST(
 ) {
   const correlationId = randomUUID();
   let participantId: number | null = null;
+  let galleryId: number | null = null;
+  let activity: {
+    gallery_id: number;
+    participant_id: number;
+    action: string;
+    result: string;
+    correlation_id: string;
+    details: Record<string, unknown>;
+  } | null = null;
+
   try {
     const authError = await requireAdminAuth(request);
     if (authError) return authError;
     const resolved = await params;
-    const galleryId = Number(resolved.id);
+    galleryId = Number(resolved.id);
     participantId = Number(resolved.participantId);
     const body = await request.json().catch(() => ({}));
     const action = String(body.action || '').trim().toUpperCase();
@@ -36,7 +46,7 @@ export async function POST(
     const result = await prisma.$transaction(async tx => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(7717, ${participantId!})`;
       const participant = await tx.galleryParticipant.findFirst({
-        where: { id: participantId!, gallery_id: galleryId },
+        where: { id: participantId!, gallery_id: galleryId! },
         include: { selections: { select: { photo_id: true }, orderBy: { photo_id: 'asc' } } },
       });
       if (!participant) throw new ReviewError('Nie znaleziono profilu w tej galerii.', 404);
@@ -53,6 +63,7 @@ export async function POST(
         if (!photoIds.length || photoIds.length > participant.max_selections) {
           throw new ReviewError('Wybór jest pusty albo przekracza limit i nie może zostać zatwierdzony.');
         }
+
         const previousStatus = participant.selection_status;
         const version = participant.selection_version + 1;
         const canonicalPayload = JSON.stringify({
@@ -61,6 +72,49 @@ export async function POST(
           version,
           photo_ids: photoIds,
         });
+        const payloadHash = createHash('sha256').update(canonicalPayload).digest('hex');
+
+        const existingManifest = await tx.groupSelectionSubmission.findUnique({
+          where: {
+            participant_id_version: {
+              participant_id: participant.id,
+              version,
+            },
+          },
+          select: { id: true, photo_ids: true, payload_hash: true, status: true },
+        });
+
+        if (existingManifest) {
+          const existingPhotoIds = Array.isArray(existingManifest.photo_ids)
+            ? existingManifest.photo_ids.map(value => Number(value))
+            : [];
+          const samePhotos = existingPhotoIds.length === photoIds.length
+            && existingPhotoIds.every((value, index) => value === photoIds[index]);
+          if (!samePhotos || existingManifest.payload_hash !== payloadHash) {
+            throw new ReviewError(
+              'Istnieje już manifest tej wersji, ale zawiera inny zestaw zdjęć. Eksport został zatrzymany dla bezpieczeństwa.',
+              409,
+            );
+          }
+          if (existingManifest.status !== 'SUBMITTED') {
+            await tx.groupSelectionSubmission.update({
+              where: { id: existingManifest.id },
+              data: { status: 'SUBMITTED' },
+            });
+          }
+        } else {
+          await tx.groupSelectionSubmission.create({
+            data: {
+              gallery_id: galleryId,
+              participant_id: participant.id,
+              parent_identifier_snapshot: participant.parent_identifier,
+              version,
+              photo_ids: photoIds,
+              payload_hash: payloadHash,
+            },
+          });
+        }
+
         const now = new Date();
         const updated = await tx.galleryParticipant.updateMany({
           where: {
@@ -75,28 +129,17 @@ export async function POST(
           },
         });
         if (updated.count !== 1) throw new ReviewError('Wybór zmienił się. Odśwież panel.');
-        await tx.groupSelectionSubmission.create({
-          data: {
-            gallery_id: galleryId,
-            participant_id: participant.id,
-            parent_identifier_snapshot: participant.parent_identifier,
-            version,
-            photo_ids: photoIds,
-            payload_hash: createHash('sha256').update(canonicalPayload).digest('hex'),
-          },
-        });
-        await tx.groupGalleryActivity.create({
-          data: {
-            gallery_id: galleryId,
-            participant_id: participant.id,
-            action: previousStatus === 'LEGACY_REVIEW_REQUIRED'
-              ? 'LEGACY_SELECTION_CONFIRMED_BY_ADMIN'
-              : 'DRAFT_SELECTION_CONFIRMED_BY_ADMIN',
-            result: 'SUCCESS',
-            correlation_id: correlationId,
-            details: { photo_ids: photoIds, version, previous_status: previousStatus },
-          },
-        });
+
+        activity = {
+          gallery_id: galleryId!,
+          participant_id: participant.id,
+          action: previousStatus === 'LEGACY_REVIEW_REQUIRED'
+            ? 'LEGACY_SELECTION_CONFIRMED_BY_ADMIN'
+            : 'DRAFT_SELECTION_CONFIRMED_BY_ADMIN',
+          result: 'SUCCESS',
+          correlation_id: correlationId,
+          details: { photo_ids: photoIds, version, previous_status: previousStatus, reused_manifest: Boolean(existingManifest) },
+        };
         return { status: 'SUBMITTED', version, photoIds };
       }
 
@@ -117,18 +160,24 @@ export async function POST(
         where: { participant_id: participant.id, status: 'SUBMITTED' },
         data: { status: 'SUPERSEDED' },
       });
-      await tx.groupGalleryActivity.create({
-        data: {
-          gallery_id: galleryId,
-          participant_id: participant.id,
-          action: 'SELECTION_REOPENED_BY_ADMIN',
-          result: 'SUCCESS',
-          correlation_id: correlationId,
-          details: { previous_status: participant.selection_status, version },
-        },
-      });
+      activity = {
+        gallery_id: galleryId!,
+        participant_id: participant.id,
+        action: 'SELECTION_REOPENED_BY_ADMIN',
+        result: 'SUCCESS',
+        correlation_id: correlationId,
+        details: { previous_status: participant.selection_status, version },
+      };
       return { status: 'DRAFT', version, photoIds: participant.selections.map(selection => selection.photo_id) };
     });
+
+    if (activity) {
+      try {
+        await prisma.groupGalleryActivity.create({ data: activity });
+      } catch (activityError) {
+        console.error('Admin gallery selection activity log failed:', activityError);
+      }
+    }
 
     return jsonWithCorrelation({
       success: true,
@@ -148,8 +197,14 @@ export async function POST(
       entityType: 'gallery_participant',
       entityId: participantId,
       correlationId,
-      details: { error: error instanceof Error ? error.message : String(error) },
+      details: {
+        gallery_id: galleryId,
+        error: error instanceof Error ? error.message : String(error),
+      },
     });
-    return jsonWithCorrelation({ error: 'Nie udało się zapisać przeglądu. Administrator otrzymał zgłoszenie.' }, correlationId, 500);
+    return jsonWithCorrelation({
+      error: 'Nie udało się zatwierdzić manifestu wyboru. Szczegóły zapisano w incydentach administratora.',
+      code: 'ADMIN_SELECTION_CONFIRM_FAILED',
+    }, correlationId, 500);
   }
 }
