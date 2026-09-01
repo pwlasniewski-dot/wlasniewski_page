@@ -155,8 +155,18 @@ export async function GET(
         return NextResponse.json({ error: 'Uczestnik nie istnieje' }, { status: 404 });
       }
       if (participant.selection_status !== 'SUBMITTED' && participant.selections.length > 0) {
+        const canAdminConfirm = ['DRAFT', 'LEGACY_REVIEW_REQUIRED'].includes(participant.selection_status);
         return NextResponse.json(
-          { error: 'Wybór rodzica nie jest zatwierdzonym manifestem i nie może trafić do druku.' },
+          {
+            error: 'Wybór rodzica nie jest zatwierdzonym manifestem i nie może trafić do druku.',
+            selection_status: participant.selection_status,
+            selection_version: participant.selection_version,
+            selections_count: participant.selections.length,
+            max_selections: participant.max_selections,
+            can_admin_confirm_selection: canAdminConfirm,
+            gallery_id: galleryId,
+            participant_id: participant.id,
+          },
           { status: 409 },
         );
       }
@@ -236,7 +246,6 @@ export async function GET(
       archive.on('warning', (err) => console.warn('archiver warning:', err));
       archive.on('error', (err) => console.error('Archiver error:', err));
 
-      // archiver nie jest natywnym Readable — mostkujemy PassThrough, strumień na S3.
       const passthrough = new PassThrough();
       archive.pipe(passthrough);
       const uploadPromise = uploadStreamToS3(
@@ -257,10 +266,6 @@ export async function GET(
           const ext = getSafeImageExtension(item.file_url);
           const idxStr = String(i + 1);
 
-          // Zrodlo (download_source_url) to juz gotowy, pelnowymiarowy JPG.
-          // NIE re-enkodujemy przez sharp/mozjpeg — to CPU-heavy i przy wielu
-          // odbitkach (dziesiatki zdjec) powodowalo timeout/OOM funkcji => 502.
-          // Sharp uruchamiamy TYLKO gdy zrodlo nie jest JPG (webp/png/itp.).
           if (ext === 'jpg') {
             const name = `${displayName} ${idxStr} [${item.format}] [${item.source}].jpg`;
             archive.append(sourceBuffer, { name });
