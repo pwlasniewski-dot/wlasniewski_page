@@ -12,6 +12,7 @@ import {
     homepagePromotionServiceNames,
     homepagePromotionSlot,
     regularPriceHistoryCoversLookback,
+    selectHomepagePromotionCandidates,
 } from '../../src/lib/packagePromotions';
 
 test('percentage promotion is calculated from the regular package price', () => {
@@ -32,6 +33,7 @@ test('promotion must remain positive and lower than regular price', () => {
 test('public percentage is conservative and based on the legal reference price', () => {
     assert.equal(calculateReferenceDiscountPercent(60_000, 50_000), 16);
     assert.equal(calculateReferenceDiscountPercent(75_000, 50_000), 33);
+    assert.equal(calculateReferenceDiscountPercent(75_000, 60_000), 20);
     assert.equal(calculateReferenceDiscountPercent(75_000, 74_999), 0);
     assert.equal(calculateReferenceDiscountPercent(50_000, 50_000), 0);
 });
@@ -84,4 +86,49 @@ test('birthdays and receptions share one homepage promotion slot', () => {
     assert.equal(homepagePromotionSlot('Przyjęcie'), 'events');
     assert.deepEqual(homepagePromotionServiceNames('Urodziny'), ['Urodziny', 'Przyjęcie', 'Przyjecie']);
     assert.deepEqual(homepagePromotionServiceNames('Sesja'), ['Sesja']);
+});
+
+
+test('scheduled homepage successor does not blank the current active promotion', () => {
+    const current = {
+        id: 11,
+        service_name: 'Sesja',
+        show_on_home: false,
+        starts_at: new Date('2026-09-01T10:00:00.000Z'),
+    };
+    const scheduled = {
+        id: 12,
+        service_name: 'Sesja',
+        show_on_home: true,
+        starts_at: new Date('2026-09-02T10:00:00.000Z'),
+    };
+    const selected = selectHomepagePromotionCandidates([current], [scheduled]);
+    assert.equal(selected.get('sesja')?.id, 11);
+});
+
+test('latest-started active featured promotion wins the one homepage service tile', () => {
+    const older = {
+        id: 21,
+        service_name: 'Sesja',
+        show_on_home: true,
+        starts_at: new Date('2026-09-01T08:00:00.000Z'),
+    };
+    const newer = {
+        id: 22,
+        service_name: 'Sesja',
+        show_on_home: true,
+        starts_at: new Date('2026-09-01T12:00:00.000Z'),
+    };
+    const selected = selectHomepagePromotionCandidates([older, newer]);
+    assert.equal(selected.get('sesja')?.id, 22);
+});
+
+test('an intentionally hidden promotion stays off homepage without a scheduled handover', () => {
+    const hidden = {
+        id: 31,
+        service_name: 'Sesja',
+        show_on_home: false,
+        starts_at: new Date('2026-09-01T08:00:00.000Z'),
+    };
+    assert.equal(selectHomepagePromotionCandidates([hidden]).size, 0);
 });

@@ -179,7 +179,7 @@ export default function PackagePromotionsAdminPage() {
                 ? Math.round(manualReference)
                 : editedPackage.regularPrice;
         if (legalReference > editedPackage.regularPrice || price >= legalReference) return null;
-        const displayPercent = Math.max(1, Math.floor((1 - price / legalReference) * 100));
+        const displayPercent = Math.max(1, Math.floor(((legalReference - price) * 100) / legalReference));
         return { price, legalReference, displayPercent, referencePeriod: editorReferencePeriod };
     }, [editor, editedPackage, editorReferencePeriod]);
 
@@ -190,7 +190,7 @@ export default function PackagePromotionsAdminPage() {
             label: 'Promocja',
             discountType: 'percentage',
             discountValue: '20',
-            startsAt: toLocalInput(null, 5),
+            startsAt: toLocalInput(null),
             endsAt: toLocalInput(null, 14 * 24 * 60),
             manualLowestPrice: ((pkg.automaticReference.lowestPrice30d || pkg.regularPrice) / 100).toString(),
             confirmManualReference: false,
@@ -352,14 +352,27 @@ export default function PackagePromotionsAdminPage() {
                                                                     : 'Brak pełnego 30-dniowego okna — pierwsza promocja wymaga ręcznego potwierdzenia ceny referencyjnej.'}
                                                         </p>
                                                     </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openNew(pkg)}
-                                                        disabled={!pkg.isActive || Boolean(current)}
-                                                        className="rounded-full bg-amber-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
-                                                    >
-                                                        {current ? 'Najpierw zakończ bieżącą' : 'Ustaw promocję'}
-                                                    </button>
+                                                    <div className="flex max-w-[15rem] flex-col items-start gap-2 sm:items-end">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openNew(pkg)}
+                                                            disabled={!pkg.isActive || Boolean(current)}
+                                                            className="rounded-full bg-amber-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-300"
+                                                        >
+                                                            {current
+                                                                ? current.status === 'ACTIVE'
+                                                                    ? 'Promocja aktywna'
+                                                                    : 'Promocja zaplanowana'
+                                                                : 'Ustaw promocję'}
+                                                        </button>
+                                                        {current && (
+                                                            <p className="text-left text-[11px] leading-4 text-zinc-500 sm:text-right">
+                                                                {current.status === 'ACTIVE'
+                                                                    ? 'Zakończ ją ikoną zasilania, aby ustawić kolejny okres dla tego pakietu.'
+                                                                    : `Uruchomi się automatycznie ${new Date(current.startsAt).toLocaleString('pl-PL')}.`}
+                                                            </p>
+                                                        )}
+                                                    </div>
                                                 </div>
 
                                                 {pkg.promotions.length === 0 ? (
@@ -398,7 +411,7 @@ export default function PackagePromotionsAdminPage() {
                                                                     <span>Start: {new Date(promotion.startsAt).toLocaleString('pl-PL')}</span>
                                                                     <span>Koniec: {promotion.endsAt ? new Date(promotion.endsAt).toLocaleString('pl-PL') : 'bez daty'}</span>
                                                                     <span>{promotion.allowPromoCode ? 'Można łączyć z kodem' : 'Bez łączenia z kodem'}</span>
-                                                                    <span>{promotion.showOnHome ? 'Kafelek strony głównej' : 'Tylko rezerwacja'}</span>
+                                                                    <span>{promotion.showOnHome ? 'Może być wyróżniona na stronie głównej' : 'Tylko rezerwacja'}</span>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -483,9 +496,14 @@ export default function PackagePromotionsAdminPage() {
                         )}
 
                         <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                            <label className="flex items-center gap-3 rounded-xl border border-zinc-700 p-4 text-sm">
-                                <input type="checkbox" checked={editor.showOnHome} onChange={event => setEditor({ ...editor, showOnHome: event.target.checked })} className="h-4 w-4" />
-                                Pokaż na kafelku strony głównej
+                            <label className="flex items-start gap-3 rounded-xl border border-zinc-700 p-4 text-sm">
+                                <input type="checkbox" checked={editor.showOnHome} onChange={event => setEditor({ ...editor, showOnHome: event.target.checked })} className="mt-1 h-4 w-4" />
+                                <span>
+                                    <strong className="block text-zinc-200">Wyróżnij na stronie głównej</strong>
+                                    <span className="mt-1 block text-xs leading-5 text-zinc-500">
+                                        Zaplanowana promocja nie ukryje obecnej przed startem. Gdy kilka promocji tej usługi jest aktywnych, kafelek pokaże tę rozpoczętą najpóźniej.
+                                    </span>
+                                </span>
                             </label>
                             <label className="flex items-center gap-3 rounded-xl border border-red-900/50 p-4 text-sm">
                                 <input type="checkbox" checked={editor.allowPromoCode} onChange={event => setEditor({ ...editor, allowPromoCode: event.target.checked })} className="h-4 w-4" />

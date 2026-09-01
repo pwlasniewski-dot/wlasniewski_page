@@ -15,7 +15,7 @@ import { useCart } from '@/context/CartContext';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { readConsentedClientAttribution } from '@/lib/analytics/clientAttribution';
 import PromotionPriceBlock from '@/components/promotions/PromotionPriceBlock';
-import type { PublicPackagePromotion } from '@/lib/packagePromotionPricing';
+import { formatPricePln, type PublicPackagePromotion } from '@/lib/packagePromotionPricing';
 import {
     DEFAULT_PHOTO_FUNNEL_CONFIG,
     formatPhotoFunnelTemplate,
@@ -611,7 +611,7 @@ export default function RezerwacjaPage() {
             )}
 
             <div className="py-20 px-4">
-                <div className="max-w-4xl mx-auto pt-8">
+                <div className="max-w-6xl mx-auto pt-8">
                     <BookingFunnelIntro config={photoFunnelConfig} splitPaymentInfo={splitPaymentInfo} />
 
                     {/* NEW: Early Gift Card Input */}
@@ -771,7 +771,7 @@ export default function RezerwacjaPage() {
                                 className="bg-white/80 rounded-2xl p-6 md:p-8 border border-[#ddd6cc]"
                             >
                                 <h2 className="font-display text-3xl font-medium text-[#25221f] mb-6">{photoFunnelConfig.bookingCopy.packageHeading}</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-2 xl:grid-cols-3">
                                     {activePackages.map((pkg) => (
                                         <button
                                             key={pkg.id}
@@ -795,12 +795,17 @@ export default function RezerwacjaPage() {
                                                     amount_bucket: pkg.price < 50000 ? 'under_500' : pkg.price < 100000 ? '500_999' : '1000_plus',
                                                 });
                                             }}
-                                            className={`p-5 rounded-2xl border transition-all text-left flex flex-col h-full ${chosenPackage?.id === pkg.id
-                                                ? "border-[#8d7f6d] bg-[#8d7f6d]/10 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-                                                : "border-[#ddd6cc] bg-white/75 hover:border-[#d2cabf] hover:bg-[#f1ede7]"
+                                            aria-pressed={chosenPackage?.id === pkg.id}
+                                            className={`relative flex h-full flex-col overflow-hidden rounded-[22px] border p-5 text-left transition-all duration-200 md:p-6 ${chosenPackage?.id === pkg.id
+                                                ? pkg.promotion
+                                                    ? "border-[#a84631] bg-[linear-gradient(145deg,#fffdfb_0%,#fff5ef_58%,#f5e4db_100%)] shadow-[0_18px_45px_rgba(138,52,35,.16)] ring-2 ring-[#a84631]/15"
+                                                    : "border-[#8d7f6d] bg-[#8d7f6d]/10 shadow-[0_14px_35px_rgba(89,78,66,.12)] ring-2 ring-[#8d7f6d]/10"
+                                                : pkg.promotion
+                                                    ? "border-[#d9aa97] bg-[linear-gradient(145deg,#fffefd_0%,#fff8f3_62%,#f8ebe4_100%)] shadow-[0_12px_32px_rgba(138,52,35,.08)] hover:-translate-y-0.5 hover:border-[#bd6a53] hover:shadow-[0_18px_40px_rgba(138,52,35,.13)]"
+                                                    : "border-[#ddd6cc] bg-white/80 hover:-translate-y-0.5 hover:border-[#bfb3a5] hover:bg-white hover:shadow-[0_14px_34px_rgba(74,61,49,.08)]"
                                                 }`}
                                         >
-                                            <div className="min-h-[5.5rem] flex flex-col">
+                                            <div className="min-h-[5rem] flex flex-col">
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <h3 className="text-xl font-bold text-[#25221f] leading-tight">{pkg.name}</h3>
                                                 </div>
@@ -812,19 +817,19 @@ export default function RezerwacjaPage() {
                                             </div>
 
                                             <div className="mb-4 space-y-3">
-                                                <span className="inline-flex text-sm bg-[#8d7f6d]/10 px-2 py-0.5 rounded border border-[#b7aa99]/50 text-[#766958] font-extrabold">{pkg.hours}h</span>
+                                                <span className="inline-flex w-fit rounded-full border border-[#b7aa99]/55 bg-[#8d7f6d]/10 px-2.5 py-1 text-xs font-extrabold text-[#766958]">{pkg.hours}h</span>
                                                 {pkg.promotion ? (
                                                     <PromotionPriceBlock promotion={pkg.promotion} variant="booking" />
                                                 ) : (
                                                     <div className="text-xl text-[#766958] font-extrabold">
-                                                        {pkg.pricePrefix && `${pkg.pricePrefix} `}{(pkg.price / 100).toFixed(2)} zł
+                                                        {pkg.pricePrefix && `${pkg.pricePrefix} `}{formatPricePln(pkg.price)}
                                                     </div>
                                                 )}
                                             </div>
 
                                             {pkg.description && (
                                                 <div
-                                                    className="text-[13px] text-[#6b645c] mt-2 prose prose-sm prose-p:my-0 prose-ul:my-2 prose-li:my-1 opacity-90"
+                                                    className="mt-auto border-t border-[#ddd6cc]/80 pt-4 text-[13px] leading-6 text-[#6b645c] prose prose-sm prose-p:my-0 prose-ul:my-2 prose-li:my-1 opacity-95"
                                                     dangerouslySetInnerHTML={{ __html: pkg.description }}
                                                 />
                                             )}
