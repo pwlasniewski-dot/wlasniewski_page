@@ -3,6 +3,8 @@ import prisma from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/auth/middleware';
 import { loadActivePromotionsForPackages, type PublicPackagePromotion } from '@/lib/packagePromotions';
 
+const PACKAGE_PROMOTION_RELEASE = 'package-promotion-save-v2';
+
 // GET all service types. Public prices are decorated with the active package
 // promotion, but the regular price remains available as `regular_price`.
 export async function GET(request: NextRequest) {
@@ -42,6 +44,10 @@ export async function GET(request: NextRequest) {
                     };
                 }),
             })),
+        }, {
+            headers: {
+                'X-Wlasniewski-Release': PACKAGE_PROMOTION_RELEASE,
+            },
         });
     } catch (error) {
         console.error('Failed to fetch service types:', error);
