@@ -56,12 +56,8 @@ jobs:
           changed.add('src/lib/db/advisoryLock.ts')
 
           known_baseline = {
-              'src/app/api/galleries/group/[galleryId]/download-all/route.ts': (
-                  'correlationId',
-              ),
-              'src/app/api/galleries/group/participant/[id]/select/route.ts': (
-                  'participant_id',
-              ),
+              'src/app/api/galleries/group/[galleryId]/download-all/route.ts': ('correlationId',),
+              'src/app/api/galleries/group/participant/[id]/select/route.ts': ('participant_id',),
           }
 
           pattern = re.compile(r'^(.+?)\(\d+,\d+\): error TS\d+:')
@@ -94,10 +90,17 @@ jobs:
           node --import tsx --test tests/unit/prisma-advisory-locks.test.ts
           node --import tsx --test tests/unit/package-promotions.test.ts
 
-      - name: Remove one-off patch automation
-        run: rm -f scripts/apply-prisma-advisory-lock-fix.py scripts/apply-prisma-advisory-lock-fix-extra.py .github/workflows/apply-prisma-advisory-lock-fix.yml
+      - name: Prepare source-only commit
+        shell: bash
+        run: |
+          # GitHub App credentials on this runner cannot update workflow files.
+          # Keep both workflows unchanged and publish only the verified source fix.
+          git restore --source=HEAD -- \
+            .github/workflows/apply-prisma-advisory-lock-fix.yml \
+            .github/workflows/package-promotion-save-integration.yml
+          rm -f scripts/apply-prisma-advisory-lock-fix.py scripts/apply-prisma-advisory-lock-fix-extra.py
 
-      - name: Commit verified fix
+      - name: Commit verified source fix
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
