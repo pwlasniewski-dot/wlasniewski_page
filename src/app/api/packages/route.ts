@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { acquireAdvisoryTransactionLock } from '@/lib/db/advisoryLock';
 import { requireAuth } from '@/lib/auth/middleware';
 import { findActivePublicPackages } from '@/lib/publicPackagePricing';
 import { loadActivePromotionsForPackages, type PublicPackagePromotion } from '@/lib/packagePromotions';
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
             }
 
             const result = await prisma.$transaction(async tx => {
-                await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`package-promotion:${packageId}`}))`;
+                await acquireAdvisoryTransactionLock(tx, `package-promotion:${packageId}`);
                 const current = await tx.package.findUnique({ where: { id: packageId } });
                 if (!current) return { error: 'PACKAGE_NOT_FOUND' as const };
 

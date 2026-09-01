@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import prisma from '@/lib/db/prisma';
+import { acquireExtendedAdvisoryTransactionLock } from '@/lib/db/advisoryLock';
 import { extractTokenFromHeader, verifyParentToken } from '@/lib/auth/parent-jwt';
 import {
   createGalleryArchiveJobId,
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // given content job across all Netlify instances. S3's per-run worker lock
   // then protects against a duplicate delivery of the same dispatch token.
   const claim = await prisma.$transaction(async (transaction) => {
-    await transaction.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${jobId}, 0))`;
+    await acquireExtendedAdvisoryTransactionLock(transaction, jobId);
     const previous = await readGalleryArchiveJob(jobId);
     if (previous && ['queued', 'processing', 'ready'].includes(previous.status) && new Date(previous.expiresAt) > new Date()) {
       return { created: false as const, job: previous };

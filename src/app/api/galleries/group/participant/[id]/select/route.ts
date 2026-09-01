@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { acquirePairAdvisoryTransactionLock } from '@/lib/db/advisoryLock';
 import { extractTokenFromHeader, verifyParentToken } from '@/lib/auth/parent-jwt';
 import { jsonWithCorrelation } from '@/lib/http/correlation';
 import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
@@ -40,7 +41,7 @@ export async function POST(
     const payload = await authenticatedPayload(request, participantId);
 
     const result = await prisma.$transaction(async tx => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(7717, ${participantId!})`;
+      await acquirePairAdvisoryTransactionLock(tx, 7717, participantId!);
       const participant = await tx.galleryParticipant.findUnique({
         where: { id: participantId! },
         include: {
