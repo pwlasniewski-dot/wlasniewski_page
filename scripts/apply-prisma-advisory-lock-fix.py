@@ -72,6 +72,7 @@ replace_exact(
     checkout_route,
     "await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`promo-code:${appliedPromoCode.toUpperCase()}`}))`;",
     "await acquireAdvisoryTransactionLock(tx, `promo-code:${appliedPromoCode.toUpperCase()}`);",
+    expected=2,
 )
 
 payu_route = 'src/app/api/payu/notify/route.ts'
