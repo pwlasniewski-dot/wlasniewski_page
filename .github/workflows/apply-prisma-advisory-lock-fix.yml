@@ -1,0 +1,88 @@
+name: Apply Prisma-safe advisory locks
+
+on:
+  push:
+    branches:
+      - fix/package-promotion-save
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/package-promotion-save
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply deterministic root-cause patch
+        run: |
+          python3 scripts/apply-prisma-advisory-lock-fix.py
+          git diff --check
+
+      - name: Install dependencies and generate Prisma client
+        run: |
+          npm ci
+          npx prisma generate
+
+      - name: Verify TypeScript on changed surfaces
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck 2>&1 | tee /tmp/typecheck.log
+          typecheck_status=${PIPESTATUS[0]}
+          set -e
+          TYPECHECK_STATUS="$typecheck_status" python3 - <<'PY'
+          import os
+          import re
+          import subprocess
+          import sys
+
+          changed = set(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
+          changed.update(subprocess.check_output(
+              ['git', 'ls-files', '--others', '--exclude-standard'], text=True
+          ).splitlines())
+          pattern = re.compile(r'^(.+?)\(\d+,\d+\): error TS\d+:')
+          feature_errors = []
+          with open('/tmp/typecheck.log', encoding='utf-8', errors='replace') as handle:
+              for raw_line in handle:
+                  line = raw_line.rstrip('\n')
+                  match = pattern.match(line)
+                  if match and match.group(1) in changed:
+                      feature_errors.append(line)
+
+          print(f'Global typecheck exit: {os.environ.get("TYPECHECK_STATUS", "unknown")}')
+          print(f'Changed files checked: {len(changed)}')
+          if feature_errors:
+              print('TypeScript errors introduced by advisory-lock fix:')
+              print('\n'.join(feature_errors))
+              sys.exit(1)
+          print('No TypeScript diagnostics in changed advisory-lock surfaces.')
+          PY
+
+      - name: Run targeted unit tests
+        run: |
+          node --import tsx --test tests/unit/prisma-advisory-locks.test.ts
+          node --import tsx --test tests/unit/package-promotions.test.ts
+
+      - name: Remove one-off patch automation
+        run: rm -f scripts/apply-prisma-advisory-lock-fix.py .github/workflows/apply-prisma-advisory-lock-fix.yml
+
+      - name: Commit verified fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'fix: make PostgreSQL advisory locks Prisma-safe'
+          git push origin HEAD:fix/package-promotion-save
