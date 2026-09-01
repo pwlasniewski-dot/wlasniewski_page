@@ -15,7 +15,7 @@ export type PublicPackagePromotion = {
     regularPrice: number;
     /** Effective promotional package price, in grosze. */
     price: number;
-    /** Lowest price from the 30 days before the reduction, in grosze. */
+    /** Lowest price from the applicable period before the reduction, in grosze. */
     lowestPrice30d: number;
     referenceSource: PromotionReferenceSource;
     referencePeriod: PromotionReferencePeriod;
@@ -23,7 +23,7 @@ export type PublicPackagePromotion = {
     endsAt: string | null;
     allowPromoCode: boolean;
     showOnHome: boolean;
-    /** Displayed reduction calculated against lowestPrice30d. */
+    /** Whole percentage points calculated conservatively against the legal reference price. */
     displayDiscountPercent: number;
     legalText: string;
 };
@@ -56,8 +56,9 @@ export function calculatePromotionalPrice(
 export function calculateReferenceDiscountPercent(referencePrice: number, promotionalPrice: number): number {
     if (!Number.isInteger(referencePrice) || referencePrice <= 0) return 0;
     if (!Number.isInteger(promotionalPrice) || promotionalPrice <= 0 || promotionalPrice >= referencePrice) return 0;
-    // Do not round upward: a public percentage must never overstate the reduction.
-    return Math.max(1, Math.floor((1 - promotionalPrice / referencePrice) * 100));
+    // Never round upward and never force a minimum 1%: a tiny fixed discount
+    // may genuinely be below one percentage point.
+    return Math.max(0, Math.floor((1 - promotionalPrice / referencePrice) * 100));
 }
 
 export function legalReferenceText(
