@@ -45,13 +45,15 @@ export async function POST(
       }
 
       if (action === 'CONFIRM') {
-        if (participant.selection_status !== 'LEGACY_REVIEW_REQUIRED') {
-          throw new ReviewError('Do potwierdzenia kwalifikują się tylko zabezpieczone wybory historyczne.');
+        const confirmableStatuses = ['LEGACY_REVIEW_REQUIRED', 'DRAFT'];
+        if (!confirmableStatuses.includes(participant.selection_status)) {
+          throw new ReviewError('Ten wybór nie wymaga zatwierdzenia albo został już zatwierdzony.');
         }
         const photoIds = participant.selections.map(selection => selection.photo_id);
         if (!photoIds.length || photoIds.length > participant.max_selections) {
-          throw new ReviewError('Historyczny wybór jest pusty albo przekracza limit i nie może zostać zatwierdzony.');
+          throw new ReviewError('Wybór jest pusty albo przekracza limit i nie może zostać zatwierdzony.');
         }
+        const previousStatus = participant.selection_status;
         const version = participant.selection_version + 1;
         const canonicalPayload = JSON.stringify({
           gallery_id: galleryId,
@@ -63,7 +65,7 @@ export async function POST(
         const updated = await tx.galleryParticipant.updateMany({
           where: {
             id: participant.id,
-            selection_status: 'LEGACY_REVIEW_REQUIRED',
+            selection_status: previousStatus,
             selection_version: expectedVersion,
           },
           data: {
@@ -87,10 +89,12 @@ export async function POST(
           data: {
             gallery_id: galleryId,
             participant_id: participant.id,
-            action: 'LEGACY_SELECTION_CONFIRMED_BY_ADMIN',
+            action: previousStatus === 'LEGACY_REVIEW_REQUIRED'
+              ? 'LEGACY_SELECTION_CONFIRMED_BY_ADMIN'
+              : 'DRAFT_SELECTION_CONFIRMED_BY_ADMIN',
             result: 'SUCCESS',
             correlation_id: correlationId,
-            details: { photo_ids: photoIds, version },
+            details: { photo_ids: photoIds, version, previous_status: previousStatus },
           },
         });
         return { status: 'SUBMITTED', version, photoIds };
@@ -140,7 +144,7 @@ export async function POST(
       severity: 'P1',
       category: 'ADMIN_WRITE',
       reasonCode: 'GROUP_GALLERY_SELECTION_REVIEW_FAILED',
-      summary: 'Nie udało się zweryfikować historycznego wyboru rodzica',
+      summary: 'Nie udało się zweryfikować wyboru rodzica',
       entityType: 'gallery_participant',
       entityId: participantId,
       correlationId,
