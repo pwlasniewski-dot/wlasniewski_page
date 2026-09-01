@@ -85,7 +85,7 @@ export default function AdminDownloadDiagnostics() {
         const countLabel = diagnostic.selectionsCount !== null && diagnostic.maxSelections !== null
             ? ` (${diagnostic.selectionsCount}/${diagnostic.maxSelections} zdjęć)`
             : '';
-        if (!window.confirm(`Zatwierdzić aktualny wybór rodzica do druku${countLabel}? Po zatwierdzeniu zostanie zapisany manifest wyboru.`)) return;
+        if (!window.confirm(`Zatwierdzić standardowy wybór rodzica do druku${countLabel}? Opłacone dodatkowe odbitki pozostają osobnym zamówieniem i zostaną dołączone automatycznie.`)) return;
 
         setConfirming(true);
         try {
@@ -108,13 +108,21 @@ export default function AdminDownloadDiagnostics() {
             if (!response.ok) {
                 setDiagnostic(current => current ? {
                     ...current,
-                    message: payload?.error || 'Nie udało się zatwierdzić wyboru do druku.',
+                    message: payload?.error || 'Nie udało się zatwierdzić standardowego wyboru do druku.',
                 } : current);
                 return;
             }
+
+            const baseMessage = typeof payload?.message === 'string'
+                ? payload.message
+                : 'Standardowy wybór został zatwierdzony do druku.';
+            const warning = typeof payload?.warning === 'string' && payload.warning.trim()
+                ? ` ${payload.warning.trim()}`
+                : '';
+
             setDiagnostic(current => current ? {
                 ...current,
-                message: 'Wybór został zatwierdzony i zapisany jako manifest do druku. Kliknij ponownie „Pobierz ZIP”.',
+                message: `${baseMessage}${warning} Opłacone dodatkowe odbitki zostaną dołączone automatycznie. Kliknij ponownie „Pobierz ZIP”.`,
                 canConfirmSelection: false,
                 confirmed: true,
                 selectionVersion: Number(payload?.selection_version) || current.selectionVersion,
@@ -131,6 +139,10 @@ export default function AdminDownloadDiagnostics() {
     };
 
     if (!diagnostic) return null;
+
+    const selectionLabel = diagnostic.selectionsCount !== null && diagnostic.maxSelections !== null
+        ? `${diagnostic.selectionsCount}/${diagnostic.maxSelections}`
+        : null;
 
     return (
         <div className="fixed right-4 top-20 z-[1000] w-[min(92vw,520px)] rounded-xl border border-amber-500/50 bg-zinc-950 p-4 shadow-2xl shadow-black/50">
@@ -159,10 +171,8 @@ export default function AdminDownloadDiagnostics() {
                     {diagnostic.missingIds.length === 0 && diagnostic.canConfirmSelection && (
                         <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
                             <p className="text-xs leading-relaxed text-zinc-300">
-                                Aktualny wybór istnieje, ale nie został zapisany jako zatwierdzony manifest. Możesz go świadomie zatwierdzić jako administrator.
-                                {diagnostic.selectionsCount !== null && diagnostic.maxSelections !== null
-                                    ? ` Wybrano ${diagnostic.selectionsCount}/${diagnostic.maxSelections} zdjęć.`
-                                    : ''}
+                                Do zatwierdzenia jest wyłącznie standardowy wybór rodzica
+                                {selectionLabel ? ` (${selectionLabel} zdjęć)` : ''}. Opłacone dodatkowe odbitki są niezależne i system dołączy je do ZIP-a automatycznie.
                             </p>
                             <button
                                 type="button"
@@ -170,13 +180,15 @@ export default function AdminDownloadDiagnostics() {
                                 disabled={confirming}
                                 className="mt-3 w-full rounded-lg bg-emerald-600 px-3 py-2 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:cursor-wait disabled:opacity-60"
                             >
-                                {confirming ? 'Zatwierdzam wybór...' : 'Zatwierdź wybór do druku'}
+                                {confirming
+                                    ? 'Zatwierdzam standardowy wybór...'
+                                    : `Zatwierdź standardowy wybór${selectionLabel ? ` ${selectionLabel}` : ''}`}
                             </button>
                         </div>
                     )}
                     {diagnostic.missingIds.length === 0 && !diagnostic.canConfirmSelection && !diagnostic.confirmed && (
                         <p className="mt-2 text-xs text-zinc-400">
-                            Otwórz galerię i sprawdź status wyboru rodzica przed ponownym eksportem.
+                            Otwórz galerię i sprawdź status standardowego wyboru rodzica przed ponownym eksportem.
                         </p>
                     )}
                 </div>
