@@ -88,12 +88,11 @@ jobs:
           psql -h localhost -U postgres -d promotion_test -v ON_ERROR_STOP=1 \
             -f prisma/migrations/20260901130000_package_promotions/migration.sql
 
-      - name: Execute the production promotion-save transaction
+      - name: Execute exact promotion-save database transaction
         shell: bash
         run: |
-          cat > .tmp-promotion-save.mts <<'TS'
+          cat > .tmp-promotion-save.mjs <<'JS'
           import { PrismaClient } from '@prisma/client';
-          import { acquireAdvisoryTransactionLock } from './src/lib/db/advisoryLock';
 
           const prisma = new PrismaClient();
           const packageId = 1;
@@ -105,7 +104,15 @@ jobs:
           try {
             const result = await prisma.$transaction(async tx => {
               console.log('PHASE advisory-lock');
-              await acquireAdvisoryTransactionLock(tx, `package-promotion:${packageId}`);
+              const lockRows = await tx.$queryRawUnsafe(
+                `WITH acquired_lock AS MATERIALIZED (
+                   SELECT pg_advisory_xact_lock(hashtext($1))
+                 )
+                 SELECT 1::integer AS acquired
+                 FROM acquired_lock`,
+                `package-promotion:${packageId}`,
+              );
+              if (lockRows[0]?.acquired !== 1) throw new Error('ADVISORY_LOCK_FAILED');
 
               console.log('PHASE package-read');
               const pkg = await tx.package.findFirst({
@@ -119,7 +126,8 @@ jobs:
               const thirtyDaysStartsAt = new Date(startsAt.getTime() - 30 * 24 * 60 * 60_000);
               const referencePeriod = pkg.created_at > thirtyDaysStartsAt ? 'SINCE_OFFERING' : 'THIRTY_DAYS';
               const lookbackStartsAt = referencePeriod === 'SINCE_OFFERING' ? pkg.created_at : thirtyDaysStartsAt;
-              const regularHistory = await tx.$queryRawUnsafe(
+
+              await tx.$queryRawUnsafe(
                 `SELECT "price", "valid_from", "valid_to", "verified"
                  FROM "package_price_history"
                  WHERE "package_id" = $1
@@ -130,7 +138,7 @@ jobs:
                 startsAt,
                 lookbackStartsAt,
               );
-              const priorPromotions = await tx.$queryRawUnsafe(
+              await tx.$queryRawUnsafe(
                 `SELECT "promotional_price"
                  FROM "package_promotions"
                  WHERE "package_id" = $1
@@ -141,7 +149,6 @@ jobs:
                 startsAt,
                 lookbackStartsAt,
               );
-              console.log({ regularHistory, priorPromotions });
 
               console.log('PHASE overlap-read');
               const overlap = await tx.packagePromotion.findFirst({
@@ -205,7 +212,7 @@ jobs:
           } finally {
             await prisma.$disconnect();
           }
-          TS
+          JS
 
-          node --import tsx .tmp-promotion-save.mts
-          rm -f .tmp-promotion-save.mts
+          node .tmp-promotion-save.mjs
+          rm -f .tmp-promotion-save.mjs
