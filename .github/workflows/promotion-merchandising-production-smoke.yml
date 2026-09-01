@@ -1,0 +1,162 @@
+name: Promotion merchandising production smoke
+
+on:
+  push:
+    branches:
+      - qa/promotion-merchandising-production-20260901
+
+permissions:
+  contents: write
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: qa/promotion-merchandising-production-20260901
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install browser test dependency
+        run: pip install selenium==4.35.0
+
+      - name: Verify production promotion handover and booking cards
+        shell: bash
+        run: |
+          cat > /tmp/promotion_smoke.py <<'PY'
+          import json
+          import time
+          import urllib.request
+          from datetime import datetime
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.support.ui import WebDriverWait
+
+          BASE = 'https://wlasniewski.pl'
+
+          def load_api():
+              req = urllib.request.Request(
+                  f'{BASE}/api/service-types?qa={int(time.time())}',
+                  headers={'Cache-Control': 'no-cache, no-store', 'User-Agent': 'promotion-production-smoke'},
+              )
+              with urllib.request.urlopen(req, timeout=35) as response:
+                  if response.status != 200:
+                      raise RuntimeError(f'service-types HTTP {response.status}')
+                  return json.loads(response.read().decode('utf-8'))
+
+          def iso_ts(value):
+              return datetime.fromisoformat(value.replace('Z', '+00:00')).timestamp()
+
+          options = Options()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--disable-gpu')
+          options.add_argument('--window-size=1440,1200')
+          options.add_argument('--disable-extensions')
+
+          driver = webdriver.Chrome(options=options)
+          try:
+              last_error = None
+              for attempt in range(1, 41):
+                  try:
+                      payload = load_api()
+                      services = payload.get('serviceTypes') or []
+                      sesja = next((s for s in services if s.get('name') == 'Sesja'), None)
+                      if not sesja:
+                          raise AssertionError('Brak usługi Sesja w publicznym API.')
+
+                      promoted = [p for p in (sesja.get('packages') or []) if p.get('promotion')]
+                      if not promoted:
+                          raise AssertionError('Publiczne API nie zwraca aktywnej promocji Sesja.')
+
+                      active_ids = {int(p['promotion']['id']) for p in promoted}
+                      featured_candidates = [p for p in promoted if p['promotion'].get('showOnHome')]
+                      if featured_candidates:
+                          expected_home = max(featured_candidates, key=lambda p: iso_ts(p['promotion']['startsAt']))
+                      else:
+                          expected_home = max(promoted, key=lambda p: iso_ts(p['promotion']['startsAt']))
+                      expected_home_id = int(expected_home['promotion']['id'])
+
+                      driver.get(f'{BASE}/?qa={int(time.time())}')
+                      WebDriverWait(driver, 25).until(lambda d: d.execute_script('return document.readyState') == 'complete')
+                      time.sleep(2)
+                      home_nodes = driver.find_elements(By.CSS_SELECTOR, '[data-promotion-id]')
+                      home_ids = {int(node.get_attribute('data-promotion-id')) for node in home_nodes if node.get_attribute('data-promotion-id')}
+                      if expected_home_id not in home_ids:
+                          raise AssertionError(f'Homepage promotion mismatch: expected {expected_home_id}, rendered {sorted(home_ids)}')
+
+                      driver.get(f'{BASE}/rezerwacja?service=Sesja&qa={int(time.time())}')
+                      WebDriverWait(driver, 30).until(lambda d: len(d.find_elements(By.CSS_SELECTOR, '[data-promotion-id]')) > 0)
+                      time.sleep(2)
+                      booking_nodes = driver.find_elements(By.CSS_SELECTOR, '[data-promotion-id]')
+                      booking_ids = {int(node.get_attribute('data-promotion-id')) for node in booking_nodes if node.get_attribute('data-promotion-id')}
+                      missing = active_ids - booking_ids
+                      if missing:
+                          raise AssertionError(f'Booking missing active promotion IDs: {sorted(missing)}; rendered {sorted(booking_ids)}')
+
+                      body_text = driver.find_element(By.TAG_NAME, 'body').text
+                      if '.00 zł' in body_text:
+                          raise AssertionError('Booking still renders legacy .00 zł formatting.')
+
+                      print(json.dumps({
+                          'attempt': attempt,
+                          'active_session_promotions': sorted(active_ids),
+                          'homepage_featured_promotion': expected_home_id,
+                          'homepage_rendered_promotions': sorted(home_ids),
+                          'booking_rendered_promotions': sorted(booking_ids),
+                      }, ensure_ascii=False, indent=2))
+                      break
+                  except Exception as exc:
+                      last_error = exc
+                      print(f'Attempt {attempt}/40: {exc}')
+                      if attempt == 40:
+                          raise
+                      time.sleep(15)
+              else:
+                  raise last_error or RuntimeError('Unknown production smoke failure')
+          finally:
+              driver.quit()
+          PY
+
+          python /tmp/promotion_smoke.py | tee /tmp/promotion-smoke.log
+
+      - name: Verify public route health
+        shell: bash
+        run: |
+          set -euo pipefail
+          for url in 'https://wlasniewski.pl/' 'https://wlasniewski.pl/rezerwacja'; do
+            status=$(curl -L --silent --show-error --connect-timeout 10 --max-time 45 -o /tmp/page.html -w '%{http_code}' -H 'Cache-Control: no-cache, no-store' "${url}?qa=$(date +%s)")
+            test "$status" = '200'
+            ! grep -qiE 'Application error|Internal Server Error|Bad Gateway|Service Unavailable' /tmp/page.html
+            echo "$url HTTP 200"
+          done
+
+      - name: Publish summary
+        run: |
+          {
+            echo '## Promotion merchandising — production smoke PASS'
+            echo
+            echo '- Homepage renders the correct active featured session promotion.'
+            echo '- Booking renders every active Sesja promotion returned by the public pricing API.'
+            echo '- Legacy `.00 zł` package price formatting is absent.'
+            echo '- Homepage and booking routes return HTTP 200.'
+            echo '- Test performed no writes, bookings or payments.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove one-time workflow
+        if: success()
+        run: |
+          rm -f .github/workflows/promotion-merchandising-production-smoke.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'chore: remove completed promotion merchandising smoke workflow'
+          git push origin HEAD:qa/promotion-merchandising-production-20260901
