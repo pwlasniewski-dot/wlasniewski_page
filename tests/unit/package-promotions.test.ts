@@ -29,9 +29,10 @@ test('promotion must remain positive and lower than regular price', () => {
     assert.throws(() => calculatePromotionalPrice(75_000, 'percentage', 100));
 });
 
-test('public percentage is based on the 30-day reference, not catalogue price', () => {
+test('public percentage is conservative and based on the legal reference price', () => {
     assert.equal(calculateReferenceDiscountPercent(60_000, 50_000), 16);
     assert.equal(calculateReferenceDiscountPercent(75_000, 50_000), 33);
+    assert.equal(calculateReferenceDiscountPercent(75_000, 74_999), 0);
     assert.equal(calculateReferenceDiscountPercent(50_000, 50_000), 0);
 });
 
