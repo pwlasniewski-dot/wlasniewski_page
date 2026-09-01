@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from '@/lib/db/prisma';
+import { acquireAdvisoryTransactionLock } from '@/lib/db/advisoryLock';
 import { sendGiftCardAccessEmail } from "@/lib/email/giftCardAccess";
 import { logSystem } from '@/lib/logger';
 import { verifyPayUNotificationSignature } from '@/lib/payments/payuNotification';
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
                     // PayU retries notifications. Serialize the state transition so a
                     // retry cannot increment a promo limit or send an email twice.
                     const transition = await prisma.$transaction(async tx => {
-                        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`payu-booking:${initialBooking.id}:${cartId}`}))`;
+                        await acquireAdvisoryTransactionLock(tx, `payu-booking:${initialBooking.id}:${cartId}`);
                         const booking = await tx.booking.findUnique({ where: { id: initialBooking.id } });
                         if (!booking) return null;
 
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
 
                         if (countPromoUse && booking.promo_code) {
                             const promoCode = booking.promo_code.trim().toUpperCase();
-                            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`promo-code:${promoCode}`}))`;
+                            await acquireAdvisoryTransactionLock(tx, `promo-code:${promoCode}`);
                             const promo = await tx.promoCode.findFirst({
                                 where: { code: { equals: promoCode, mode: 'insensitive' } },
                             });
@@ -231,7 +232,7 @@ export async function POST(request: NextRequest) {
 
                 for (const initialGiftCardOrder of giftCardOrders) {
                     const provisioned = await prisma.$transaction(async tx => {
-                        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`payu-gift-order:${initialGiftCardOrder.id}:${cartId}`}))`;
+                        await acquireAdvisoryTransactionLock(tx, `payu-gift-order:${initialGiftCardOrder.id}:${cartId}`);
                         const giftCardOrder = await tx.giftCardOrder.findUnique({
                             where: { id: initialGiftCardOrder.id },
                             include: { gift_card: true },

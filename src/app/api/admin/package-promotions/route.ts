@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import prisma from '@/lib/db/prisma';
+import { acquireAdvisoryTransactionLock } from '@/lib/db/advisoryLock';
 import { requireAdminAuth } from '@/lib/auth/middleware';
 import { logSystem } from '@/lib/logger';
 import {
@@ -177,7 +178,7 @@ export async function POST(request: NextRequest) {
         }
 
         const result = await prisma.$transaction(async tx => {
-            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`package-promotion:${packageId}`}))`;
+            await acquireAdvisoryTransactionLock(tx, `package-promotion:${packageId}`);
 
             const pkg = await tx.package.findFirst({
                 where: { id: packageId, is_active: true, service: { is_active: true } },
@@ -366,7 +367,7 @@ export async function DELETE(request: NextRequest) {
         const result = await prisma.$transaction(async tx => {
             const current = await tx.packagePromotion.findUnique({ where: { id: promotionId } });
             if (!current) throw new Error('PROMOTION_NOT_FOUND');
-            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`package-promotion:${current.package_id}`}))`;
+            await acquireAdvisoryTransactionLock(tx, `package-promotion:${current.package_id}`);
 
             const now = new Date();
             if (current.is_enabled && current.starts_at <= now) {

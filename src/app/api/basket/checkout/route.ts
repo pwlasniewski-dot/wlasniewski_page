@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import prisma from '@/lib/db/prisma';
+import { acquireAdvisoryTransactionLock } from '@/lib/db/advisoryLock';
 import { logSystem } from '@/lib/logger';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
@@ -453,7 +454,7 @@ export async function POST(request: Request) {
                             ...(verifiedSlot.endDayOffset === 1 ? [shiftBookingDate(bookingDateISO, 1)] : []),
                         ].sort();
                         for (const lockDate of lockDates) {
-                            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`booking:${lockDate}`}))`;
+                            await acquireAdvisoryTransactionLock(tx, `booking:${lockDate}`);
                         }
                         const conflictRangeStart = new Date(`${shiftBookingDate(bookingDateISO, -1)}T00:00:00.000Z`);
                         const conflictRangeEnd = new Date(`${shiftBookingDate(bookingDateISO, 2)}T00:00:00.000Z`);
@@ -473,7 +474,7 @@ export async function POST(request: Request) {
                         })) throw new BookingConflictError();
 
                         if (appliedPromoCode && appliedPromoId) {
-                            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`promo-code:${appliedPromoCode.toUpperCase()}`}))`;
+                            await acquireAdvisoryTransactionLock(tx, `promo-code:${appliedPromoCode.toUpperCase()}`);
                             const lockedPromo = await tx.promoCode.findUnique({ where: { id: appliedPromoId } });
                             const pendingPromoReservations = await tx.booking.count({
                                 where: {
@@ -494,7 +495,7 @@ export async function POST(request: Request) {
                         }
 
                         if (appliedGiftCardCode) {
-                            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`gift-card:${appliedGiftCardCode}`}))`;
+                            await acquireAdvisoryTransactionLock(tx, `gift-card:${appliedGiftCardCode}`);
                             const lockedCard = await tx.giftCard.findUnique({ where: { code: appliedGiftCardCode } });
                             const existingReservations = await tx.booking.findMany({
                                 where: { gift_card_code: { equals: appliedGiftCardCode, mode: 'insensitive' } },
@@ -511,7 +512,7 @@ export async function POST(request: Request) {
                         }
 
                         if (voucherRef) {
-                            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`foto-match-voucher:${voucherRef.code}`}))`;
+                            await acquireAdvisoryTransactionLock(tx, `foto-match-voucher:${voucherRef.code}`);
                             const lockedVoucher = await tx.fotoMatchReferral.findUnique({
                                 where: { id: voucherRef.id },
                                 select: { status: true, reward_redeemed_at: true, reward_expires_at: true },
@@ -631,7 +632,7 @@ export async function POST(request: Request) {
             try {
                 const confirmedBookings = await prisma.$transaction(async tx => {
                     if (appliedPromoCode && appliedPromoId) {
-                        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`promo-code:${appliedPromoCode.toUpperCase()}`}))`;
+                        await acquireAdvisoryTransactionLock(tx, `promo-code:${appliedPromoCode.toUpperCase()}`);
                         const promo = await tx.promoCode.findUnique({ where: { id: appliedPromoId } });
                         if (!promo || (promo.max_usage !== null && promo.usage_count >= promo.max_usage)) {
                             throw new PromoCodeUnavailableError();
@@ -643,7 +644,7 @@ export async function POST(request: Request) {
                     }
 
                     for (const giftCode of appliedGiftCardCodes) {
-                        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`gift-card:${giftCode}`}))`;
+                        await acquireAdvisoryTransactionLock(tx, `gift-card:${giftCode}`);
                         const redemption = await tx.giftCard.updateMany({
                             where: { code: giftCode, is_active: true, redeemed_at: null },
                             data: { is_active: false, redeemed_at: new Date() },
@@ -652,7 +653,7 @@ export async function POST(request: Request) {
                     }
 
                     if (voucherRef) {
-                        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`foto-match-voucher:${voucherRef.code}`}))`;
+                        await acquireAdvisoryTransactionLock(tx, `foto-match-voucher:${voucherRef.code}`);
                         const redemption = await tx.fotoMatchReferral.updateMany({
                             where: { id: voucherRef.id, status: 'REWARDED', reward_redeemed_at: null },
                             data: { reward_redeemed_at: new Date() },
