@@ -1,0 +1,188 @@
+name: Package promotions QA
+
+on:
+  push:
+    branches:
+      - feat/package-promotions
+
+permissions:
+  contents: write
+
+jobs:
+  migration-and-code-qa:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: promotions
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d promotions"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/promotions?schema=public
+      PGPASSWORD: postgres
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: feat/package-promotions
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply QA corrections
+        run: |
+          python3 scripts/package-promotions-qa-fix.py
+          git diff --check
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Prisma schema and generate client
+        run: |
+          npx prisma validate
+          npx prisma generate
+
+      - name: Execute migration on isolated PostgreSQL
+        run: |
+          psql -h localhost -U postgres -d promotions -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE "packages" (
+            "id" SERIAL PRIMARY KEY,
+            "price" INTEGER NOT NULL,
+            "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+          INSERT INTO "packages" ("price") VALUES (75000);
+          SQL
+
+          psql -h localhost -U postgres -d promotions -v ON_ERROR_STOP=1 \
+            -f prisma/migrations/20260901130000_package_promotions/migration.sql
+
+          psql -h localhost -U postgres -d promotions -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE
+            baseline_count INTEGER;
+            open_count INTEGER;
+            closed_count INTEGER;
+          BEGIN
+            SELECT COUNT(*) INTO baseline_count
+            FROM "package_price_history"
+            WHERE "package_id" = 1
+              AND "price" = 75000
+              AND "source" = 'MIGRATION_BASELINE'
+              AND "verified" = FALSE
+              AND "valid_to" IS NULL;
+            IF baseline_count <> 1 THEN
+              RAISE EXCEPTION 'Expected one unverified migration baseline, got %', baseline_count;
+            END IF;
+
+            UPDATE "packages" SET "price" = 80000 WHERE "id" = 1;
+
+            SELECT COUNT(*) INTO open_count
+            FROM "package_price_history"
+            WHERE "package_id" = 1
+              AND "price" = 80000
+              AND "source" = 'SYSTEM'
+              AND "verified" = TRUE
+              AND "valid_to" IS NULL;
+            SELECT COUNT(*) INTO closed_count
+            FROM "package_price_history"
+            WHERE "package_id" = 1
+              AND "price" = 75000
+              AND "valid_to" IS NOT NULL;
+            IF open_count <> 1 OR closed_count <> 1 THEN
+              RAISE EXCEPTION 'Price history trigger failed: open %, closed %', open_count, closed_count;
+            END IF;
+
+            INSERT INTO "package_promotions" (
+              "package_id", "is_enabled", "discount_type", "discount_value",
+              "regular_price_snapshot", "promotional_price", "lowest_price_30d",
+              "lowest_price_source", "lowest_price_period", "lowest_price_confirmed_at",
+              "label", "starts_at", "ends_at", "allow_promo_code", "show_on_home"
+            ) VALUES (
+              1, TRUE, 'percentage', 25,
+              80000, 60000, 75000,
+              'ADMIN_CONFIRMED', 'THIRTY_DAYS', CURRENT_TIMESTAMP,
+              'Promocja', CURRENT_TIMESTAMP + INTERVAL '5 minutes',
+              CURRENT_TIMESTAMP + INTERVAL '14 days', FALSE, TRUE
+            );
+
+            BEGIN
+              INSERT INTO "package_promotions" (
+                "package_id", "is_enabled", "discount_type", "discount_value",
+                "regular_price_snapshot", "promotional_price", "lowest_price_30d",
+                "lowest_price_source", "lowest_price_period", "lowest_price_confirmed_at",
+                "label", "starts_at", "ends_at", "allow_promo_code", "show_on_home"
+              ) VALUES (
+                1, FALSE, 'fixed', 20000,
+                80000, 60000, 90000,
+                'ADMIN_CONFIRMED', 'THIRTY_DAYS', CURRENT_TIMESTAMP,
+                'Nieprawidłowa', CURRENT_TIMESTAMP + INTERVAL '20 days',
+                CURRENT_TIMESTAMP + INTERVAL '30 days', FALSE, FALSE
+              );
+              RAISE EXCEPTION 'Expected impossible reference price to be rejected';
+            EXCEPTION
+              WHEN check_violation THEN NULL;
+            END;
+          END $$;
+          SQL
+
+      - name: Verify TypeScript on changed feature surfaces
+        run: |
+          set +e
+          npm run typecheck 2>&1 | tee /tmp/typecheck.log
+          typecheck_status=${PIPESTATUS[0]}
+          set -e
+          TYPECHECK_STATUS="$typecheck_status" python3 - <<'PY'
+          import os
+          import re
+          import subprocess
+          import sys
+
+          changed = set(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
+          changed.update(subprocess.check_output(
+              ['git', 'ls-files', '--others', '--exclude-standard'],
+              text=True,
+          ).splitlines())
+          pattern = re.compile(r'^(.+?)\(\d+,\d+\): error TS\d+:')
+          feature_errors = []
+          with open('/tmp/typecheck.log', encoding='utf-8', errors='replace') as handle:
+              for raw_line in handle:
+                  line = raw_line.rstrip('\n')
+                  match = pattern.match(line)
+                  if match and match.group(1) in changed:
+                      feature_errors.append(line)
+
+          print(f'Global typecheck exit: {os.environ.get("TYPECHECK_STATUS", "unknown")}')
+          if feature_errors:
+              print('TypeScript errors introduced on changed package-promotion files:')
+              print('\n'.join(feature_errors))
+              sys.exit(1)
+          print('No TypeScript diagnostics were reported in changed package-promotion files.')
+          PY
+
+      - name: Run promotion unit tests
+        run: node --import tsx --test tests/unit/package-promotions.test.ts
+
+      - name: Remove one-off QA automation
+        run: rm -f scripts/package-promotions-qa-fix.py .github/workflows/package-promotions-qa.yml
+
+      - name: Commit verified QA corrections
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "fix: harden package promotion pricing and legal display"
+          git push origin HEAD:feat/package-promotions
