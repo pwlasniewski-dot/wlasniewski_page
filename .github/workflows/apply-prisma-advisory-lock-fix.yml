@@ -28,6 +28,7 @@ jobs:
       - name: Apply deterministic root-cause patch
         run: |
           python3 scripts/apply-prisma-advisory-lock-fix.py
+          python3 scripts/apply-prisma-advisory-lock-fix-extra.py
           git diff --check
 
       - name: Install dependencies and generate Prisma client
@@ -94,7 +95,7 @@ jobs:
           node --import tsx --test tests/unit/package-promotions.test.ts
 
       - name: Remove one-off patch automation
-        run: rm -f scripts/apply-prisma-advisory-lock-fix.py .github/workflows/apply-prisma-advisory-lock-fix.yml
+        run: rm -f scripts/apply-prisma-advisory-lock-fix.py scripts/apply-prisma-advisory-lock-fix-extra.py .github/workflows/apply-prisma-advisory-lock-fix.yml
 
       - name: Commit verified fix
         run: |
