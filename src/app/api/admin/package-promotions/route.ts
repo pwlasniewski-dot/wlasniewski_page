@@ -8,7 +8,6 @@ import {
     calculatePromotionalPrice,
     calculateReferenceDiscountPercent,
     formatPricePln,
-    homepagePromotionServiceNames,
     legalReferenceText,
     resolveLowestPriceBeforePromotion,
     toPublicPackagePromotion,
@@ -268,27 +267,9 @@ export async function POST(request: NextRequest) {
                     include: { package: { include: { service: true } } },
                 });
 
-            if (showOnHome && isEnabled) {
-                const homeServiceNames = homepagePromotionServiceNames(pkg.service.name);
-                const servicePackageIds = await tx.package.findMany({
-                    where: { service: { name: { in: homeServiceNames } } },
-                    select: { id: true },
-                });
-                // Keep non-overlapping scheduled promotions eligible for the same
-                // homepage tile. Only a promotion competing in the same time
-                // window loses the homepage flag.
-                await tx.packagePromotion.updateMany({
-                    where: {
-                        id: { not: promotion.id },
-                        package_id: { in: servicePackageIds.map(item => item.id) },
-                        is_enabled: true,
-                        show_on_home: true,
-                        ...(endsAt ? { starts_at: { lt: endsAt } } : {}),
-                        OR: [{ ends_at: null }, { ends_at: { gt: startsAt } }],
-                    },
-                    data: { show_on_home: false, updated_at: now },
-                });
-            }
+            // Multiple package promotions may be eligible for one homepage
+            // service tile. The public selector chooses the most recently
+            // started active one, so a scheduled successor never creates a gap.
 
             return {
                 promotion: toPublicPackagePromotion({

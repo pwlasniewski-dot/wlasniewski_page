@@ -58,7 +58,7 @@ export function calculateReferenceDiscountPercent(referencePrice: number, promot
     if (!Number.isInteger(promotionalPrice) || promotionalPrice <= 0 || promotionalPrice >= referencePrice) return 0;
     // Never round upward and never force a minimum 1%: a tiny fixed discount
     // may genuinely be below one percentage point.
-    return Math.max(0, Math.floor((1 - promotionalPrice / referencePrice) * 100));
+    return Math.max(0, Math.floor(((referencePrice - promotionalPrice) * 100) / referencePrice));
 }
 
 export function legalReferenceText(

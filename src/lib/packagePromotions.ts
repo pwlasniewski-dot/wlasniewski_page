@@ -179,29 +179,79 @@ export function homepagePromotionServiceNames(serviceName: string): string[] {
         : [serviceName];
 }
 
+export type HomepagePromotionCandidate = {
+    id: number;
+    service_name: string;
+    show_on_home: boolean;
+    starts_at: Date | string;
+};
+
+export function selectHomepagePromotionCandidates<T extends HomepagePromotionCandidate>(
+    activeRows: T[],
+    scheduledFeaturedRows: T[] = [],
+): Map<string, T> {
+    const scheduledSlots = new Set(
+        scheduledFeaturedRows
+            .filter(row => row.show_on_home)
+            .map(row => homepagePromotionSlot(row.service_name)),
+    );
+
+    const sortedActive = [...activeRows].sort((left, right) => {
+        const startDifference = toDate(right.starts_at).getTime() - toDate(left.starts_at).getTime();
+        return startDifference || Number(right.id) - Number(left.id);
+    });
+
+    const rowsBySlot = new Map<string, T[]>();
+    for (const row of sortedActive) {
+        const slot = homepagePromotionSlot(row.service_name);
+        const rows = rowsBySlot.get(slot) || [];
+        rows.push(row);
+        rowsBySlot.set(slot, rows);
+    }
+
+    const selected = new Map<string, T>();
+    for (const [slot, rows] of rowsBySlot) {
+        const explicitFeatured = rows.find(row => row.show_on_home);
+        if (explicitFeatured) {
+            selected.set(slot, explicitFeatured);
+            continue;
+        }
+
+        // Compatibility for promotions hidden by the old scheduling rule: if a
+        // future featured promotion is waiting, keep the current active offer on
+        // the homepage until the successor actually starts.
+        if (scheduledSlots.has(slot) && rows[0]) selected.set(slot, rows[0]);
+    }
+    return selected;
+}
+
 export async function loadFeaturedPromotionsByService(
     now = new Date(),
     db: PromotionDb = prisma,
 ): Promise<Record<string, PublicPackagePromotion>> {
-    const rows = await db.$queryRaw<PromotionRow[]>(Prisma.sql`
-        ${basePromotionSelect()}
-        WHERE pp."is_enabled" = TRUE
-          AND pp."show_on_home" = TRUE
-          AND pp."starts_at" <= ${now}
-          AND (pp."ends_at" IS NULL OR pp."ends_at" > ${now})
-          AND p."is_active" = TRUE
-          AND st."is_active" = TRUE
-        ORDER BY st."order" ASC, p."order" ASC, pp."starts_at" DESC, pp."id" DESC
-    `);
+    const [activeRows, scheduledFeaturedRows] = await Promise.all([
+        db.$queryRaw<PromotionRow[]>(Prisma.sql`
+            ${basePromotionSelect()}
+            WHERE pp."is_enabled" = TRUE
+              AND pp."starts_at" <= ${now}
+              AND (pp."ends_at" IS NULL OR pp."ends_at" > ${now})
+              AND p."is_active" = TRUE
+              AND st."is_active" = TRUE
+        `),
+        db.$queryRaw<PromotionRow[]>(Prisma.sql`
+            ${basePromotionSelect()}
+            WHERE pp."is_enabled" = TRUE
+              AND pp."show_on_home" = TRUE
+              AND pp."starts_at" > ${now}
+              AND p."is_active" = TRUE
+              AND st."is_active" = TRUE
+        `),
+    ]);
 
-    const selectedBySlot = new Map<string, PublicPackagePromotion>();
-    for (const row of rows) {
-        const slot = homepagePromotionSlot(row.service_name);
-        if (!selectedBySlot.has(slot)) selectedBySlot.set(slot, toPublicPackagePromotion(row));
-    }
-
+    const selectedRows = selectHomepagePromotionCandidates(activeRows, scheduledFeaturedRows);
     const result: Record<string, PublicPackagePromotion> = {};
-    for (const [slot, promotion] of selectedBySlot) {
+    for (const [slot, row] of selectedRows) {
+        const promotion = toPublicPackagePromotion(row as PromotionRow);
         if (slot === 'events') {
             result.Urodziny = promotion;
             result['Przyjęcie'] = promotion;
