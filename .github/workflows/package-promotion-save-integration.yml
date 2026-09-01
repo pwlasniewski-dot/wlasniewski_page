@@ -88,16 +88,14 @@ jobs:
           psql -h localhost -U postgres -d promotion_test -v ON_ERROR_STOP=1 \
             -f prisma/migrations/20260901130000_package_promotions/migration.sql
 
-      - name: Execute the production save transaction
+      - name: Execute the production database transaction
         shell: bash
         run: |
-          node --import tsx <<'TS'
+          cat > /tmp/promotion-save.mjs <<'JS'
           import { PrismaClient } from '@prisma/client';
-          import { calculatePromotionalPrice } from './src/lib/packagePromotionPricing.ts';
 
           const prisma = new PrismaClient();
           const packageId = 1;
-          const discountType = 'fixed' as const;
           const discountValue = 25000;
           const startsAt = new Date(Date.now() + 5 * 60_000);
           const endsAt = new Date(Date.now() + 14 * 24 * 60 * 60_000);
@@ -106,7 +104,10 @@ jobs:
           try {
             const result = await prisma.$transaction(async tx => {
               console.log('PHASE advisory-lock');
-              await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`package-promotion:${packageId}`}))`;
+              await tx.$queryRawUnsafe(
+                'SELECT pg_advisory_xact_lock(hashtext($1))',
+                `package-promotion:${packageId}`,
+              );
 
               console.log('PHASE package-read');
               const pkg = await tx.package.findFirst({
@@ -116,31 +117,32 @@ jobs:
               if (!pkg) throw new Error('PACKAGE_NOT_FOUND');
 
               console.log('PHASE price-and-history');
-              const promotionalPrice = calculatePromotionalPrice(pkg.price, discountType, discountValue);
+              const promotionalPrice = pkg.price - discountValue;
               const thirtyDaysStartsAt = new Date(startsAt.getTime() - 30 * 24 * 60 * 60_000);
               const referencePeriod = pkg.created_at > thirtyDaysStartsAt ? 'SINCE_OFFERING' : 'THIRTY_DAYS';
               const lookbackStartsAt = referencePeriod === 'SINCE_OFFERING' ? pkg.created_at : thirtyDaysStartsAt;
-              const regularHistory = await tx.$queryRaw<Array<{
-                price: number;
-                valid_from: Date;
-                valid_to: Date | null;
-                verified: boolean;
-              }>>`
-                SELECT "price", "valid_from", "valid_to", "verified"
-                FROM "package_price_history"
-                WHERE "package_id" = ${packageId}
-                  AND "valid_from" < ${startsAt}
-                  AND ("valid_to" IS NULL OR "valid_to" > ${lookbackStartsAt})
-                ORDER BY "valid_from" ASC
-              `;
-              const priorPromotions = await tx.$queryRaw<Array<{ promotional_price: number }>>`
-                SELECT "promotional_price"
-                FROM "package_promotions"
-                WHERE "package_id" = ${packageId}
-                  AND "is_enabled" = TRUE
-                  AND "starts_at" < ${startsAt}
-                  AND ("ends_at" IS NULL OR "ends_at" > ${lookbackStartsAt})
-              `;
+              const regularHistory = await tx.$queryRawUnsafe(
+                `SELECT "price", "valid_from", "valid_to", "verified"
+                 FROM "package_price_history"
+                 WHERE "package_id" = $1
+                   AND "valid_from" < $2
+                   AND ("valid_to" IS NULL OR "valid_to" > $3)
+                 ORDER BY "valid_from" ASC`,
+                packageId,
+                startsAt,
+                lookbackStartsAt,
+              );
+              const priorPromotions = await tx.$queryRawUnsafe(
+                `SELECT "promotional_price"
+                 FROM "package_promotions"
+                 WHERE "package_id" = $1
+                   AND "is_enabled" = TRUE
+                   AND "starts_at" < $2
+                   AND ("ends_at" IS NULL OR "ends_at" > $3)`,
+                packageId,
+                startsAt,
+                lookbackStartsAt,
+              );
               console.log({ regularHistory, priorPromotions });
 
               console.log('PHASE overlap-read');
@@ -160,7 +162,7 @@ jobs:
                 data: {
                   package_id: packageId,
                   is_enabled: true,
-                  discount_type: discountType,
+                  discount_type: 'fixed',
                   discount_value: discountValue,
                   regular_price_snapshot: pkg.price,
                   promotional_price: promotionalPrice,
@@ -205,4 +207,6 @@ jobs:
           } finally {
             await prisma.$disconnect();
           }
-          TS
+          JS
+
+          node /tmp/promotion-save.mjs
