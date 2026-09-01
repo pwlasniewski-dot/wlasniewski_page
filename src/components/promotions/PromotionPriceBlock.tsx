@@ -18,6 +18,8 @@ function formatEndDate(value: string | null): string | null {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
         timeZone: 'Europe/Warsaw',
     }).format(date);
 }
@@ -28,6 +30,9 @@ export default function PromotionPriceBlock({
     className = '',
 }: PromotionPriceBlockProps) {
     const endsAt = formatEndDate(promotion.endsAt);
+    const referenceWindowLabel = promotion.referencePeriod === 'SINCE_OFFERING'
+        ? 'od rozpoczęcia oferowania'
+        : 'z 30 dni';
     const { trackEvent } = useAnalytics();
     const tracked = useRef(false);
 
@@ -62,9 +67,7 @@ export default function PromotionPriceBlock({
                     <strong className="font-display text-3xl font-normal text-white">
                         {formatPricePln(promotion.price)}
                     </strong>
-                    <span className="text-sm text-white/55 line-through decoration-[#d9a081] decoration-2">
-                        {formatPricePln(promotion.regularPrice)}
-                    </span>
+                    <span className="text-[11px] text-white/60">Cena regularna <span className="line-through decoration-[#d9a081] decoration-2">{formatPricePln(promotion.regularPrice)}</span></span>
                 </div>
                 <p className="mt-2 text-[10px] leading-4 text-[#eadfce]">
                     {promotion.legalText}
@@ -93,7 +96,7 @@ export default function PromotionPriceBlock({
                 </div>
                 <div className="mt-2 flex flex-wrap items-baseline gap-2">
                     <strong className="text-xl font-extrabold text-[#f6d4c9]">{formatPricePln(promotion.price)}</strong>
-                    <span className="text-xs font-semibold text-zinc-500 line-through">{formatPricePln(promotion.regularPrice)}</span>
+                    <span className="text-xs font-semibold text-zinc-500">Cena regularna <span className="line-through">{formatPricePln(promotion.regularPrice)}</span></span>
                 </div>
                 <p className="mt-1 text-[10px] leading-4 text-zinc-400">{promotion.legalText}</p>
                 {endsAt && <p className="mt-1 text-[10px] font-semibold text-[#e8b4a4]">Oferta do {endsAt}</p>}
@@ -112,16 +115,14 @@ export default function PromotionPriceBlock({
                     {promotion.label}
                 </span>
                 <span className="text-xs font-extrabold text-[#8a3423]">
-                    −{promotion.displayDiscountPercent}% względem ceny z 30 dni
+                    −{promotion.displayDiscountPercent}% względem ceny {referenceWindowLabel}
                 </span>
             </div>
             <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <strong className="text-3xl font-extrabold text-[#8a3423]">
                     {formatPricePln(promotion.price)}
                 </strong>
-                <span className="text-base font-semibold text-[#7b7168] line-through decoration-[#b95b44] decoration-2">
-                    {formatPricePln(promotion.regularPrice)}
-                </span>
+                <span className="text-sm font-semibold text-[#7b7168]">Cena regularna <span className="line-through decoration-[#b95b44] decoration-2">{formatPricePln(promotion.regularPrice)}</span></span>
             </div>
             <p className="mt-2 text-xs leading-5 text-[#5f554c]">
                 {promotion.legalText}

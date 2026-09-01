@@ -3,7 +3,8 @@ import prisma from '@/lib/db/prisma';
 
 import {
     calculateReferenceDiscountPercent,
-    formatPricePln,
+    legalReferenceText,
+    type PromotionReferencePeriod,
     type PublicPackagePromotion,
 } from '@/lib/packagePromotionPricing';
 
@@ -13,6 +14,7 @@ export {
     formatPricePln,
     type PromotionDiscountType,
     type PromotionReferenceSource,
+    type PromotionReferencePeriod,
     type PublicPackagePromotion,
 } from '@/lib/packagePromotionPricing';
 
@@ -31,6 +33,7 @@ type PromotionRow = {
     promotional_price: number;
     lowest_price_30d: number;
     lowest_price_source: string;
+    lowest_price_period: string;
     label: string;
     starts_at: Date;
     ends_at: Date | null;
@@ -53,6 +56,21 @@ function toDate(value: Date | string): Date {
     return value instanceof Date ? value : new Date(value);
 }
 
+export function regularPriceHistoryCoversLookback(
+    rows: Array<Pick<PriceHistoryRow, 'valid_from' | 'valid_to'>>,
+    lookbackStartsAt: Date,
+): boolean {
+    return rows.some(row => {
+        const validFrom = toDate(row.valid_from);
+        const validTo = row.valid_to ? toDate(row.valid_to) : null;
+        // A migration baseline is uncertain only before it was recorded.
+        // Once the whole reference window starts after valid_from, the
+        // application has continuously observed that price and all changes.
+        return validFrom <= lookbackStartsAt
+            && (!validTo || validTo > lookbackStartsAt);
+    });
+}
+
 function basePromotionSelect() {
     return Prisma.sql`
         SELECT
@@ -68,6 +86,7 @@ function basePromotionSelect() {
             pp."promotional_price",
             pp."lowest_price_30d",
             pp."lowest_price_source",
+            pp."lowest_price_period",
             pp."label",
             pp."starts_at",
             pp."ends_at",
@@ -84,6 +103,9 @@ export function toPublicPackagePromotion(record: PromotionRow): PublicPackagePro
     const endsAt = record.ends_at ? toDate(record.ends_at) : null;
     const lowestPrice30d = Number(record.lowest_price_30d);
     const promotionalPrice = Number(record.promotional_price);
+    const referencePeriod: PromotionReferencePeriod = record.lowest_price_period === 'SINCE_OFFERING'
+        ? 'SINCE_OFFERING'
+        : 'THIRTY_DAYS';
 
     return {
         id: Number(record.id),
@@ -99,12 +121,13 @@ export function toPublicPackagePromotion(record: PromotionRow): PublicPackagePro
         referenceSource: record.lowest_price_source === 'AUTO_HISTORY'
             ? 'AUTO_HISTORY'
             : 'ADMIN_CONFIRMED',
+        referencePeriod,
         startsAt: startsAt.toISOString(),
         endsAt: endsAt?.toISOString() || null,
         allowPromoCode: record.allow_promo_code === true,
         showOnHome: record.show_on_home === true,
         displayDiscountPercent: calculateReferenceDiscountPercent(lowestPrice30d, promotionalPrice),
-        legalText: `Najniższa cena z 30 dni przed obniżką: ${formatPricePln(lowestPrice30d)}`,
+        legalText: legalReferenceText(lowestPrice30d, referencePeriod),
     };
 }
 
@@ -168,6 +191,7 @@ export type LowestPriceResolution = {
     completeHistory: boolean;
     lowestPrice: number | null;
     lookbackStartsAt: Date;
+    referencePeriod: PromotionReferencePeriod;
     candidates: Array<{ kind: 'REGULAR' | 'PROMOTION'; price: number }>;
 };
 
@@ -176,8 +200,19 @@ export async function resolveLowestPriceBeforePromotion(
     promotionStartsAt: Date,
     db: PromotionDb = prisma,
     excludePromotionId?: number,
+    offeringStartedAt?: Date,
 ): Promise<LowestPriceResolution> {
-    const lookbackStartsAt = new Date(promotionStartsAt.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const thirtyDaysStartsAt = new Date(promotionStartsAt.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const normalizedOfferingStart = offeringStartedAt && !Number.isNaN(offeringStartedAt.getTime())
+        ? offeringStartedAt
+        : null;
+    const referencePeriod: PromotionReferencePeriod = normalizedOfferingStart
+        && normalizedOfferingStart > thirtyDaysStartsAt
+        ? 'SINCE_OFFERING'
+        : 'THIRTY_DAYS';
+    const lookbackStartsAt = referencePeriod === 'SINCE_OFFERING'
+        ? normalizedOfferingStart!
+        : thirtyDaysStartsAt;
     const exclude = excludePromotionId
         ? Prisma.sql`AND pp."id" <> ${excludePromotionId}`
         : Prisma.empty;
@@ -202,13 +237,7 @@ export async function resolveLowestPriceBeforePromotion(
         `),
     ]);
 
-    const completeHistory = regularHistory.some(row => {
-        const validFrom = toDate(row.valid_from);
-        const validTo = row.valid_to ? toDate(row.valid_to) : null;
-        return row.verified === true
-            && validFrom <= lookbackStartsAt
-            && (!validTo || validTo > lookbackStartsAt);
-    });
+    const completeHistory = regularPriceHistoryCoversLookback(regularHistory, lookbackStartsAt);
 
     const candidates: LowestPriceResolution['candidates'] = [
         ...regularHistory.map(row => ({ kind: 'REGULAR' as const, price: Number(row.price) })),
@@ -219,6 +248,7 @@ export async function resolveLowestPriceBeforePromotion(
         completeHistory,
         lowestPrice: candidates.length ? Math.min(...candidates.map(item => item.price)) : null,
         lookbackStartsAt,
+        referencePeriod,
         candidates,
     };
 }

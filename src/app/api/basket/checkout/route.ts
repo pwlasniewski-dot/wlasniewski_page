@@ -199,11 +199,25 @@ export async function POST(request: Request) {
                     packageHours = selectedPackage.hours;
                     packageBlocksEntireDay = selectedPackage.blocks_entire_day === true;
                     regularPackagePrice = selectedPackage.price;
+                    const expectedPromotionId = Number(md.package_promotion?.id);
+                    const clientExpectedPromotion = Number.isInteger(expectedPromotionId) && expectedPromotionId > 0;
                     try {
                         packagePromotion = await loadActivePromotionForPackage(selectedPackage.id);
                     } catch (promotionError) {
-                        console.warn('[checkout] Package promotions unavailable; using regular package price.', promotionError);
+                        console.warn('[checkout] Package promotion verification failed.', promotionError);
+                        if (clientExpectedPromotion) {
+                            return NextResponse.json({
+                                ok: false,
+                                message: 'Nie udało się teraz potwierdzić ceny promocyjnej. Odśwież rezerwację i spróbuj ponownie — nie pobierzemy wyższej kwoty bez potwierdzenia.',
+                            }, { status: 503 });
+                        }
                         packagePromotion = null;
+                    }
+                    if (clientExpectedPromotion && packagePromotion?.id !== expectedPromotionId) {
+                        return NextResponse.json({
+                            ok: false,
+                            message: 'Promocja w koszyku zakończyła się albo została zmieniona. Odśwież rezerwację, aby zobaczyć aktualną cenę.',
+                        }, { status: 409 });
                     }
                     basePrice = packagePromotion?.price ?? regularPackagePrice;
 

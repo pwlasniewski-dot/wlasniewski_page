@@ -5,8 +5,10 @@ import {
     calculateReferenceDiscountPercent,
     effectivePackagePrice,
     isPromotionWindowActive,
+    legalReferenceText,
     promotionAllowsAdditionalDiscount,
 } from '../../src/lib/packagePromotionPricing';
+import { regularPriceHistoryCoversLookback } from '../../src/lib/packagePromotions';
 
 test('percentage promotion is calculated from the regular package price', () => {
     assert.equal(calculatePromotionalPrice(75_000, 'percentage', 20), 60_000);
@@ -24,7 +26,7 @@ test('promotion must remain positive and lower than regular price', () => {
 });
 
 test('public percentage is based on the 30-day reference, not catalogue price', () => {
-    assert.equal(calculateReferenceDiscountPercent(60_000, 50_000), 17);
+    assert.equal(calculateReferenceDiscountPercent(60_000, 50_000), 16);
     assert.equal(calculateReferenceDiscountPercent(75_000, 50_000), 33);
     assert.equal(calculateReferenceDiscountPercent(50_000, 50_000), 0);
 });
@@ -47,4 +49,27 @@ test('additional discount is denied by default for a promoted package', () => {
     assert.equal(promotionAllowsAdditionalDiscount({ allowPromoCode: false }), false);
     assert.equal(promotionAllowsAdditionalDiscount({ allowPromoCode: true }), true);
     assert.equal(promotionAllowsAdditionalDiscount(null), true);
+});
+
+test('public legal copy distinguishes a package offered for less than 30 days', () => {
+    assert.equal(
+        legalReferenceText(75_000, 'THIRTY_DAYS'),
+        'Najniższa cena z 30 dni przed obniżką: 750 zł',
+    );
+    assert.equal(
+        legalReferenceText(75_000, 'SINCE_OFFERING'),
+        'Najniższa cena od rozpoczęcia oferowania: 750 zł',
+    );
+});
+
+test('migration baseline becomes sufficient after the complete observed window', () => {
+    const lookback = new Date('2026-10-01T12:00:00.000Z');
+    assert.equal(regularPriceHistoryCoversLookback([{
+        valid_from: new Date('2026-09-01T12:00:00.000Z'),
+        valid_to: null,
+    }], lookback), true);
+    assert.equal(regularPriceHistoryCoversLookback([{
+        valid_from: new Date('2026-10-15T12:00:00.000Z'),
+        valid_to: null,
+    }], lookback), false);
 });

@@ -110,7 +110,6 @@ export default function RezerwacjaPage() {
     const { trackEvent } = useAnalytics();
     const bookingFormStarted = useRef(false);
     const submissionLock = useRef(false);
-    const viewedPromotionIds = useRef<Set<number>>(new Set());
     // Data from API
     const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
     const [droneCatalog, setDroneCatalog] = useState<DroneCatalog | null>(null);
@@ -388,19 +387,6 @@ export default function RezerwacjaPage() {
         () => (service ? service.packages.filter(p => p.is_active) : []),
         [service]
     );
-
-    useEffect(() => {
-        activePackages.forEach(pkg => {
-            if (!pkg.promotion || viewedPromotionIds.current.has(pkg.promotion.id)) return;
-            viewedPromotionIds.current.add(pkg.promotion.id);
-            void trackEvent('promotion_view', {
-                promotion_id: pkg.promotion.id,
-                package_id: pkg.id,
-                service: service?.name,
-                placement: 'booking',
-            });
-        });
-    }, [activePackages, service?.name, trackEvent]);
 
     const finalPrice = useMemo(() => {
         if (!chosenPackage) return 0;

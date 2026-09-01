@@ -40,6 +40,7 @@ CREATE TABLE "package_promotions" (
   "promotional_price" INTEGER NOT NULL,
   "lowest_price_30d" INTEGER NOT NULL,
   "lowest_price_source" TEXT NOT NULL,
+  "lowest_price_period" TEXT NOT NULL,
   "lowest_price_confirmed_at" TIMESTAMP(3) NOT NULL,
   "label" TEXT NOT NULL DEFAULT 'Promocja',
   "starts_at" TIMESTAMP(3) NOT NULL,
@@ -66,6 +67,7 @@ CREATE TABLE "package_promotions" (
       "regular_price_snapshot" > 0
       AND "promotional_price" > 0
       AND "lowest_price_30d" > 0
+      AND "lowest_price_30d" <= "regular_price_snapshot"
       AND "promotional_price" < "regular_price_snapshot"
       AND "promotional_price" < "lowest_price_30d"
     ),
@@ -80,6 +82,8 @@ CREATE TABLE "package_promotions" (
     ),
   CONSTRAINT "package_promotions_reference_source_check"
     CHECK ("lowest_price_source" IN ('AUTO_HISTORY', 'ADMIN_CONFIRMED')),
+  CONSTRAINT "package_promotions_reference_period_check"
+    CHECK ("lowest_price_period" IN ('THIRTY_DAYS', 'SINCE_OFFERING')),
   CONSTRAINT "package_promotions_period_check"
     CHECK ("ends_at" IS NULL OR "ends_at" > "starts_at"),
   CONSTRAINT "package_promotions_label_check"

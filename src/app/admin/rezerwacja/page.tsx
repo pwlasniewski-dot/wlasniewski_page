@@ -170,7 +170,7 @@ export default function AdminPackagesPage() {
         if (!confirm('Na pewno chcesz usunąć całą kategorię wraz ze wszystkimi pakietami?')) return;
 
         try {
-            const res = await fetch(`${`${getApiUrl('service-types')}?view=admin`}?id=${serviceId}`, {
+            const res = await fetch(`${getApiUrl('service-types')}?view=admin&id=${serviceId}`, {
                 method: 'DELETE'
             });
 

@@ -63,9 +63,9 @@ export async function GET(request: NextRequest) {
         const now = new Date();
         const historyPreview = await Promise.all(packages.map(async pkg => {
             try {
-                return await resolveLowestPriceBeforePromotion(pkg.id, now);
+                return await resolveLowestPriceBeforePromotion(pkg.id, now, prisma, undefined, pkg.created_at);
             } catch {
-                return { completeHistory: false, lowestPrice: null };
+                return { completeHistory: false, lowestPrice: null, referencePeriod: 'THIRTY_DAYS' as const };
             }
         }));
 
@@ -78,10 +78,12 @@ export async function GET(request: NextRequest) {
                 serviceName: pkg.service.name,
                 packageName: pkg.name,
                 regularPrice: pkg.price,
+                createdAt: pkg.created_at.toISOString(),
                 isActive: pkg.is_active && pkg.service.is_active,
                 automaticReference: {
                     available: historyPreview[index]?.completeHistory === true,
                     lowestPrice30d: historyPreview[index]?.lowestPrice || null,
+                    referencePeriod: historyPreview[index]?.referencePeriod || 'THIRTY_DAYS',
                 },
                 promotions: pkg.promotions.map(promotion => ({
                     id: promotion.id,
@@ -93,6 +95,7 @@ export async function GET(request: NextRequest) {
                     price: promotion.promotional_price,
                     lowestPrice30d: promotion.lowest_price_30d,
                     referenceSource: promotion.lowest_price_source,
+                    referencePeriod: promotion.lowest_price_period,
                     label: promotion.label,
                     startsAt: promotion.starts_at.toISOString(),
                     endsAt: promotion.ends_at?.toISOString() || null,
@@ -193,6 +196,7 @@ export async function POST(request: NextRequest) {
                 startsAt,
                 tx,
                 promotionId || undefined,
+                pkg.created_at,
             );
 
             let lowestPrice30d: number;
@@ -208,6 +212,9 @@ export async function POST(request: NextRequest) {
                 lowestPriceSource = 'ADMIN_CONFIRMED';
             }
 
+            if (lowestPrice30d > pkg.price) {
+                throw new Error('REFERENCE_ABOVE_REGULAR');
+            }
             if (promotionalPrice >= lowestPrice30d) {
                 throw new Error('NOT_LOWER_THAN_REFERENCE');
             }
@@ -235,6 +242,7 @@ export async function POST(request: NextRequest) {
                 promotional_price: promotionalPrice,
                 lowest_price_30d: lowestPrice30d,
                 lowest_price_source: lowestPriceSource,
+                lowest_price_period: reference.referencePeriod,
                 lowest_price_confirmed_at: now,
                 label,
                 starts_at: startsAt,
@@ -304,9 +312,13 @@ export async function POST(request: NextRequest) {
                 status: 409,
                 message: 'Brakuje pełnej historii 30 dni. Wpisz rzeczywistą najniższą cenę i potwierdź ją świadomie.',
             },
+            REFERENCE_ABOVE_REGULAR: {
+                status: 409,
+                message: 'Najniższa wcześniejsza cena nie może być wyższa od ceny regularnej obowiązującej bezpośrednio przed promocją.',
+            },
             NOT_LOWER_THAN_REFERENCE: {
                 status: 409,
-                message: 'Cena promocyjna musi być niższa od najniższej ceny z 30 dni przed obniżką.',
+                message: 'Cena promocyjna musi być niższa od właściwej ceny referencyjnej przed obniżką.',
             },
             OVERLAPPING_PROMOTION: {
                 status: 409,

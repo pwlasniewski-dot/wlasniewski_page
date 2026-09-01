@@ -1,5 +1,6 @@
 export type PromotionDiscountType = 'percentage' | 'fixed';
 export type PromotionReferenceSource = 'AUTO_HISTORY' | 'ADMIN_CONFIRMED';
+export type PromotionReferencePeriod = 'THIRTY_DAYS' | 'SINCE_OFFERING';
 
 export type PublicPackagePromotion = {
     id: number;
@@ -17,6 +18,7 @@ export type PublicPackagePromotion = {
     /** Lowest price from the 30 days before the reduction, in grosze. */
     lowestPrice30d: number;
     referenceSource: PromotionReferenceSource;
+    referencePeriod: PromotionReferencePeriod;
     startsAt: string;
     endsAt: string | null;
     allowPromoCode: boolean;
@@ -54,7 +56,18 @@ export function calculatePromotionalPrice(
 export function calculateReferenceDiscountPercent(referencePrice: number, promotionalPrice: number): number {
     if (!Number.isInteger(referencePrice) || referencePrice <= 0) return 0;
     if (!Number.isInteger(promotionalPrice) || promotionalPrice <= 0 || promotionalPrice >= referencePrice) return 0;
-    return Math.max(1, Math.round((1 - promotionalPrice / referencePrice) * 100));
+    // Do not round upward: a public percentage must never overstate the reduction.
+    return Math.max(1, Math.floor((1 - promotionalPrice / referencePrice) * 100));
+}
+
+export function legalReferenceText(
+    referencePrice: number,
+    period: PromotionReferencePeriod,
+): string {
+    const label = period === 'SINCE_OFFERING'
+        ? 'Najniższa cena od rozpoczęcia oferowania'
+        : 'Najniższa cena z 30 dni przed obniżką';
+    return `${label}: ${formatPricePln(referencePrice)}`;
 }
 
 export function isPromotionWindowActive(

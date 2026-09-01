@@ -19,7 +19,7 @@ Przy aktywnej promocji wszędzie należy pokazać:
 
 - cenę promocyjną,
 - zwykłą cenę przekreśloną,
-- tekst: `Najniższa cena z 30 dni przed obniżką: …`,
+- tekst: `Najniższa cena z 30 dni przed obniżką: …`, a dla pakietu oferowanego krócej niż 30 dni: `Najniższa cena od rozpoczęcia oferowania: …`,
 - termin zakończenia, jeżeli został ustawiony,
 - procent obniżki liczony względem ceny referencyjnej z 30 dni, a nie dowolnej ceny katalogowej.
 

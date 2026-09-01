@@ -16,6 +16,7 @@ type AdminPromotion = {
     price: number;
     lowestPrice30d: number;
     referenceSource: 'AUTO_HISTORY' | 'ADMIN_CONFIRMED';
+    referencePeriod: 'THIRTY_DAYS' | 'SINCE_OFFERING';
     label: string;
     startsAt: string;
     endsAt: string | null;
@@ -31,8 +32,13 @@ type AdminPackage = {
     serviceName: string;
     packageName: string;
     regularPrice: number;
+    createdAt: string;
     isActive: boolean;
-    automaticReference: { available: boolean; lowestPrice30d: number | null };
+    automaticReference: {
+        available: boolean;
+        lowestPrice30d: number | null;
+        referencePeriod: 'THIRTY_DAYS' | 'SINCE_OFFERING';
+    };
     promotions: AdminPromotion[];
     priceHistory: Array<{
         id: number;
@@ -90,6 +96,21 @@ function statusClass(status: PromotionStatus) {
     return 'border-amber-500/40 bg-amber-500/10 text-amber-300';
 }
 
+function referencePeriodFor(packageCreatedAt: string, promotionStartsAt: string) {
+    const createdAt = new Date(packageCreatedAt);
+    const startsAt = new Date(promotionStartsAt);
+    if (Number.isNaN(createdAt.getTime()) || Number.isNaN(startsAt.getTime())) return 'THIRTY_DAYS' as const;
+    return startsAt.getTime() - createdAt.getTime() < 30 * 24 * 60 * 60 * 1000
+        ? 'SINCE_OFFERING' as const
+        : 'THIRTY_DAYS' as const;
+}
+
+function legalReferenceLabel(period: 'THIRTY_DAYS' | 'SINCE_OFFERING') {
+    return period === 'SINCE_OFFERING'
+        ? 'Najniższa cena od rozpoczęcia oferowania'
+        : 'Najniższa cena z 30 dni przed obniżką';
+}
+
 export default function PackagePromotionsAdminPage() {
     const [packages, setPackages] = useState<AdminPackage[]>([]);
     const [loading, setLoading] = useState(true);
@@ -138,6 +159,10 @@ export default function PackagePromotionsAdminPage() {
         ? packages.find(pkg => pkg.id === editor.packageId) || null
         : null;
 
+    const editorReferencePeriod = editor && editedPackage
+        ? referencePeriodFor(editedPackage.createdAt, editor.startsAt)
+        : 'THIRTY_DAYS' as const;
+
     const preview = useMemo(() => {
         if (!editor || !editedPackage) return null;
         const raw = Number(editor.discountValue.replace(',', '.'));
@@ -153,10 +178,10 @@ export default function PackagePromotionsAdminPage() {
             : Number.isFinite(manualReference) && manualReference > 0
                 ? Math.round(manualReference)
                 : editedPackage.regularPrice;
-        if (price >= legalReference) return null;
-        const displayPercent = Math.max(1, Math.round((1 - price / legalReference) * 100));
-        return { price, legalReference, displayPercent };
-    }, [editor, editedPackage]);
+        if (legalReference > editedPackage.regularPrice || price >= legalReference) return null;
+        const displayPercent = Math.max(1, Math.floor((1 - price / legalReference) * 100));
+        return { price, legalReference, displayPercent, referencePeriod: editorReferencePeriod };
+    }, [editor, editedPackage, editorReferencePeriod]);
 
     const openNew = (pkg: AdminPackage) => {
         setEditor({
@@ -416,7 +441,7 @@ export default function PackagePromotionsAdminPage() {
                                 <input type="number" min="1" step={editor.discountType === 'percentage' ? '1' : '0.01'} value={editor.discountValue} onChange={event => setEditor({ ...editor, discountValue: event.target.value })} className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 outline-none focus:border-amber-500" />
                             </label>
                             <label className="block">
-                                <span className="mb-2 block text-sm font-semibold text-zinc-300">Najniższa cena z 30 dni przed obniżką (zł)</span>
+                                <span className="mb-2 block text-sm font-semibold text-zinc-300">{legalReferenceLabel(editorReferencePeriod)} (zł)</span>
                                 <input
                                     type="number"
                                     min="0.01"
@@ -429,7 +454,9 @@ export default function PackagePromotionsAdminPage() {
                                 <span className="mt-2 block text-xs leading-5 text-zinc-500">
                                     {editedPackage.automaticReference.available
                                         ? 'Wartość zostanie pobrana automatycznie z historii cen.'
-                                        : 'Wpisz faktyczną najniższą cenę obowiązującą przed promocją.'}
+                                        : editorReferencePeriod === 'SINCE_OFFERING'
+                                            ? 'Wpisz faktyczną najniższą cenę od dnia rozpoczęcia oferowania tego pakietu.'
+                                            : 'Wpisz faktyczną najniższą cenę z 30 dni przed promocją.'}
                                 </span>
                             </label>
                             <label className="block">
@@ -446,7 +473,7 @@ export default function PackagePromotionsAdminPage() {
                             <label className="mt-5 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
                                 <input type="checkbox" checked={editor.confirmManualReference} onChange={event => setEditor({ ...editor, confirmManualReference: event.target.checked })} className="mt-1 h-4 w-4" />
                                 <span className="text-sm leading-6 text-zinc-300">
-                                    Potwierdzam, że wpisana wartość jest rzeczywistą najniższą ceną tego pakietu z 30 dni przed rozpoczęciem obniżki.
+                                    Potwierdzam, że wpisana wartość jest rzeczywistą wartością: {legalReferenceLabel(editorReferencePeriod).toLocaleLowerCase('pl')} tego pakietu.
                                 </span>
                             </label>
                         )}
@@ -473,7 +500,7 @@ export default function PackagePromotionsAdminPage() {
                                         <strong className="text-3xl text-[#8a3423]">{formatPln(preview.price)}</strong>
                                         <span className="text-base text-[#7b7168] line-through">{formatPln(editedPackage.regularPrice)}</span>
                                     </div>
-                                    <p className="mt-2 text-xs">Najniższa cena z 30 dni przed obniżką: {formatPln(preview.legalReference)}</p>
+                                    <p className="mt-2 text-xs">{legalReferenceLabel(preview.referencePeriod)}: {formatPln(preview.legalReference)}</p>
                                 </>
                             ) : (
                                 <p className="mt-3 text-sm text-[#8a3423]">Ustaw prawidłową obniżkę, aby zobaczyć podgląd.</p>
