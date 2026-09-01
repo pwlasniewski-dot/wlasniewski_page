@@ -91,7 +91,7 @@ jobs:
       - name: Execute the production database transaction
         shell: bash
         run: |
-          cat > /tmp/promotion-save.mjs <<'JS'
+          cat > .tmp-promotion-save.mjs <<'JS'
           import { PrismaClient } from '@prisma/client';
 
           const prisma = new PrismaClient();
@@ -209,4 +209,5 @@ jobs:
           }
           JS
 
-          node /tmp/promotion-save.mjs
+          node .tmp-promotion-save.mjs
+          rm -f .tmp-promotion-save.mjs
