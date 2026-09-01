@@ -1,0 +1,86 @@
+name: Homepage promotion section visual QA
+
+on:
+  push:
+    branches:
+      - qa/promotion-card-preview-63
+
+permissions:
+  contents: read
+
+jobs:
+  capture-section:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: qa/promotion-card-preview-63
+
+      - name: Install Selenium
+        run: python3 -m pip install --disable-pip-version-check selenium==4.35.0
+
+      - name: Capture homepage service section
+        shell: bash
+        run: |
+          cat > /tmp/capture.py <<'PY'
+          from pathlib import Path
+          import time
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.support.ui import WebDriverWait
+          from selenium.webdriver.support import expected_conditions as EC
+
+          options = Options()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--disable-gpu')
+          options.add_argument('--window-size=1440,1200')
+          options.add_argument('--force-device-scale-factor=1')
+
+          output = Path('visual-qa-section')
+          output.mkdir(exist_ok=True)
+          driver = webdriver.Chrome(options=options)
+          try:
+              driver.get('https://deploy-preview-63--helpful-axolotl-cc1cbb.netlify.app/?visual_qa=services')
+              wait = WebDriverWait(driver, 40)
+              section = wait.until(EC.presence_of_element_located((
+                  By.XPATH,
+                  "//section[.//h2[contains(normalize-space(.), 'Wybierz sesję')]]",
+              )))
+              driver.execute_script("arguments[0].scrollIntoView({block: 'start'});", section)
+              time.sleep(3)
+              driver.execute_script("""
+                  for (const element of document.querySelectorAll('body *')) {
+                    const style = getComputedStyle(element);
+                    if (style.position !== 'fixed') continue;
+                    const text = (element.innerText || '').toLowerCase();
+                    if (text.includes('plików cookie') || text.includes('collaborate on this deploy preview') || text.includes('napisz do mnie')) {
+                      element.style.display = 'none';
+                    }
+                  }
+              """)
+              time.sleep(1)
+              assert section.screenshot(str(output / 'home-services.png'))
+
+              text = section.text
+              assert 'Rodzinny Komfort' in text, text
+              assert '780 zł' in text, text
+              assert 'Promocja' in text, text
+              print(text[:3000])
+          finally:
+              driver.quit()
+          PY
+          python3 /tmp/capture.py
+          file visual-qa-section/home-services.png
+          test -s visual-qa-section/home-services.png
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: homepage-promotion-section-visual-qa
+          path: visual-qa-section/home-services.png
+          if-no-files-found: error
+          retention-days: 3
