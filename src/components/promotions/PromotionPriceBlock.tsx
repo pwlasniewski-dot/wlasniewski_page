@@ -58,9 +58,11 @@ export default function PromotionPriceBlock({
                     <span className="rounded-full bg-[#a84631] px-3 py-1 text-[9px] font-extrabold uppercase tracking-[.18em] text-white">
                         {promotion.label}
                     </span>
-                    <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#f4dfb6]">
-                        −{promotion.displayDiscountPercent}%
-                    </span>
+                    {promotion.displayDiscountPercent > 0 && (
+                        <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#f4dfb6]">
+                            −{promotion.displayDiscountPercent}%
+                        </span>
+                    )}
                 </div>
                 <p className="mt-3 text-xs font-semibold text-white/80">{promotion.packageName}</p>
                 <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -92,7 +94,9 @@ export default function PromotionPriceBlock({
                     <span className="rounded-full bg-[#a84631] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[.14em] text-white">
                         {promotion.label}
                     </span>
-                    <span className="text-[10px] font-bold text-[#f1c5b7]">−{promotion.displayDiscountPercent}%</span>
+                    {promotion.displayDiscountPercent > 0 && (
+                        <span className="text-[10px] font-bold text-[#f1c5b7]">−{promotion.displayDiscountPercent}%</span>
+                    )}
                 </div>
                 <div className="mt-2 flex flex-wrap items-baseline gap-2">
                     <strong className="text-xl font-extrabold text-[#f6d4c9]">{formatPricePln(promotion.price)}</strong>
@@ -114,9 +118,11 @@ export default function PromotionPriceBlock({
                 <span className="rounded-full bg-[#a84631] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[.16em] text-white">
                     {promotion.label}
                 </span>
-                <span className="text-xs font-extrabold text-[#8a3423]">
-                    −{promotion.displayDiscountPercent}% względem ceny {referenceWindowLabel}
-                </span>
+                {promotion.displayDiscountPercent > 0 && (
+                    <span className="text-xs font-extrabold text-[#8a3423]">
+                        −{promotion.displayDiscountPercent}% względem ceny {referenceWindowLabel}
+                    </span>
+                )}
             </div>
             <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <strong className="text-3xl font-extrabold text-[#8a3423]">
