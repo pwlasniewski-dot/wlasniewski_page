@@ -93,12 +93,7 @@ jobs:
         run: |
           node --import tsx <<'TS'
           import { PrismaClient } from '@prisma/client';
-          import {
-            calculatePromotionalPrice,
-            homepagePromotionServiceNames,
-            resolveLowestPriceBeforePromotion,
-            toPublicPackagePromotion,
-          } from './src/lib/packagePromotions.ts';
+          import { calculatePromotionalPrice } from './src/lib/packagePromotionPricing.ts';
 
           const prisma = new PrismaClient();
           const packageId = 1;
@@ -110,23 +105,57 @@ jobs:
 
           try {
             const result = await prisma.$transaction(async tx => {
+              console.log('PHASE advisory-lock');
               await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`package-promotion:${packageId}`}))`;
 
+              console.log('PHASE package-read');
               const pkg = await tx.package.findFirst({
                 where: { id: packageId, is_active: true, service: { is_active: true } },
                 include: { service: true },
               });
               if (!pkg) throw new Error('PACKAGE_NOT_FOUND');
 
+              console.log('PHASE price-and-history');
               const promotionalPrice = calculatePromotionalPrice(pkg.price, discountType, discountValue);
-              const reference = await resolveLowestPriceBeforePromotion(
-                packageId,
-                startsAt,
-                tx,
-                undefined,
-                pkg.created_at,
-              );
+              const thirtyDaysStartsAt = new Date(startsAt.getTime() - 30 * 24 * 60 * 60_000);
+              const referencePeriod = pkg.created_at > thirtyDaysStartsAt ? 'SINCE_OFFERING' : 'THIRTY_DAYS';
+              const lookbackStartsAt = referencePeriod === 'SINCE_OFFERING' ? pkg.created_at : thirtyDaysStartsAt;
+              const regularHistory = await tx.$queryRaw<Array<{
+                price: number;
+                valid_from: Date;
+                valid_to: Date | null;
+                verified: boolean;
+              }>>`
+                SELECT "price", "valid_from", "valid_to", "verified"
+                FROM "package_price_history"
+                WHERE "package_id" = ${packageId}
+                  AND "valid_from" < ${startsAt}
+                  AND ("valid_to" IS NULL OR "valid_to" > ${lookbackStartsAt})
+                ORDER BY "valid_from" ASC
+              `;
+              const priorPromotions = await tx.$queryRaw<Array<{ promotional_price: number }>>`
+                SELECT "promotional_price"
+                FROM "package_promotions"
+                WHERE "package_id" = ${packageId}
+                  AND "is_enabled" = TRUE
+                  AND "starts_at" < ${startsAt}
+                  AND ("ends_at" IS NULL OR "ends_at" > ${lookbackStartsAt})
+              `;
+              console.log({ regularHistory, priorPromotions });
 
+              console.log('PHASE overlap-read');
+              const overlap = await tx.packagePromotion.findFirst({
+                where: {
+                  package_id: packageId,
+                  is_enabled: true,
+                  starts_at: { lt: endsAt },
+                  OR: [{ ends_at: null }, { ends_at: { gt: startsAt } }],
+                },
+                select: { id: true },
+              });
+              if (overlap) throw new Error('OVERLAPPING_PROMOTION');
+
+              console.log('PHASE promotion-create');
               const promotion = await tx.packagePromotion.create({
                 data: {
                   package_id: packageId,
@@ -137,7 +166,7 @@ jobs:
                   promotional_price: promotionalPrice,
                   lowest_price_30d: manualLowestPrice,
                   lowest_price_source: 'ADMIN_CONFIRMED',
-                  lowest_price_period: reference.referencePeriod,
+                  lowest_price_period: referencePeriod,
                   lowest_price_confirmed_at: new Date(),
                   label: 'Promocja',
                   starts_at: startsAt,
@@ -148,9 +177,9 @@ jobs:
                 include: { package: { include: { service: true } } },
               });
 
-              const homeServiceNames = homepagePromotionServiceNames(pkg.service.name);
+              console.log('PHASE homepage-selection');
               const servicePackageIds = await tx.package.findMany({
-                where: { service: { name: { in: homeServiceNames } } },
+                where: { service: { name: { in: [pkg.service.name] } } },
                 select: { id: true },
               });
               await tx.packagePromotion.updateMany({
@@ -165,13 +194,7 @@ jobs:
                 data: { show_on_home: false, updated_at: new Date() },
               });
 
-              return toPublicPackagePromotion({
-                ...promotion,
-                package_name: promotion.package.name,
-                package_order: promotion.package.order,
-                service_name: promotion.package.service.name,
-                service_order: promotion.package.service.order,
-              });
+              return { id: promotion.id, price: promotion.promotional_price };
             });
 
             const count = await prisma.packagePromotion.count();
