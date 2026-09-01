@@ -344,8 +344,12 @@ export default function PackagePromotionsAdminPage() {
                                                         <p className="mt-1 text-sm text-zinc-400">Cena zwykła: <strong className="text-white">{formatPln(pkg.regularPrice)}</strong></p>
                                                         <p className={`mt-1 text-xs ${pkg.automaticReference.available ? 'text-emerald-400' : 'text-amber-300'}`}>
                                                             {pkg.automaticReference.available && pkg.automaticReference.lowestPrice30d
-                                                                ? `System ma pełne 30 dni historii. Automatyczna cena referencyjna: ${formatPln(pkg.automaticReference.lowestPrice30d)}`
-                                                                : 'Brak pełnego 30-dniowego okna — pierwsza promocja wymaga ręcznego potwierdzenia ceny referencyjnej.'}
+                                                                ? `${pkg.automaticReference.referencePeriod === 'SINCE_OFFERING'
+                                                                    ? 'System ma pełną historię od rozpoczęcia oferowania'
+                                                                    : 'System ma pełne 30 dni historii'}. Automatyczna cena referencyjna: ${formatPln(pkg.automaticReference.lowestPrice30d)}`
+                                                                : pkg.automaticReference.referencePeriod === 'SINCE_OFFERING'
+                                                                    ? 'Brak pełnej historii od rozpoczęcia oferowania — promocja wymaga ręcznego potwierdzenia ceny referencyjnej.'
+                                                                    : 'Brak pełnego 30-dniowego okna — pierwsza promocja wymaga ręcznego potwierdzenia ceny referencyjnej.'}
                                                         </p>
                                                     </div>
                                                     <button
@@ -492,7 +496,11 @@ export default function PackagePromotionsAdminPage() {
                         <div className="mt-6 rounded-2xl border border-[#c9826f]/40 bg-[#fff8f3] p-5 text-[#3c3028]">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <span className="rounded-full bg-[#a84631] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[.16em] text-white">{editor.label || 'Promocja'}</span>
-                                {preview && preview.displayPercent > 0 && <span className="text-xs font-extrabold text-[#8a3423]">−{preview.displayPercent}% względem ceny z 30 dni</span>}
+                                {preview && preview.displayPercent > 0 && (
+                                    <span className="text-xs font-extrabold text-[#8a3423]">
+                                        −{preview.displayPercent}% względem ceny {preview.referencePeriod === 'SINCE_OFFERING' ? 'od rozpoczęcia oferowania' : 'z 30 dni'}
+                                    </span>
+                                )}
                             </div>
                             {preview ? (
                                 <>

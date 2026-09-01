@@ -12,6 +12,7 @@ export {
     calculatePromotionalPrice,
     calculateReferenceDiscountPercent,
     formatPricePln,
+    legalReferenceText,
     type PromotionDiscountType,
     type PromotionReferenceSource,
     type PromotionReferencePeriod,
@@ -166,6 +167,18 @@ export async function loadActivePromotionForPackage(
     return (await loadActivePromotionsForPackages([packageId], now, db)).get(packageId) || null;
 }
 
+export function homepagePromotionSlot(serviceName: string): string {
+    const normalized = serviceName.trim().toLocaleLowerCase('pl');
+    if (['urodziny', 'przyjęcie', 'przyjecie'].includes(normalized)) return 'events';
+    return normalized;
+}
+
+export function homepagePromotionServiceNames(serviceName: string): string[] {
+    return homepagePromotionSlot(serviceName) === 'events'
+        ? ['Urodziny', 'Przyjęcie', 'Przyjecie']
+        : [serviceName];
+}
+
 export async function loadFeaturedPromotionsByService(
     now = new Date(),
     db: PromotionDb = prisma,
@@ -181,10 +194,23 @@ export async function loadFeaturedPromotionsByService(
         ORDER BY st."order" ASC, p."order" ASC, pp."starts_at" DESC, pp."id" DESC
     `);
 
-    return rows.reduce<Record<string, PublicPackagePromotion>>((result, row) => {
-        if (!result[row.service_name]) result[row.service_name] = toPublicPackagePromotion(row);
-        return result;
-    }, {});
+    const selectedBySlot = new Map<string, PublicPackagePromotion>();
+    for (const row of rows) {
+        const slot = homepagePromotionSlot(row.service_name);
+        if (!selectedBySlot.has(slot)) selectedBySlot.set(slot, toPublicPackagePromotion(row));
+    }
+
+    const result: Record<string, PublicPackagePromotion> = {};
+    for (const [slot, promotion] of selectedBySlot) {
+        if (slot === 'events') {
+            result.Urodziny = promotion;
+            result['Przyjęcie'] = promotion;
+            result.Przyjecie = promotion;
+        } else {
+            result[promotion.serviceName] = promotion;
+        }
+    }
+    return result;
 }
 
 export type LowestPriceResolution = {

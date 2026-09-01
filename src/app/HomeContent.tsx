@@ -83,6 +83,15 @@ interface HomeData {
 }
 
 // Interfaces
+function promotionBookingHref(baseHref: string, promotion: PublicPackagePromotion): string {
+    const [pathname, rawQuery = ''] = baseHref.split('?');
+    const query = new URLSearchParams(rawQuery);
+    query.set('service', promotion.serviceName);
+    query.set('package_id', String(promotion.packageId));
+    query.set('promotion_id', String(promotion.id));
+    return `${pathname}?${query.toString()}`;
+}
+
 interface HomeContentProps {
     heroSlides: any[]; // Explicitly passed hero slides array
     sections: Section[]; // Explicitly passed sections array
@@ -1024,7 +1033,7 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                             <article key={item.title} className={`group relative min-h-[420px] overflow-hidden rounded-[2px] bg-[#28221c] ${index === 0 ? 'md:col-span-5 md:min-h-[620px]' : index === 1 ? 'md:col-span-7 md:min-h-[620px]' : 'md:col-span-6 md:min-h-[480px]'}`}>
                                 <Link
                                     href={featuredPromotions[item.service]
-                                        ? `${item.href}${item.href.includes('?') ? '&' : '?'}package_id=${featuredPromotions[item.service].packageId}&promotion_id=${featuredPromotions[item.service].id}`
+                                        ? promotionBookingHref(item.href, featuredPromotions[item.service])
                                         : item.href}
                                     aria-label={`${item.title} — ${item.cta_label || 'sprawdź ceny i terminy'}`}
                                     onClick={() => {

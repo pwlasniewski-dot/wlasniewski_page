@@ -8,7 +8,11 @@ import {
     legalReferenceText,
     promotionAllowsAdditionalDiscount,
 } from '../../src/lib/packagePromotionPricing';
-import { regularPriceHistoryCoversLookback } from '../../src/lib/packagePromotions';
+import {
+    homepagePromotionServiceNames,
+    homepagePromotionSlot,
+    regularPriceHistoryCoversLookback,
+} from '../../src/lib/packagePromotions';
 
 test('percentage promotion is calculated from the regular package price', () => {
     assert.equal(calculatePromotionalPrice(75_000, 'percentage', 20), 60_000);
@@ -72,4 +76,11 @@ test('migration baseline becomes sufficient after the complete observed window',
         valid_from: new Date('2026-10-15T12:00:00.000Z'),
         valid_to: null,
     }], lookback), false);
+});
+
+test('birthdays and receptions share one homepage promotion slot', () => {
+    assert.equal(homepagePromotionSlot('Urodziny'), 'events');
+    assert.equal(homepagePromotionSlot('Przyjęcie'), 'events');
+    assert.deepEqual(homepagePromotionServiceNames('Urodziny'), ['Urodziny', 'Przyjęcie', 'Przyjecie']);
+    assert.deepEqual(homepagePromotionServiceNames('Sesja'), ['Sesja']);
 });

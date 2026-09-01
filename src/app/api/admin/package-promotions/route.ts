@@ -7,6 +7,8 @@ import {
     calculatePromotionalPrice,
     calculateReferenceDiscountPercent,
     formatPricePln,
+    homepagePromotionServiceNames,
+    legalReferenceText,
     resolveLowestPriceBeforePromotion,
     toPublicPackagePromotion,
     type PromotionDiscountType,
@@ -105,7 +107,10 @@ export async function GET(request: NextRequest) {
                         promotion.lowest_price_30d,
                         promotion.promotional_price,
                     ),
-                    legalText: `Najniższa cena z 30 dni przed obniżką: ${formatPricePln(promotion.lowest_price_30d)}`,
+                    legalText: legalReferenceText(
+                        promotion.lowest_price_30d,
+                        promotion.lowest_price_period === 'SINCE_OFFERING' ? 'SINCE_OFFERING' : 'THIRTY_DAYS',
+                    ),
                 })),
                 priceHistory: pkg.price_history.map(entry => ({
                     id: entry.id,
@@ -263,8 +268,9 @@ export async function POST(request: NextRequest) {
                 });
 
             if (showOnHome && isEnabled) {
+                const homeServiceNames = homepagePromotionServiceNames(pkg.service.name);
                 const servicePackageIds = await tx.package.findMany({
-                    where: { service_id: pkg.service_id },
+                    where: { service: { name: { in: homeServiceNames } } },
                     select: { id: true },
                 });
                 await tx.packagePromotion.updateMany({
@@ -310,7 +316,7 @@ export async function POST(request: NextRequest) {
             },
             MANUAL_REFERENCE_REQUIRED: {
                 status: 409,
-                message: 'Brakuje pełnej historii 30 dni. Wpisz rzeczywistą najniższą cenę i potwierdź ją świadomie.',
+                message: 'Brakuje pełnej historii wymaganego okresu przed obniżką. Wpisz rzeczywistą najniższą cenę i potwierdź ją świadomie.',
             },
             REFERENCE_ABOVE_REGULAR: {
                 status: 409,
