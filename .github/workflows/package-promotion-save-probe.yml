@@ -1,0 +1,73 @@
+name: Probe production package promotion state
+
+on:
+  push:
+    branches:
+      - qa/package-promotion-save-probe-20260901
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: qa/package-promotion-save-probe-20260901
+
+      - name: Read production package promotion state
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -L --fail --silent --show-error \
+            --connect-timeout 10 --max-time 45 \
+            -H 'Cache-Control: no-cache, no-store' \
+            "https://wlasniewski.pl/api/service-types?promotion_probe=$(date +%s)" \
+            -o /tmp/service-types.json
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path('/tmp/service-types.json').read_text(encoding='utf-8'))
+          services = payload.get('serviceTypes') or []
+          packages = [
+              {
+                  'service': service.get('name'),
+                  'package_id': pkg.get('id'),
+                  'package': pkg.get('name'),
+                  'regular_price': pkg.get('regular_price'),
+                  'effective_price': pkg.get('effective_price'),
+                  'promotion': pkg.get('promotion'),
+              }
+              for service in services
+              for pkg in (service.get('packages') or [])
+          ]
+          active = [row for row in packages if row['promotion'] is not None]
+          print(json.dumps({
+              'success': payload.get('success'),
+              'package_count': len(packages),
+              'active_promotion_count': len(active),
+              'active_promotions': active,
+          }, ensure_ascii=False, indent=2))
+          Path('/tmp/probe-summary.json').write_text(json.dumps({
+              'package_count': len(packages),
+              'active_promotion_count': len(active),
+              'active_promotions': active,
+          }, ensure_ascii=False, indent=2), encoding='utf-8')
+          PY
+
+      - name: Remove one-off workflow
+        if: always()
+        shell: bash
+        run: |
+          rm -f .github/workflows/package-promotion-save-probe.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: remove production promotion probe'
+            git push origin HEAD:qa/package-promotion-save-probe-20260901
+          fi
