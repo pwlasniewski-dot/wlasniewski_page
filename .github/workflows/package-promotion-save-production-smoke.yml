@@ -1,0 +1,158 @@
+name: Package promotion save production smoke
+
+on:
+  push:
+    branches:
+      - qa/package-promotion-save-production-smoke-20260901
+
+permissions:
+  contents: write
+
+jobs:
+  production-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: qa/package-promotion-save-production-smoke-20260901
+          fetch-depth: 0
+
+      - name: Wait for production hotfix marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 40); do
+            cache_buster="$(date +%s)-${attempt}"
+            echo "Production marker attempt ${attempt}/40"
+            status="$(curl -L --silent --show-error \
+              --connect-timeout 10 --max-time 45 \
+              -H 'Cache-Control: no-cache, no-store' \
+              -D /tmp/service-types.headers \
+              -o /tmp/service-types.json \
+              -w '%{http_code}' \
+              "https://wlasniewski.pl/api/service-types?promotion_save_qa=${cache_buster}" || true)"
+
+            marker="$(awk -F': ' 'tolower($1)=="x-wlasniewski-release" {gsub("\r", "", $2); print $2}' /tmp/service-types.headers | tail -n1)"
+            if [ "$status" = "200" ] && [ "$marker" = "package-promotion-save-v2" ]; then
+              echo "Production exposes package-promotion-save-v2."
+              break
+            fi
+
+            echo "Current HTTP=${status}, marker=${marker:-missing}."
+            if [ "$attempt" = "40" ]; then
+              echo 'Production did not expose the verified hotfix marker in time.'
+              cat /tmp/service-types.headers || true
+              cat /tmp/service-types.json || true
+              exit 1
+            fi
+            sleep 15
+          done
+
+      - name: Validate public pricing state
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path('/tmp/service-types.json').read_text(encoding='utf-8'))
+          assert payload.get('success') is True, 'service-types success flag is not true'
+          services = payload.get('serviceTypes')
+          assert isinstance(services, list) and services, 'no services returned'
+          packages = [pkg for service in services for pkg in (service.get('packages') or [])]
+          assert packages, 'no packages returned'
+
+          missing = []
+          for pkg in packages:
+              for key in ('regular_price', 'effective_price', 'promotion'):
+                  if key not in pkg:
+                      missing.append(f"package {pkg.get('id')}: {key}")
+          assert not missing, 'pricing contract missing: ' + ', '.join(missing[:10])
+
+          active = [pkg.get('id') for pkg in packages if pkg.get('promotion') is not None]
+          assert not active, f'unexpected active promotions during technical acceptance: {active}'
+          mismatched = [
+              pkg.get('id') for pkg in packages
+              if pkg.get('price') != pkg.get('regular_price')
+              or pkg.get('effective_price') != pkg.get('regular_price')
+          ]
+          assert not mismatched, f'price changed despite no active promotions: {mismatched}'
+          Path('/tmp/package-count.txt').write_text(str(len(packages)), encoding='utf-8')
+          print(f'Validated {len(packages)} packages; active promotions: 0.')
+          PY
+
+      - name: Smoke-test public and protected routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cache_buster="$(date +%s)"
+
+          check_page() {
+            local url="$1"
+            local name="$2"
+            local output="$3"
+            local status
+            status="$(curl -L --silent --show-error \
+              --connect-timeout 10 --max-time 50 \
+              -H 'Cache-Control: no-cache, no-store' \
+              -o "$output" -w '%{http_code}' \
+              "${url}?promotion_save_qa=${cache_buster}")"
+            if [ "$status" != "200" ] || [ ! -s "$output" ]; then
+              echo "${name} failed: HTTP ${status}."
+              exit 1
+            fi
+            if grep -qiE 'Application error|Internal Server Error|Bad Gateway|Service Unavailable' "$output"; then
+              echo "${name} contains an application/server error marker."
+              exit 1
+            fi
+            echo "${name}: HTTP 200"
+          }
+
+          check_page 'https://wlasniewski.pl/' 'Homepage' '/tmp/home.html'
+          check_page 'https://wlasniewski.pl/rezerwacja' 'Booking page' '/tmp/booking.html'
+          check_page 'https://wlasniewski.pl/admin/promocje' 'Promotion admin route' '/tmp/admin-promotions.html'
+
+          protected_status="$(curl --silent --show-error \
+            --connect-timeout 10 --max-time 40 \
+            -H 'Cache-Control: no-cache, no-store' \
+            -o /tmp/admin-api.json -w '%{http_code}' \
+            "https://wlasniewski.pl/api/admin/package-promotions?promotion_save_qa=${cache_buster}")"
+          case "$protected_status" in
+            401|403) echo "Promotion admin API is protected: HTTP ${protected_status}" ;;
+            *)
+              echo "Expected promotion admin API to return 401/403, got ${protected_status}."
+              cat /tmp/admin-api.json || true
+              exit 1
+              ;;
+          esac
+
+      - name: Publish verification summary
+        shell: bash
+        run: |
+          packages="$(cat /tmp/package-count.txt)"
+          {
+            echo '## Package promotion save hotfix — production smoke PASS'
+            echo
+            echo '- Release marker: `package-promotion-save-v2`.'
+            echo "- Pricing contract validated for **${packages} packages**."
+            echo '- No promotion was activated by deployment.'
+            echo '- Existing regular and effective prices remain identical.'
+            echo '- Homepage: HTTP 200.'
+            echo '- Booking page: HTTP 200.'
+            echo '- Promotion admin route: HTTP 200.'
+            echo '- Promotion admin API is present and protected.'
+            echo '- Test performed no writes, bookings or payments.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove one-time smoke workflow
+        if: success()
+        shell: bash
+        run: |
+          rm -f .github/workflows/package-promotion-save-production-smoke.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'chore: remove completed promotion-save smoke workflow'
+          git push origin HEAD:qa/package-promotion-save-production-smoke-20260901
