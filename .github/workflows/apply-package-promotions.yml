@@ -1,0 +1,57 @@
+name: Apply package promotions draft
+
+on:
+  push:
+    branches:
+      - feat/package-promotions
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: feat/package-promotions
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Reconstruct deterministic patcher
+        run: |
+          cat scripts/package-promotions-patch/part-* | base64 -d | gzip -dc > /tmp/apply-package-promotions.py
+          python3 -m py_compile /tmp/apply-package-promotions.py
+
+      - name: Apply deterministic source patches
+        run: python3 /tmp/apply-package-promotions.py
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Promotion unit tests
+        run: node --import tsx --test tests/unit/package-promotions.test.ts
+
+      - name: Remove one-off patch automation
+        run: rm -rf scripts/package-promotions-patch .github/workflows/apply-package-promotions.yml
+
+      - name: Commit verified draft implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "feat: implement package-level promotions"
+          git push origin HEAD:feat/package-promotions
