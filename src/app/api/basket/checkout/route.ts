@@ -17,6 +17,7 @@ import { bookingDateUtcRange, isBookingDateAllowed, isBookingStartInFuture, mini
 import { isBookingBlockingAvailability } from '@/lib/bookingStatus';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
 import { calculateFotoMatchDiscount } from '@/lib/fotoMatchDiscount';
+import { loadActivePromotionForPackage, type PublicPackagePromotion } from '@/lib/packagePromotions';
 
 class BookingConflictError extends Error {}
 class GiftCardUnavailableError extends Error {}
@@ -163,6 +164,8 @@ export async function POST(request: Request) {
                 let basePrice = 0;
                 let dronePackage: { slug: string; name: string; price: number } | null = null;
                 let selectedPackage: any = null;
+                let packagePromotion: PublicPackagePromotion | null = null;
+                let regularPackagePrice = 0;
 
                 if (isDroneStandalone) {
                     droneConfigPromise ||= loadDronePhotographyCmsPage();
@@ -179,6 +182,7 @@ export async function POST(request: Request) {
                     packageHours = Math.max(1, selected.durationHours || 1);
                     packageBlocksEntireDay = selected.blocksEntireDay === true;
                     basePrice = selected.price * 100;
+                    regularPackagePrice = basePrice;
                     dronePackage = { slug: selected.slug, name: selected.name, price: selected.price * 100 };
                 } else {
                     const packageId = Number(item.productId);
@@ -194,7 +198,28 @@ export async function POST(request: Request) {
                     packageName = selectedPackage.name;
                     packageHours = selectedPackage.hours;
                     packageBlocksEntireDay = selectedPackage.blocks_entire_day === true;
-                    basePrice = selectedPackage.price;
+                    regularPackagePrice = selectedPackage.price;
+                    const expectedPromotionId = Number(md.package_promotion?.id);
+                    const clientExpectedPromotion = Number.isInteger(expectedPromotionId) && expectedPromotionId > 0;
+                    try {
+                        packagePromotion = await loadActivePromotionForPackage(selectedPackage.id);
+                    } catch (promotionError) {
+                        console.warn('[checkout] Package promotion verification failed.', promotionError);
+                        if (clientExpectedPromotion) {
+                            return NextResponse.json({
+                                ok: false,
+                                message: 'Nie udało się teraz potwierdzić ceny promocyjnej. Odśwież rezerwację i spróbuj ponownie — nie pobierzemy wyższej kwoty bez potwierdzenia.',
+                            }, { status: 503 });
+                        }
+                        packagePromotion = null;
+                    }
+                    if (clientExpectedPromotion && packagePromotion?.id !== expectedPromotionId) {
+                        return NextResponse.json({
+                            ok: false,
+                            message: 'Promocja w koszyku zakończyła się albo została zmieniona. Odśwież rezerwację, aby zobaczyć aktualną cenę.',
+                        }, { status: 409 });
+                    }
+                    basePrice = packagePromotion?.price ?? regularPackagePrice;
 
                     if (md.drone_addon_slug) {
                         droneConfigPromise ||= loadDronePhotographyCmsPage();
@@ -224,6 +249,13 @@ export async function POST(request: Request) {
 
                 let verifiedPrice = basePrice + (isDroneStandalone ? 0 : dronePackage?.price || 0);
                 let appliedGiftCardCode: string | null = null;
+
+                if (md.promo_code && packagePromotion && !packagePromotion.allowPromoCode) {
+                    return NextResponse.json({
+                        ok: false,
+                        message: 'Promocja tego pakietu nie łączy się z kodem rabatowym. Usuń kod i spróbuj ponownie.',
+                    }, { status: 409 });
+                }
 
                 if (md.promo_code) {
                     const promoCode = String(md.promo_code).trim().toUpperCase();
@@ -347,7 +379,7 @@ export async function POST(request: Request) {
                     service: serviceName,
                     package: packageName,
                     price: verifiedPrice,
-                    base_price: basePrice,
+                    base_price: regularPackagePrice || basePrice,
                     date: bookingDate,
                     start_time: verifiedSlot.start,
                     end_time: verifiedSlot.end,
@@ -373,9 +405,26 @@ export async function POST(request: Request) {
                     booking_snapshot: {
                         version: 2,
                         service: serviceName,
-                        package: { name: packageName, price: basePrice, hours: packageHours },
+                        package: {
+                            name: packageName,
+                            regularPrice: regularPackagePrice || basePrice,
+                            effectivePrice: basePrice,
+                            hours: packageHours,
+                        },
+                        promotion: packagePromotion ? {
+                            id: packagePromotion.id,
+                            label: packagePromotion.label,
+                            regularPrice: packagePromotion.regularPrice,
+                            promotionalPrice: packagePromotion.price,
+                            lowestPrice30d: packagePromotion.lowestPrice30d,
+                            referenceSource: packagePromotion.referenceSource,
+                            startsAt: packagePromotion.startsAt,
+                            endsAt: packagePromotion.endsAt,
+                            allowPromoCode: packagePromotion.allowPromoCode,
+                        } : null,
                         drone: dronePackage,
-                        totalBeforeDiscounts: basePrice + (isDroneStandalone ? 0 : dronePackage?.price || 0),
+                        totalBeforeDiscounts: (regularPackagePrice || basePrice) + (isDroneStandalone ? 0 : dronePackage?.price || 0),
+                        totalAfterPackagePromotion: basePrice + (isDroneStandalone ? 0 : dronePackage?.price || 0),
                         totalAfterDiscounts: verifiedPrice,
                         venue: { city: md.venue_city || null, place: md.venue_place || null },
                         droneGoal: hasDrone ? String(md.drone_goal) : null,

@@ -146,6 +146,12 @@ export default function BannersManagementPage() {
 
                 {/* Banner Cards */}
                 <div className="space-y-6">
+                    <div className="rounded-lg border border-rose-500/30 bg-gradient-to-br from-rose-950/40 to-zinc-900 p-6">
+                        <h2 className="text-xl font-bold">Promocje konkretnych pakietów</h2>
+                        <p className="mt-2 text-sm leading-6 text-zinc-300">Ustawiaj obniżki procentowe lub kwotowe dla wybranego pakietu. Cena, termin i właściwa informacja o najniższej cenie przed obniżką trafiają automatycznie na stronę główną, do rezerwacji i checkoutu.</p>
+                        <a href="/admin/promocje" className="mt-4 inline-flex rounded-lg bg-rose-500 px-4 py-2 text-sm font-bold text-white hover:bg-rose-400">Otwórz promocje pakietów</a>
+                    </div>
+
                     {/* 1. PromocodeBar — source: PromoCode */}
                     <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
                         <h2 className="text-xl font-bold mb-1">1️⃣ Kod Rabatowy (PromocodeBar)</h2>

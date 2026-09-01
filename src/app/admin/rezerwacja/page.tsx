@@ -44,7 +44,7 @@ export default function AdminPackagesPage() {
     useEffect(() => {
         const loadData = async () => {
             try {
-                const res = await fetch(getApiUrl('service-types'));
+                const res = await fetch(`${getApiUrl('service-types')}?view=admin`);
                 if (res.ok) {
                     const data = await res.json();
                     setServiceTypes(data.serviceTypes || []);
@@ -88,7 +88,7 @@ export default function AdminPackagesPage() {
                 setShowPackageForm(false);
 
                 // Reload data
-                const reloadRes = await fetch(getApiUrl('service-types'));
+                const reloadRes = await fetch(`${getApiUrl('service-types')}?view=admin`);
                 if (reloadRes.ok) {
                     const reloadData = await reloadRes.json();
                     setServiceTypes(reloadData.serviceTypes || []);
@@ -115,7 +115,7 @@ export default function AdminPackagesPage() {
                 toast.success('Pakiet usunięty');
 
                 // Reload data
-                const reloadRes = await fetch(getApiUrl('service-types'));
+                const reloadRes = await fetch(`${getApiUrl('service-types')}?view=admin`);
                 if (reloadRes.ok) {
                     const reloadData = await reloadRes.json();
                     setServiceTypes(reloadData.serviceTypes || []);
@@ -137,7 +137,7 @@ export default function AdminPackagesPage() {
         }
 
         try {
-            const res = await fetch(getApiUrl('service-types'), {
+            const res = await fetch(`${getApiUrl('service-types')}?view=admin`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -151,7 +151,7 @@ export default function AdminPackagesPage() {
                 setShowServiceTypeForm(false);
 
                 // Reload data
-                const reloadRes = await fetch(getApiUrl('service-types'));
+                const reloadRes = await fetch(`${getApiUrl('service-types')}?view=admin`);
                 if (reloadRes.ok) {
                     const reloadData = await reloadRes.json();
                     setServiceTypes(reloadData.serviceTypes || []);
@@ -170,7 +170,7 @@ export default function AdminPackagesPage() {
         if (!confirm('Na pewno chcesz usunąć całą kategorię wraz ze wszystkimi pakietami?')) return;
 
         try {
-            const res = await fetch(`${getApiUrl('service-types')}?id=${serviceId}`, {
+            const res = await fetch(`${getApiUrl('service-types')}?view=admin&id=${serviceId}`, {
                 method: 'DELETE'
             });
 
@@ -178,7 +178,7 @@ export default function AdminPackagesPage() {
                 toast.success('Kategoria usunięta');
 
                 // Reload data
-                const reloadRes = await fetch(getApiUrl('service-types'));
+                const reloadRes = await fetch(`${getApiUrl('service-types')}?view=admin`);
                 if (reloadRes.ok) {
                     const reloadData = await reloadRes.json();
                     setServiceTypes(reloadData.serviceTypes || []);
@@ -199,8 +199,11 @@ export default function AdminPackagesPage() {
             <Toaster position="top-right" theme="dark" />
 
             <div className="max-w-6xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-4xl font-bold text-white">📦 Zarządzaj Ofertą</h1>
+                <div className="flex flex-col gap-4 mb-8 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h1 className="text-4xl font-bold text-white">📦 Zarządzaj Ofertą</h1>
+                        <a href="/admin/promocje" className="mt-3 inline-flex rounded-lg border border-rose-400/40 bg-rose-500/10 px-4 py-2 text-sm font-bold text-rose-200 hover:bg-rose-500/20">Zarządzaj promocjami konkretnych pakietów</a>
+                    </div>
                     <button
                         onClick={() => {
                             setEditingServiceType({

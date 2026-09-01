@@ -527,9 +527,52 @@ model Package {
   provider_id       Int?
   users             User?       @relation(fields: [provider_id], references: [id])
   service           ServiceType @relation(fields: [service_id], references: [id], onDelete: Cascade)
+  promotions        PackagePromotion[]
+  price_history     PackagePriceHistory[]
 
   @@unique([service_id, name])
   @@map("packages")
+}
+
+model PackagePriceHistory {
+  id         Int      @id @default(autoincrement())
+  package_id Int
+  price      Int
+  valid_from DateTime @default(now())
+  valid_to   DateTime?
+  source     String   @default("SYSTEM")
+  verified   Boolean  @default(true)
+  created_at DateTime @default(now())
+  package    Package  @relation(fields: [package_id], references: [id], onDelete: Cascade)
+
+  @@index([package_id, valid_from])
+  @@map("package_price_history")
+}
+
+model PackagePromotion {
+  id                        Int      @id @default(autoincrement())
+  package_id                Int
+  is_enabled                Boolean  @default(false)
+  discount_type             String
+  discount_value            Int
+  regular_price_snapshot    Int
+  promotional_price         Int
+  lowest_price_30d          Int
+  lowest_price_source       String
+  lowest_price_period       String
+  lowest_price_confirmed_at DateTime
+  label                     String   @default("Promocja")
+  starts_at                 DateTime
+  ends_at                   DateTime?
+  allow_promo_code          Boolean  @default(false)
+  show_on_home              Boolean  @default(true)
+  created_at                DateTime @default(now())
+  updated_at                DateTime @default(now()) @updatedAt
+  package                   Package  @relation(fields: [package_id], references: [id], onDelete: Cascade)
+
+  @@index([package_id, starts_at])
+  @@index([is_enabled, starts_at, ends_at])
+  @@map("package_promotions")
 }
 
 model BookingAvailabilityRule {

@@ -1,6 +1,6 @@
 
 import HomeContent from "./HomeContent";
-import { loadPublicMinimumPrices, publicPriceLabel } from '@/lib/publicPackagePricing';
+import { loadPublicPricingSnapshot, publicPriceLabel } from '@/lib/publicPackagePricing';
 import { Metadata } from "next";
 
 export const revalidate = 3600; // Cache for 1 hour
@@ -158,9 +158,9 @@ async function getPublicGuidePromo() {
 }
 
 export default async function HomePage() {
-    const [{ page, testimonials, cmsUnavailable, testimonialsUnavailable }, publicMinimumPrices, publicGuidePromo] = await Promise.all([
+    const [{ page, testimonials, cmsUnavailable, testimonialsUnavailable }, publicPricing, publicGuidePromo] = await Promise.all([
         getHomePageData(),
-        loadPublicMinimumPrices(),
+        loadPublicPricingSnapshot(),
         getPublicGuidePromo(),
     ]);
 
@@ -323,10 +323,11 @@ export default async function HomePage() {
                 : testimonials}
             heroSliderInterval={heroSliderInterval}
             publicPriceLabels={{
-                Sesja: publicPriceLabel(publicMinimumPrices, 'Sesja'),
-                'Ślub': publicPriceLabel(publicMinimumPrices, 'Ślub'),
-                Urodziny: publicPriceLabel(publicMinimumPrices, 'Urodziny'),
+                Sesja: publicPriceLabel(publicPricing.minimumPrices, 'Sesja'),
+                'Ślub': publicPriceLabel(publicPricing.minimumPrices, 'Ślub'),
+                Urodziny: publicPriceLabel(publicPricing.minimumPrices, 'Urodziny'),
             }}
+            featuredPromotions={publicPricing.featuredPromotions}
             publicGuidePromo={publicGuidePromo}
         />
     );

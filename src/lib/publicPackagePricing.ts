@@ -1,4 +1,9 @@
 import prisma from '@/lib/db/prisma';
+import {
+    loadActivePromotionsForPackages,
+    loadFeaturedPromotionsByService,
+    type PublicPackagePromotion,
+} from '@/lib/packagePromotions';
 
 export type PublicPackageFilter = {
     serviceId?: number;
@@ -8,7 +13,13 @@ export type PublicPackageFilter = {
 /** Monetary values from Package.price, always expressed in grosze. */
 export type PublicMinimumPricesInCents = Record<string, number>;
 
+export type PublicPricingSnapshot = {
+    minimumPrices: PublicMinimumPricesInCents;
+    featuredPromotions: Record<string, PublicPackagePromotion>;
+};
+
 type PriceSourcePackage = {
+    id?: number;
     price: number;
     service: { name: string };
 };
@@ -46,6 +57,39 @@ export async function loadPublicMinimumPrices(
     } catch (error) {
         console.warn('[public-pricing] Packages unavailable; rendering without an amount.', error);
         return {};
+    }
+}
+
+/**
+ * Public homepage snapshot. Promotions are additive and fail open: during the
+ * migration rollout the site keeps showing regular prices instead of failing.
+ */
+export async function loadPublicPricingSnapshot(): Promise<PublicPricingSnapshot> {
+    try {
+        const packages = await findActivePublicPackages();
+        let activePromotions = new Map<number, PublicPackagePromotion>();
+        let featuredPromotions: Record<string, PublicPackagePromotion> = {};
+
+        try {
+            [activePromotions, featuredPromotions] = await Promise.all([
+                loadActivePromotionsForPackages(packages.map(pkg => pkg.id)),
+                loadFeaturedPromotionsByService(),
+            ]);
+        } catch (promotionError) {
+            console.warn('[public-pricing] Promotions unavailable; using regular prices.', promotionError);
+        }
+
+        return {
+            minimumPrices: summarizeMinimumPrices(packages.map(pkg => ({
+                id: pkg.id,
+                price: activePromotions.get(pkg.id)?.price ?? pkg.price,
+                service: pkg.service,
+            }))),
+            featuredPromotions,
+        };
+    } catch (error) {
+        console.warn('[public-pricing] Pricing snapshot unavailable.', error);
+        return { minimumPrices: {}, featuredPromotions: {} };
     }
 }
 

@@ -4,6 +4,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingBag, Trash2, ArrowRight } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import PromotionPriceBlock from '@/components/promotions/PromotionPriceBlock';
 
 export default function BasketDrawer() {
     const { items, removeItem, updateItem, totalAmount, isOpen, setIsOpen } = useCart();
@@ -107,6 +108,10 @@ export default function BasketDrawer() {
                                                             />
                                                         </div>
                                                     </div>
+                                                )}
+
+                                                {item.type === 'booking' && item.metadata?.package_promotion && (
+                                                    <PromotionPriceBlock promotion={item.metadata.package_promotion} variant="summary" className="mt-4" />
                                                 )}
 
                                                 <div className="mt-4 flex items-center justify-between">
