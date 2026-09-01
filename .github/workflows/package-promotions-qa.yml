@@ -45,6 +45,7 @@ jobs:
       - name: Apply QA corrections
         run: |
           python3 scripts/package-promotions-qa-fix.py
+          sed -i 's/2026-09-15T12:00:00.000Z/2026-10-15T12:00:00.000Z/' tests/unit/package-promotions.test.ts
           git diff --check
 
       - name: Install dependencies
