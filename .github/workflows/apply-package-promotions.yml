@@ -27,6 +27,8 @@ jobs:
       - name: Reconstruct deterministic patcher
         run: |
           cat scripts/package-promotions-patch/part-* | base64 -d | gzip -dc > /tmp/apply-package-promotions.py
+          sed -i 's|ROOT = Path(__file__).resolve().parents\[1\]|ROOT = Path.cwd()|' /tmp/apply-package-promotions.py
+          grep -F 'ROOT = Path.cwd()' /tmp/apply-package-promotions.py
           python3 -m py_compile /tmp/apply-package-promotions.py
 
       - name: Apply deterministic source patches
