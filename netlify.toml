@@ -2,6 +2,14 @@
   command = "npm run build"
   base = "."
 
+# Production-only rollout gate. Deploy previews and branch deploys still run the
+# standard build without touching the database. On production, the script stops
+# the deploy unless the database identity and migration history are exactly what
+# this release expects. After the migration has succeeded it becomes a verified
+# no-op on subsequent deploys.
+[context.production]
+  command = "npx prisma generate && node scripts/deploy-package-promotions-production.mjs && npm run build"
+
 # ─── ENVIRONMENT VARIABLES ───
 # Set these in Netlify UI: Site settings → Environment variables
 # Required variables:
