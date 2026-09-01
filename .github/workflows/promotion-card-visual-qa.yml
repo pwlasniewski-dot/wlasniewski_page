@@ -1,0 +1,79 @@
+name: Promotion card visual QA
+
+on:
+  push:
+    branches:
+      - qa/package-promotion-card-preview-63
+      - qa/promotion-card-preview-63
+
+permissions:
+  contents: read
+
+jobs:
+  capture-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: qa/promotion-card-preview-63
+
+      - name: Locate headless Chrome
+        id: chrome
+        shell: bash
+        run: |
+          set -euo pipefail
+          chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$chrome" ]; then
+            echo 'No Chromium-based browser found on runner.'
+            exit 1
+          fi
+          echo "binary=$chrome" >> "$GITHUB_OUTPUT"
+          "$chrome" --version
+
+      - name: Verify preview availability
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 20); do
+            status="$(curl -L --silent --show-error --connect-timeout 10 --max-time 40 -o /tmp/preview.html -w '%{http_code}' 'https://deploy-preview-63--helpful-axolotl-cc1cbb.netlify.app/rezerwacja?service=Sesja' || true)"
+            if [ "$status" = '200' ] && [ -s /tmp/preview.html ]; then
+              exit 0
+            fi
+            echo "Preview attempt ${attempt}/20 returned HTTP ${status}."
+            sleep 10
+          done
+          exit 1
+
+      - name: Capture desktop and mobile screenshots
+        shell: bash
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.binary }}
+        run: |
+          set -euo pipefail
+          mkdir -p visual-qa
+          common=(--headless --disable-gpu --no-sandbox --hide-scrollbars --disable-dev-shm-usage --virtual-time-budget=12000)
+
+          "$CHROME_BIN" "${common[@]}" --window-size=1440,1700 \
+            --screenshot=visual-qa/booking-desktop.png \
+            'https://deploy-preview-63--helpful-axolotl-cc1cbb.netlify.app/rezerwacja?service=Sesja&visual_qa=desktop'
+
+          "$CHROME_BIN" "${common[@]}" --window-size=1440,1600 \
+            --screenshot=visual-qa/home-desktop.png \
+            'https://deploy-preview-63--helpful-axolotl-cc1cbb.netlify.app/?visual_qa=desktop'
+
+          "$CHROME_BIN" "${common[@]}" --window-size=430,1400 \
+            --force-device-scale-factor=1 \
+            --screenshot=visual-qa/booking-mobile.png \
+            'https://deploy-preview-63--helpful-axolotl-cc1cbb.netlify.app/rezerwacja?service=Sesja&visual_qa=mobile'
+
+          file visual-qa/*.png
+          test "$(find visual-qa -name '*.png' -size +20k | wc -l)" -eq 3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: promotion-card-visual-qa
+          path: visual-qa/*.png
+          if-no-files-found: error
+          retention-days: 3
