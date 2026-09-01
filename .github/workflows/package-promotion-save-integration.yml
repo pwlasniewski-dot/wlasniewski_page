@@ -1,0 +1,185 @@
+name: Package promotion save integration
+
+on:
+  push:
+    branches:
+      - fix/package-promotion-save
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce-save:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: promotion_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d promotion_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/promotion_test?schema=public
+      PGPASSWORD: postgres
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/package-promotion-save
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies and generate Prisma client
+        run: |
+          npm ci
+          npx prisma generate
+
+      - name: Create minimal booking schema and apply promotion migration
+        shell: bash
+        run: |
+          psql -h localhost -U postgres -d promotion_test -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE "service_types" (
+            "id" SERIAL PRIMARY KEY,
+            "name" TEXT NOT NULL UNIQUE,
+            "icon" TEXT,
+            "description" TEXT,
+            "order" INTEGER NOT NULL DEFAULT 0,
+            "is_active" BOOLEAN NOT NULL DEFAULT TRUE,
+            "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE "packages" (
+            "id" SERIAL PRIMARY KEY,
+            "service_id" INTEGER NOT NULL REFERENCES "service_types"("id") ON DELETE CASCADE,
+            "name" TEXT NOT NULL,
+            "icon" TEXT,
+            "description" TEXT,
+            "hours" INTEGER NOT NULL,
+            "price" INTEGER NOT NULL,
+            "subtitle" TEXT,
+            "features" TEXT,
+            "order" INTEGER NOT NULL DEFAULT 0,
+            "is_active" BOOLEAN NOT NULL DEFAULT TRUE,
+            "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "available_hours" TEXT,
+            "blocks_entire_day" BOOLEAN,
+            "provider_id" INTEGER,
+            CONSTRAINT "packages_service_id_name_key" UNIQUE ("service_id", "name")
+          );
+
+          INSERT INTO "service_types" ("name", "order") VALUES ('Sesja', 1);
+          INSERT INTO "packages" ("service_id", "name", "hours", "price", "order")
+          VALUES (1, 'Rodzinny Start', 1, 75000, 1);
+          SQL
+
+          psql -h localhost -U postgres -d promotion_test -v ON_ERROR_STOP=1 \
+            -f prisma/migrations/20260901130000_package_promotions/migration.sql
+
+      - name: Execute the production save transaction
+        shell: bash
+        run: |
+          node --import tsx <<'TS'
+          import { PrismaClient } from '@prisma/client';
+          import {
+            calculatePromotionalPrice,
+            homepagePromotionServiceNames,
+            resolveLowestPriceBeforePromotion,
+            toPublicPackagePromotion,
+          } from './src/lib/packagePromotions.ts';
+
+          const prisma = new PrismaClient();
+          const packageId = 1;
+          const discountType = 'fixed' as const;
+          const discountValue = 25000;
+          const startsAt = new Date(Date.now() + 5 * 60_000);
+          const endsAt = new Date(Date.now() + 14 * 24 * 60 * 60_000);
+          const manualLowestPrice = 75000;
+
+          try {
+            const result = await prisma.$transaction(async tx => {
+              await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`package-promotion:${packageId}`}))`;
+
+              const pkg = await tx.package.findFirst({
+                where: { id: packageId, is_active: true, service: { is_active: true } },
+                include: { service: true },
+              });
+              if (!pkg) throw new Error('PACKAGE_NOT_FOUND');
+
+              const promotionalPrice = calculatePromotionalPrice(pkg.price, discountType, discountValue);
+              const reference = await resolveLowestPriceBeforePromotion(
+                packageId,
+                startsAt,
+                tx,
+                undefined,
+                pkg.created_at,
+              );
+
+              const promotion = await tx.packagePromotion.create({
+                data: {
+                  package_id: packageId,
+                  is_enabled: true,
+                  discount_type: discountType,
+                  discount_value: discountValue,
+                  regular_price_snapshot: pkg.price,
+                  promotional_price: promotionalPrice,
+                  lowest_price_30d: manualLowestPrice,
+                  lowest_price_source: 'ADMIN_CONFIRMED',
+                  lowest_price_period: reference.referencePeriod,
+                  lowest_price_confirmed_at: new Date(),
+                  label: 'Promocja',
+                  starts_at: startsAt,
+                  ends_at: endsAt,
+                  allow_promo_code: false,
+                  show_on_home: true,
+                },
+                include: { package: { include: { service: true } } },
+              });
+
+              const homeServiceNames = homepagePromotionServiceNames(pkg.service.name);
+              const servicePackageIds = await tx.package.findMany({
+                where: { service: { name: { in: homeServiceNames } } },
+                select: { id: true },
+              });
+              await tx.packagePromotion.updateMany({
+                where: {
+                  id: { not: promotion.id },
+                  package_id: { in: servicePackageIds.map(item => item.id) },
+                  is_enabled: true,
+                  show_on_home: true,
+                  starts_at: { lt: endsAt },
+                  OR: [{ ends_at: null }, { ends_at: { gt: startsAt } }],
+                },
+                data: { show_on_home: false, updated_at: new Date() },
+              });
+
+              return toPublicPackagePromotion({
+                ...promotion,
+                package_name: promotion.package.name,
+                package_order: promotion.package.order,
+                service_name: promotion.package.service.name,
+                service_order: promotion.package.service.order,
+              });
+            });
+
+            const count = await prisma.packagePromotion.count();
+            console.log(JSON.stringify({ result, count }, null, 2));
+            if (count !== 1 || result.price !== 50000) {
+              throw new Error(`Unexpected save outcome: count=${count}, price=${result.price}`);
+            }
+          } finally {
+            await prisma.$disconnect();
+          }
+          TS
