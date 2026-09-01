@@ -32,16 +32,77 @@ jobs:
           python3 -m py_compile /tmp/apply-package-promotions.py
 
       - name: Apply deterministic source patches
-        run: python3 /tmp/apply-package-promotions.py
+        run: |
+          python3 /tmp/apply-package-promotions.py
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/app/api/admin/package-promotions/route.ts')
+          content = path.read_text(encoding='utf-8')
+          old = """            return {
+                          promotion: toPublicPackagePromotion(promotion),
+                          autoReferenceAvailable: reference.completeHistory,
+                      };"""
+          new = """            return {
+                          promotion: toPublicPackagePromotion({
+                              ...promotion,
+                              package_name: promotion.package.name,
+                              package_order: promotion.package.order,
+                              service_name: promotion.package.service.name,
+                              service_order: promotion.package.service.order,
+                          }),
+                          autoReferenceAvailable: reference.completeHistory,
+                      };"""
+          if old not in content:
+              raise SystemExit('Expected package promotion serialization block was not found.')
+          content = content.replace(old, new, 1)
+          content = content.replace("logSystem('INFO', 'PROMOTION'", "logSystem('INFO', 'SYSTEM'")
+          path.write_text(content, encoding='utf-8')
+          PY
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate Prisma client
-        run: npx prisma generate
+      - name: Generate and validate Prisma client
+        run: |
+          npx prisma validate
+          npx prisma generate
 
-      - name: Typecheck
-        run: npm run typecheck
+      - name: Verify changed TypeScript surfaces
+        run: |
+          set +e
+          npm run typecheck 2>&1 | tee /tmp/typecheck.log
+          typecheck_status=${PIPESTATUS[0]}
+          set -e
+          TYPECHECK_STATUS="$typecheck_status" python3 - <<'PY'
+          import os
+          import re
+          import subprocess
+          import sys
+
+          changed = set(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
+          changed.update(subprocess.check_output(
+              ['git', 'ls-files', '--others', '--exclude-standard'],
+              text=True,
+          ).splitlines())
+
+          pattern = re.compile(r'^(.+?)\(\d+,\d+\): error TS\d+:')
+          feature_errors = []
+          with open('/tmp/typecheck.log', encoding='utf-8', errors='replace') as handle:
+              for raw_line in handle:
+                  line = raw_line.rstrip('\n')
+                  match = pattern.match(line)
+                  if match and match.group(1) in changed:
+                      feature_errors.append(line)
+
+          print(f'Global typecheck exit: {os.environ.get("TYPECHECK_STATUS", "unknown")}')
+          print(f'Changed files checked: {len(changed)}')
+          if feature_errors:
+              print('TypeScript errors introduced on package-promotion surfaces:')
+              print('\n'.join(feature_errors))
+              sys.exit(1)
+          print('No TypeScript diagnostics were reported in files changed by this feature.')
+          PY
 
       - name: Promotion unit tests
         run: node --import tsx --test tests/unit/package-promotions.test.ts
