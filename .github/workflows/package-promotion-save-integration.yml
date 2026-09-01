@@ -88,11 +88,12 @@ jobs:
           psql -h localhost -U postgres -d promotion_test -v ON_ERROR_STOP=1 \
             -f prisma/migrations/20260901130000_package_promotions/migration.sql
 
-      - name: Execute the production database transaction
+      - name: Execute the production promotion-save transaction
         shell: bash
         run: |
-          cat > .tmp-promotion-save.mjs <<'JS'
+          cat > .tmp-promotion-save.ts <<'TS'
           import { PrismaClient } from '@prisma/client';
+          import { acquireAdvisoryTransactionLock } from './src/lib/db/advisoryLock';
 
           const prisma = new PrismaClient();
           const packageId = 1;
@@ -104,10 +105,7 @@ jobs:
           try {
             const result = await prisma.$transaction(async tx => {
               console.log('PHASE advisory-lock');
-              await tx.$queryRawUnsafe(
-                'SELECT pg_advisory_xact_lock(hashtext($1))',
-                `package-promotion:${packageId}`,
-              );
+              await acquireAdvisoryTransactionLock(tx, `package-promotion:${packageId}`);
 
               console.log('PHASE package-read');
               const pkg = await tx.package.findFirst({
@@ -207,7 +205,7 @@ jobs:
           } finally {
             await prisma.$disconnect();
           }
-          JS
+          TS
 
-          node .tmp-promotion-save.mjs
-          rm -f .tmp-promotion-save.mjs
+          node --import tsx .tmp-promotion-save.ts
+          rm -f .tmp-promotion-save.ts
