@@ -1,20 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/auth/middleware';
+import { loadActivePromotionsForPackages, type PublicPackagePromotion } from '@/lib/packagePromotions';
 
-// GET all service types
+// GET all service types. Public prices are decorated with the active package
+// promotion, but the regular price remains available as `regular_price`.
 export async function GET(request: NextRequest) {
+    const adminView = new URL(request.url).searchParams.get('view') === 'admin';
     try {
         const serviceTypes = await prisma.serviceType.findMany({
             include: {
                 packages: {
-                    orderBy: { order: 'asc' }
-                }
+                    orderBy: { order: 'asc' },
+                },
             },
-            orderBy: { order: 'asc' }
+            orderBy: { order: 'asc' },
         });
 
-        return NextResponse.json({ success: true, serviceTypes });
+        let promotions = new Map<number, PublicPackagePromotion>();
+        try {
+            const packageIds = serviceTypes.flatMap(service => service.packages.map(pkg => pkg.id));
+            promotions = await loadActivePromotionsForPackages(packageIds);
+        } catch (promotionError) {
+            // Additive rollout: the public offer must remain available before the
+            // migration is committed. No promotion is shown until the table exists.
+            console.warn('[service-types] Package promotions unavailable; using regular prices.', promotionError);
+        }
+
+        return NextResponse.json({
+            success: true,
+            serviceTypes: serviceTypes.map(service => ({
+                ...service,
+                packages: service.packages.map(pkg => {
+                    const promotion = promotions.get(pkg.id) || null;
+                    return {
+                        ...pkg,
+                        regular_price: pkg.price,
+                        effective_price: promotion?.price ?? pkg.price,
+                        price: adminView ? pkg.price : (promotion?.price ?? pkg.price),
+                        promotion,
+                    };
+                }),
+            })),
+        });
     } catch (error) {
         console.error('Failed to fetch service types:', error);
         return NextResponse.json({ error: 'Failed to fetch service types' }, { status: 500 });
@@ -34,18 +62,17 @@ export async function POST(request: NextRequest) {
             icon,
             description,
             order,
-            is_active
+            is_active,
         } = body;
 
         if (!name) {
             return NextResponse.json(
                 { error: 'Name is required' },
-                { status: 400 }
+                { status: 400 },
             );
         }
 
         if (id) {
-            // Update
             const serviceType = await prisma.serviceType.update({
                 where: { id: parseInt(id) },
                 data: {
@@ -53,29 +80,28 @@ export async function POST(request: NextRequest) {
                     icon,
                     description,
                     order: order ?? 0,
-                    is_active: is_active !== undefined ? is_active : true
+                    is_active: is_active !== undefined ? is_active : true,
                 },
                 include: {
-                    packages: { orderBy: { order: 'asc' } }
-                }
-            });
-            return NextResponse.json({ success: true, serviceType });
-        } else {
-            // Create
-            const serviceType = await prisma.serviceType.create({
-                data: {
-                    name,
-                    icon,
-                    description,
-                    order: order ?? 0,
-                    is_active: is_active !== undefined ? is_active : true
+                    packages: { orderBy: { order: 'asc' } },
                 },
-                include: {
-                    packages: { orderBy: { order: 'asc' } }
-                }
             });
             return NextResponse.json({ success: true, serviceType });
         }
+
+        const serviceType = await prisma.serviceType.create({
+            data: {
+                name,
+                icon,
+                description,
+                order: order ?? 0,
+                is_active: is_active !== undefined ? is_active : true,
+            },
+            include: {
+                packages: { orderBy: { order: 'asc' } },
+            },
+        });
+        return NextResponse.json({ success: true, serviceType });
     } catch (error) {
         console.error('Error updating service type:', error);
         return NextResponse.json({ error: 'Failed to save service type' }, { status: 500 });
@@ -91,12 +117,15 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (!id) {
-        return NextResponse.json({ error: 'Service type ID is required' }, { status: 400 });
+        return NextResponse.json(
+            { error: 'Service type ID is required' },
+            { status: 400 },
+        );
     }
 
     try {
         await prisma.serviceType.delete({
-            where: { id: parseInt(id) }
+            where: { id: parseInt(id) },
         });
         return NextResponse.json({ success: true });
     } catch (error) {

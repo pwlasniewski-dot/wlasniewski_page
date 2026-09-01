@@ -14,6 +14,8 @@ import { PageSection } from '@/components/admin/PageBuilder';
 import { useCart } from '@/context/CartContext';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { readConsentedClientAttribution } from '@/lib/analytics/clientAttribution';
+import PromotionPriceBlock from '@/components/promotions/PromotionPriceBlock';
+import type { PublicPackagePromotion } from '@/lib/packagePromotionPricing';
 import {
     DEFAULT_PHOTO_FUNNEL_CONFIG,
     formatPhotoFunnelTemplate,
@@ -38,6 +40,9 @@ interface Package {
     description?: string;
     hours: number;
     price: number;
+    regular_price?: number;
+    effective_price?: number;
+    promotion?: PublicPackagePromotion | null;
     subtitle?: string;
     features?: string;
     order: number;
@@ -105,6 +110,7 @@ export default function RezerwacjaPage() {
     const { trackEvent } = useAnalytics();
     const bookingFormStarted = useRef(false);
     const submissionLock = useRef(false);
+    const viewedPromotionIds = useRef<Set<number>>(new Set());
     // Data from API
     const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
     const [droneCatalog, setDroneCatalog] = useState<DroneCatalog | null>(null);
@@ -383,6 +389,19 @@ export default function RezerwacjaPage() {
         [service]
     );
 
+    useEffect(() => {
+        activePackages.forEach(pkg => {
+            if (!pkg.promotion || viewedPromotionIds.current.has(pkg.promotion.id)) return;
+            viewedPromotionIds.current.add(pkg.promotion.id);
+            void trackEvent('promotion_view', {
+                promotion_id: pkg.promotion.id,
+                package_id: pkg.id,
+                service: service?.name,
+                placement: 'booking',
+            });
+        });
+    }, [activePackages, service?.name, trackEvent]);
+
     const finalPrice = useMemo(() => {
         if (!chosenPackage) return 0;
         let price = chosenPackage.price + (selectedDroneAddon?.price || 0) * 100;
@@ -421,6 +440,11 @@ export default function RezerwacjaPage() {
     const handleCheckPromoCode = async () => {
         const normalizedCode = promoCode.trim().toUpperCase();
         if (!normalizedCode) return;
+        if (chosenPackage?.promotion && !chosenPackage.promotion.allowPromoCode) {
+            setDiscount(null);
+            setCodeMessage('Ta promocja pakietu nie łączy się z kodami rabatowymi.');
+            return;
+        }
 
         setCheckingCode(true);
         setCodeMessage("");
@@ -528,7 +552,8 @@ export default function RezerwacjaPage() {
                 package: chosenPackage.name,
                 hours: chosenPackage.hours,
                 price: finalPrice,
-                originalPrice: chosenPackage.price + (selectedDroneAddon?.price || 0) * 100,
+                originalPrice: (chosenPackage.regular_price ?? chosenPackage.price) + (selectedDroneAddon?.price || 0) * 100,
+                package_promotion: chosenPackage.promotion || null,
                 date: slot.date,
                 start_time: slot.start ?? null,
                 end_time: slot.end ?? null,
@@ -718,6 +743,9 @@ export default function RezerwacjaPage() {
                                             markBookingFormStarted('service', svc.name);
                                             setService(svc);
                                             setChosenPackage(null);
+                                            setDiscount(null);
+                                            setPromoCode('');
+                                            setCodeMessage('');
                                             setSlot(null);
                                             setSelectedStart('');
                                             setSelectedDroneAddonSlug(null);
@@ -757,7 +785,7 @@ export default function RezerwacjaPage() {
                                 className="bg-white/80 rounded-2xl p-6 md:p-8 border border-[#ddd6cc]"
                             >
                                 <h2 className="font-display text-3xl font-medium text-[#25221f] mb-6">{photoFunnelConfig.bookingCopy.packageHeading}</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                                     {activePackages.map((pkg) => (
                                         <button
                                             key={pkg.id}
@@ -765,10 +793,21 @@ export default function RezerwacjaPage() {
                                             onClick={() => {
                                                 markBookingFormStarted('package', service.name);
                                                 setChosenPackage(pkg);
+                                                if (pkg.promotion && !pkg.promotion.allowPromoCode) {
+                                                    setDiscount(null);
+                                                    setPromoCode('');
+                                                    setCodeMessage('Promocja pakietu została zastosowana automatycznie i nie łączy się z kodami rabatowymi.');
+                                                }
                                                 setSelectedStart('');
                                                 setSlot(current => current ? { date: current.date } : null);
                                                 trackBookingEvent('booking_package_select', { service: service.name, package: pkg.name, value: pkg.price / 100, currency: 'PLN' });
-                                                void trackEvent('package_selected', { amount_bucket: pkg.price < 50000 ? 'under_500' : pkg.price < 100000 ? '500_999' : '1000_plus' });
+                                                void trackEvent(pkg.promotion ? 'promotion_package_selected' : 'package_selected', {
+                                                    promotion_id: pkg.promotion?.id,
+                                                    package_id: pkg.id,
+                                                    service: service.name,
+                                                    placement: 'booking',
+                                                    amount_bucket: pkg.price < 50000 ? 'under_500' : pkg.price < 100000 ? '500_999' : '1000_plus',
+                                                });
                                             }}
                                             className={`p-5 rounded-2xl border transition-all text-left flex flex-col h-full ${chosenPackage?.id === pkg.id
                                                 ? "border-[#8d7f6d] bg-[#8d7f6d]/10 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
@@ -786,9 +825,15 @@ export default function RezerwacjaPage() {
                                                 )}
                                             </div>
 
-                                            <div className="text-xl text-[#766958] font-extrabold mb-4 flex items-center gap-2">
-                                                <span className="text-sm bg-[#8d7f6d]/10 px-2 py-0.5 rounded border border-[#b7aa99]/50">{pkg.hours}h</span>
-                                                <span>{pkg.pricePrefix && `${pkg.pricePrefix} `}{(pkg.price / 100).toFixed(2)} zł</span>
+                                            <div className="mb-4 space-y-3">
+                                                <span className="inline-flex text-sm bg-[#8d7f6d]/10 px-2 py-0.5 rounded border border-[#b7aa99]/50 text-[#766958] font-extrabold">{pkg.hours}h</span>
+                                                {pkg.promotion ? (
+                                                    <PromotionPriceBlock promotion={pkg.promotion} variant="booking" />
+                                                ) : (
+                                                    <div className="text-xl text-[#766958] font-extrabold">
+                                                        {pkg.pricePrefix && `${pkg.pricePrefix} `}{(pkg.price / 100).toFixed(2)} zł
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {pkg.description && (

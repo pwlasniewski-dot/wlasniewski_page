@@ -10,6 +10,9 @@ import HeroSlider from '@/components/HeroSlider';
 import ContactForm from '@/components/ContactForm';
 import GiftCard from '@/components/GiftCard';
 import { mergeHomepageServiceCards, type HomepageServiceCard } from '@/lib/homepageServiceCards';
+import PromotionPriceBlock from '@/components/promotions/PromotionPriceBlock';
+import type { PublicPackagePromotion } from '@/lib/packagePromotionPricing';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 // Lazy-loaded below-the-fold components
 const ParallaxSection = dynamic(() => import('@/components/ParallaxSection'), { ssr: false });
@@ -88,11 +91,13 @@ interface HomeContentProps {
     testimonials: Testimonial[];
     heroSliderInterval?: number;
     publicPriceLabels: Record<string, string>;
+    featuredPromotions: Record<string, PublicPackagePromotion>;
     publicGuidePromo: { title: string; image: string; imageAlt: string } | null;
 }
 
-export default function HomeContent({ heroSlides, sections, homeData, orderedSections, testimonials, heroSliderInterval = 6000, publicPriceLabels, publicGuidePromo }: HomeContentProps) {
+export default function HomeContent({ heroSlides, sections, homeData, orderedSections, testimonials, heroSliderInterval = 6000, publicPriceLabels, featuredPromotions, publicGuidePromo }: HomeContentProps) {
     const fallbackPublicPriceLabel = 'Aktualne pakiety i ceny';
+    const { trackEvent } = useAnalytics();
     const [currentTestimonial, setCurrentTestimonial] = useState(0);
     const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
 
@@ -1017,7 +1022,17 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                     <div className="grid gap-4 md:grid-cols-12 md:gap-5">
                         {serviceCards.map((item, index) => (
                             <article key={item.title} className={`group relative min-h-[420px] overflow-hidden rounded-[2px] bg-[#28221c] ${index === 0 ? 'md:col-span-5 md:min-h-[620px]' : index === 1 ? 'md:col-span-7 md:min-h-[620px]' : 'md:col-span-6 md:min-h-[480px]'}`}>
-                                <Link href={item.href} aria-label={`${item.title} — ${item.cta_label || 'sprawdź ceny i terminy'}`} className="absolute inset-0 z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#ead5ab]" />
+                                <Link
+                                    href={featuredPromotions[item.service]
+                                        ? `${item.href}${item.href.includes('?') ? '&' : '?'}package_id=${featuredPromotions[item.service].packageId}&promotion_id=${featuredPromotions[item.service].id}`
+                                        : item.href}
+                                    aria-label={`${item.title} — ${item.cta_label || 'sprawdź ceny i terminy'}`}
+                                    onClick={() => {
+                                        const promotion = featuredPromotions[item.service];
+                                        if (promotion) void trackEvent('promotion_package_selected', { promotion_id: promotion.id, package_id: promotion.packageId, service: promotion.serviceName, placement: 'home' });
+                                    }}
+                                    className="absolute inset-0 z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#ead5ab]"
+                                />
                                 <picture className="absolute inset-0 block">
                                     {item.image_mobile && <source media="(max-width: 767px)" srcSet={item.image_mobile} />}
                                     <img
@@ -1038,7 +1053,11 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                                             <p className="mt-4 max-w-lg text-sm leading-6 text-white/70">{item.copy}</p>
                                         </div>
                                         <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
-                                            <span className="text-xs font-bold uppercase tracking-[.14em] text-[#ead5ab]">{item.cta_label || publicPriceLabels[item.service] || fallbackPublicPriceLabel} <ArrowRight className="ml-2 inline" size={16}/></span>
+                                            {featuredPromotions[item.service] ? (
+                                                <PromotionPriceBlock promotion={featuredPromotions[item.service]} variant="home" />
+                                            ) : (
+                                                <span className="text-xs font-bold uppercase tracking-[.14em] text-[#ead5ab]">{item.cta_label || publicPriceLabels[item.service] || fallbackPublicPriceLabel} <ArrowRight className="ml-2 inline" size={16}/></span>
+                                            )}
                                             {item.secondary_href && item.secondary_label && (
                                                 <Link href={item.secondary_href} className="pointer-events-auto rounded-full border border-white/60 px-4 py-2 text-[10px] font-bold uppercase tracking-[.16em] text-white transition hover:border-[#ead5ab] hover:bg-[#ead5ab] hover:text-[#28221c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ead5ab]">
                                                     {item.secondary_label}

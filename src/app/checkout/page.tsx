@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { calculateFotoMatchDiscount } from '@/lib/fotoMatchDiscount';
 import { checkoutItemsWithCurrentAttribution, readConsentedClientAttribution } from '@/lib/analytics/clientAttribution';
+import PromotionPriceBlock from '@/components/promotions/PromotionPriceBlock';
 
 export default function CheckoutPage() {
     const { trackEvent } = useAnalytics();
@@ -449,6 +450,9 @@ export default function CheckoutPage() {
                                     <div className="flex-1 pr-4">
                                         <h4 className="font-bold text-white mb-0.5">{item.title}</h4>
                                         <p className="text-xs text-zinc-500">{item.subtitle}</p>
+                                        {item.type === 'booking' && item.metadata?.package_promotion && (
+                                            <PromotionPriceBlock promotion={item.metadata.package_promotion} variant="summary" className="mt-3" />
+                                        )}
                                     </div>
                                     <span className="font-bold text-amber-500 whitespace-nowrap">{(item.price / 100).toFixed(2)} zł</span>
                                 </div>
