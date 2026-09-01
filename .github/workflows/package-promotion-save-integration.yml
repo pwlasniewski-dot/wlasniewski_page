@@ -91,7 +91,7 @@ jobs:
       - name: Execute the production promotion-save transaction
         shell: bash
         run: |
-          cat > .tmp-promotion-save.ts <<'TS'
+          cat > .tmp-promotion-save.mts <<'TS'
           import { PrismaClient } from '@prisma/client';
           import { acquireAdvisoryTransactionLock } from './src/lib/db/advisoryLock';
 
@@ -207,5 +207,5 @@ jobs:
           }
           TS
 
-          node --import tsx .tmp-promotion-save.ts
-          rm -f .tmp-promotion-save.ts
+          node --import tsx .tmp-promotion-save.mts
+          rm -f .tmp-promotion-save.mts
