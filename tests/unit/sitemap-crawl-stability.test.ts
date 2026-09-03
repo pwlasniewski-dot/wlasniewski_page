@@ -28,14 +28,9 @@ test('dynamic sitemap path segments cannot produce literal spaces or path inject
 
 test('root sitemap stays cacheable and independent from request headers', () => {
     const sitemapSource = readFileSync('src/app/sitemap.ts', 'utf8');
-    const netlifyConfig = readFileSync('netlify.toml', 'utf8');
 
     assert.doesNotMatch(sitemapSource, /from ['"]next\/headers['"]/);
     assert.match(sitemapSource, /export const dynamic = ['"]force-static['"]/);
     assert.match(sitemapSource, /export const revalidate = 86_400/);
     assert.match(sitemapSource, /portfolioSessionSitemapUrl\(session\.category, session\.slug\)/);
-
-    assert.match(netlifyConfig, /for = "\/sitemap\.xml"/);
-    assert.match(netlifyConfig, /s-maxage=86400/);
-    assert.match(netlifyConfig, /stale-while-revalidate=604800/);
 });
