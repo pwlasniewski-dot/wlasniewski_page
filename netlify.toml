@@ -70,15 +70,6 @@
     Cache-Control = "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800"
     Content-Type = "text/plain; charset=utf-8"
 
-# The sitemap is regenerated at most once per day. Edge stale-while-revalidate
-# keeps the last valid XML available while Next.js refreshes dynamic CMS entries,
-# so a crawler never has to wait for a cold database path.
-[[headers]]
-  for = "/sitemap.xml"
-  [headers.values]
-    Cache-Control = "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"
-    Content-Type = "application/xml; charset=utf-8"
-
 [[headers]]
   for = "/_static/aeroanaliza-robots.txt"
   [headers.values]
