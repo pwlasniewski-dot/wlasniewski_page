@@ -95,11 +95,9 @@ jobs:
             curl -L --silent --show-error \
               --connect-timeout 10 --max-time 20 \
               -A "$AHREFS_UA" \
-              -D "/tmp/headers-${round}" \
               -o /dev/null \
               -w '%{http_code}\t%{time_starttransfer}\t%{time_total}\n' \
               "$PREVIEW_URL/sitemap.xml" >> /tmp/timings.txt
-            grep -qi '^cache-status:.*Netlify Durable.*hit' "/tmp/headers-${round}"
           done
           cat /tmp/timings.txt
 
