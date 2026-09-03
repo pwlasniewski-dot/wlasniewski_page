@@ -1,50 +1,20 @@
 import { MetadataRoute } from 'next';
-import { headers } from 'next/headers';
 import prisma from '@/lib/db/prisma';
-import { b2bPublicPath, isB2bCmsPage } from '@/lib/sites/b2b-routing';
+import { isB2bCmsPage } from '@/lib/sites/b2b-routing';
+import {
+    photographySitemapUrl,
+    portfolioSessionSitemapUrl,
+    sitemapPathSegment,
+} from '@/lib/seo/sitemapUrl';
+
+// The photography sitemap is independent from request headers. Aeroanaliza.pl
+// is rewritten by middleware to /b2b/sitemap.xml, which has its own generator.
+// Keeping this route static/ISR prevents crawler entry requests from waiting on
+// a fresh serverless runtime and live database connection on every request.
+export const dynamic = 'force-static';
+export const revalidate = 86_400;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const headersList = await headers();
-    const host = headersList.get('host') || 'wlasniewski.pl';
-    const isB2B = host.includes('aeroanaliza');
-
-    // ─── B2B Sitemap ───
-    if (isB2B) {
-        const b2bBase = 'https://aeroanaliza.pl';
-        const b2bStaticPages = ['', '/dron', '/termowizja', '/monitoring'];
-
-        let dbPages: Array<{ slug: string; page_type: string; updated_at: Date }> = [];
-        try {
-            const publishedPages = await prisma.page.findMany({
-                where: { is_published: true },
-                select: { slug: true, page_type: true, updated_at: true }
-            });
-            dbPages = publishedPages.filter(isB2bCmsPage);
-        } catch (error) {
-            console.error('[sitemap-b2b] Failed to load dynamic entries:', error);
-        }
-
-        const sitemap: MetadataRoute.Sitemap = [
-            ...b2bStaticPages.map(route => ({
-                url: `${b2bBase}${route}`,
-                lastModified: new Date(),
-                changeFrequency: 'monthly' as const,
-                priority: route === '' ? 1.0 : 0.8,
-            })),
-            ...dbPages.map(page => ({
-                url: `${b2bBase}${b2bPublicPath(page.slug)}`,
-                lastModified: page.updated_at,
-                changeFrequency: 'monthly' as const,
-                priority: 0.7,
-            })),
-        ];
-        return Array.from(new Map(sitemap.map(entry => [entry.url, entry] as const)).values());
-    }
-
-    // ─── B2C Sitemap ───
-    const b2cBase = 'https://wlasniewski.pl';
-
-    // B2C Static pages
     const staticPages = [
         '',
         '/o-mnie',
@@ -58,7 +28,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/fotografia-z-drona',
     ];
 
-    // City SEO landing pages — priority 1.0 for local SEO
     const cityPages = [
         '/fotograf-torun',
         '/fotograf-grudziadz',
@@ -77,108 +46,104 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     let publicGuidePage: { page_type: string; is_published: boolean; updated_at: Date } | null = null;
 
     try {
-        dbPages = await prisma.page.findMany({
-            where: {
-                is_published: true,
-                AND: [
-                    { NOT: { slug: { startsWith: 'b2b' } } },
-                    { NOT: { page_type: 'b2b' } },
-                ],
-            },
-            select: { slug: true, page_type: true, updated_at: true }
-        });
-
-        portfolioSessions = await prisma.portfolioSession.findMany({
-            where: { is_published: true },
-            select: { slug: true, category: true, updated_at: true }
-        });
-
-        blogPosts = await prisma.blogPost.findMany({
-            where: {
-                status: 'published',
-                published_at: { lte: new Date() },
-            },
-            select: { slug: true, updated_at: true }
-        });
-
-        nphotoAlbums = await prisma.nphotoAlbum.findMany({
-            where: { is_active: true },
-            select: { slug: true, updated_at: true }
-        });
-        publicGuidePage = await prisma.page.findUnique({
-            where: { slug: 'jak-sie-ubrac' },
-            select: { page_type: true, is_published: true, updated_at: true },
-        });
+        [dbPages, portfolioSessions, blogPosts, nphotoAlbums, publicGuidePage] = await Promise.all([
+            prisma.page.findMany({
+                where: {
+                    is_published: true,
+                    AND: [
+                        { NOT: { slug: { startsWith: 'b2b' } } },
+                        { NOT: { page_type: 'b2b' } },
+                    ],
+                },
+                select: { slug: true, page_type: true, updated_at: true },
+            }),
+            prisma.portfolioSession.findMany({
+                where: { is_published: true },
+                select: { slug: true, category: true, updated_at: true },
+            }),
+            prisma.blogPost.findMany({
+                where: {
+                    status: 'published',
+                    published_at: { lte: new Date() },
+                },
+                select: { slug: true, updated_at: true },
+            }),
+            prisma.nphotoAlbum.findMany({
+                where: { is_active: true },
+                select: { slug: true, updated_at: true },
+            }),
+            prisma.page.findUnique({
+                where: { slug: 'jak-sie-ubrac' },
+                select: { page_type: true, is_published: true, updated_at: true },
+            }),
+        ]);
     } catch (error) {
+        // The static and city pages still produce a valid sitemap if the CMS is
+        // temporarily unavailable during regeneration. A stale CDN copy remains
+        // available while Next.js retries the next ISR regeneration.
         console.error('[sitemap] Failed to load dynamic entries:', error);
     }
 
-    const sitemap: MetadataRoute.Sitemap = [
-        // ─── B2C: Static pages ───
+    const excludedSlugs = new Set([
+        '',
+        'strona-glowna',
+        'start',
+        'kontakt-',
+        'sklep',
+        'regulamin',
+        'polityka-prywatnosci',
+        'reklamacje',
+        'jak-sie-ubrac',
+    ]);
+
+    const entries: MetadataRoute.Sitemap = [
         ...staticPages.map(route => ({
-            url: `${b2cBase}${route}`,
+            url: photographySitemapUrl(route),
             changeFrequency: 'monthly' as const,
             priority: route === '' ? 1.0 : 0.8,
         })),
         ...(!publicGuidePage || publicGuidePage.page_type !== 'public-guide' || publicGuidePage.is_published ? [{
-            url: `${b2cBase}/jak-sie-ubrac`,
+            url: photographySitemapUrl('/jak-sie-ubrac'),
             lastModified: publicGuidePage?.updated_at,
             changeFrequency: 'monthly' as const,
             priority: 0.85,
         }] : []),
-
-        // ─── B2C: City SEO Landing Pages (highest priority for local SEO) ───
         ...cityPages.map(route => ({
-            url: `${b2cBase}${route}`,
+            url: photographySitemapUrl(route),
             changeFrequency: 'weekly' as const,
             priority: 0.95,
         })),
-
-        // ─── B2C: Dynamic pages from database ───
-        ...dbPages.filter(page => {
-            const excludedSlugs = new Set([
-                '',
-                'strona-glowna',
-                'start',
-                'kontakt-',
-                'sklep',
-                'regulamin',
-                'polityka-prywatnosci',
-                'reklamacje',
-                'jak-sie-ubrac',
-            ]);
-            return !isB2bCmsPage(page) && !page.slug.startsWith('fotograf-') && !excludedSlugs.has(page.slug);
-        }).map(page => ({
-            url: `${b2cBase}/${page.slug}`,
-            lastModified: page.updated_at,
-            changeFrequency: 'monthly' as const,
-            priority: 0.7,
-        })),
-
-        // ─── B2C: Portfolio sessions ───
+        ...dbPages
+            .filter(page => (
+                !isB2bCmsPage(page)
+                && !page.slug.startsWith('fotograf-')
+                && !excludedSlugs.has(page.slug)
+            ))
+            .map(page => ({
+                url: photographySitemapUrl(`/${sitemapPathSegment(page.slug)}`),
+                lastModified: page.updated_at,
+                changeFrequency: 'monthly' as const,
+                priority: 0.7,
+            })),
         ...portfolioSessions.map(session => ({
-            url: `${b2cBase}/portfolio/${session.category}/${session.slug}`,
+            url: portfolioSessionSitemapUrl(session.category, session.slug),
             lastModified: session.updated_at,
             changeFrequency: 'monthly' as const,
             priority: 0.6,
         })),
-
-        // ─── B2C: Blog posts ───
         ...blogPosts.map(post => ({
-            url: `${b2cBase}/blog/${post.slug}`,
+            url: photographySitemapUrl(`/blog/${sitemapPathSegment(post.slug)}`),
             lastModified: post.updated_at,
             changeFrequency: 'weekly' as const,
             priority: 0.7,
         })),
-
-        // ─── B2C: Albums catalog (SEO boost via product pages) ───
         {
-            url: `${b2cBase}/sklep/albumy`,
+            url: photographySitemapUrl('/sklep/albumy'),
             changeFrequency: 'weekly' as const,
             priority: 0.85,
         },
         ...nphotoAlbums.map(album => ({
-            url: `${b2cBase}/sklep/albumy/${album.slug}`,
+            url: photographySitemapUrl(`/sklep/albumy/${sitemapPathSegment(album.slug)}`),
             lastModified: album.updated_at,
             changeFrequency: 'monthly' as const,
             priority: 0.75,
@@ -186,6 +151,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ];
 
     return Array.from(
-        new Map(sitemap.map(entry => [entry.url, entry] as const)).values()
+        new Map(entries.map(entry => [entry.url, entry] as const)).values(),
     );
 }
