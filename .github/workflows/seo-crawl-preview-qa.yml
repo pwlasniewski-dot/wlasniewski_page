@@ -21,7 +21,7 @@ jobs:
         with:
           ref: fix/seo-crawl-stability
 
-      - name: Wait for new sitemap fingerprint
+      - name: Wait for new sitemap fingerprint and durable cache
         shell: bash
         run: |
           set -euo pipefail
@@ -32,18 +32,18 @@ jobs:
               -D /tmp/sitemap.headers \
               -o /tmp/sitemap.xml \
               -w '%{http_code}' \
-              "$PREVIEW_URL/sitemap.xml?qa=${GITHUB_SHA}-${attempt}" || true)"
+              "$PREVIEW_URL/sitemap.xml" || true)"
 
             if [ "$status" = "200" ] \
               && grep -q 'Sesja%20Rodzinna' /tmp/sitemap.xml \
-              && grep -qi 'stale-while-revalidate=604800' /tmp/sitemap.headers; then
-              echo "Latest preview sitemap is available."
+              && grep -qi '^cache-status:.*Netlify Durable.*hit' /tmp/sitemap.headers; then
+              echo "Latest preview sitemap is available from the durable cache."
               break
             fi
 
-            echo "Attempt ${attempt}/50: HTTP ${status}; waiting for latest preview."
+            echo "Attempt ${attempt}/50: HTTP ${status}; waiting for latest preview/cache."
             if [ "$attempt" = "50" ]; then
-              echo 'Preview did not expose the expected sitemap fingerprint.'
+              echo 'Preview did not expose the expected sitemap fingerprint and durable cache.'
               cat /tmp/sitemap.headers || true
               head -c 2000 /tmp/sitemap.xml || true
               exit 1
@@ -55,7 +55,6 @@ jobs:
         shell: bash
         run: |
           python3 - <<'PY'
-          import re
           import xml.etree.ElementTree as ET
           from pathlib import Path
           from urllib.parse import urlsplit
@@ -83,13 +82,12 @@ jobs:
           print(f'Validated {len(urls)} unique canonical URLs; encoded session URLs: {len(session_urls)}.')
           PY
 
-      - name: Verify CDN cache contract and warmed response time
+      - name: Verify durable cache and warmed response time
         shell: bash
         run: |
           set -euo pipefail
-          grep -i '^cache-control:' /tmp/sitemap.headers
-          grep -qi 's-maxage=86400' /tmp/sitemap.headers
-          grep -qi 'stale-while-revalidate=604800' /tmp/sitemap.headers
+          grep -i '^cache-status:' /tmp/sitemap.headers
+          grep -qi '^cache-status:.*Netlify Durable.*hit' /tmp/sitemap.headers
           grep -qi '^content-type: application/xml' /tmp/sitemap.headers
 
           : > /tmp/timings.txt
@@ -97,9 +95,11 @@ jobs:
             curl -L --silent --show-error \
               --connect-timeout 10 --max-time 20 \
               -A "$AHREFS_UA" \
+              -D "/tmp/headers-${round}" \
               -o /dev/null \
               -w '%{http_code}\t%{time_starttransfer}\t%{time_total}\n' \
               "$PREVIEW_URL/sitemap.xml" >> /tmp/timings.txt
+            grep -qi '^cache-status:.*Netlify Durable.*hit' "/tmp/headers-${round}"
           done
           cat /tmp/timings.txt
 
