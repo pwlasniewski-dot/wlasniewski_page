@@ -1,0 +1,190 @@
+name: SEO crawl production smoke
+
+on:
+  push:
+    branches:
+      - qa/seo-crawl-production-smoke-20260903
+
+permissions:
+  contents: read
+
+jobs:
+  production-crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SITE_ORIGIN: https://wlasniewski.pl
+      AHREFS_UA: Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)
+
+    steps:
+      - name: Wait for production sitemap release
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 60); do
+            status="$(curl -L --silent --show-error \
+              --connect-timeout 10 --max-time 35 \
+              -A "$AHREFS_UA" \
+              -D /tmp/sitemap.headers \
+              -o /tmp/sitemap.xml \
+              -w '%{http_code}' \
+              "$SITE_ORIGIN/sitemap.xml" || true)"
+
+            if [ "$status" = "200" ] \
+              && grep -q '<loc>https://wlasniewski.pl/</loc>' /tmp/sitemap.xml \
+              && grep -q 'Sesja%20Rodzinna' /tmp/sitemap.xml \
+              && ! grep -q 'Sesja Rodzinna' /tmp/sitemap.xml; then
+              echo "Production exposes the corrected sitemap release."
+              break
+            fi
+
+            echo "Attempt ${attempt}/60: HTTP ${status}; waiting for production deployment."
+            if [ "$attempt" = "60" ]; then
+              echo 'Production did not expose the corrected sitemap in time.'
+              cat /tmp/sitemap.headers || true
+              head -c 3000 /tmp/sitemap.xml || true
+              exit 1
+            fi
+            sleep 10
+          done
+
+      - name: Validate robots and sitemap contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          robots_status="$(curl -L --silent --show-error \
+            --connect-timeout 10 --max-time 20 \
+            -A "$AHREFS_UA" \
+            -D /tmp/robots.headers \
+            -o /tmp/robots.txt \
+            -w '%{http_code}' \
+            "$SITE_ORIGIN/robots.txt")"
+          test "$robots_status" = '200'
+          grep -Fq 'User-agent: *' /tmp/robots.txt
+          grep -Fq 'Allow: /' /tmp/robots.txt
+          grep -Fq 'Sitemap: https://wlasniewski.pl/sitemap.xml' /tmp/robots.txt
+          grep -qi '^content-type: text/plain' /tmp/robots.headers
+
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          from urllib.parse import urlsplit
+
+          xml = Path('/tmp/sitemap.xml').read_bytes()
+          root = ET.fromstring(xml)
+          urls = [node.text.strip() for node in root.iter() if node.tag.endswith('loc') and node.text]
+          assert len(urls) == 44, f'Expected 44 URLs, found {len(urls)}'
+          assert len(urls) == len(set(urls)), 'Duplicate URLs in sitemap'
+
+          problems = []
+          for url in urls:
+              parsed = urlsplit(url)
+              if parsed.scheme != 'https' or parsed.netloc != 'wlasniewski.pl':
+                  problems.append(f'non-canonical: {url}')
+              if ' ' in url:
+                  problems.append(f'literal space: {url}')
+              if parsed.fragment:
+                  problems.append(f'fragment: {url}')
+          assert not problems, '\n'.join(problems)
+
+          encoded = [url for url in urls if '/portfolio/Sesja%20Rodzinna/' in url]
+          assert len(encoded) == 2, f'Expected 2 encoded Sesja Rodzinna URLs, found {len(encoded)}'
+          assert all('%2520' not in url for url in encoded), 'Double-encoded category URL'
+
+          Path('/tmp/sitemap-urls.txt').write_text('\n'.join(urls) + '\n', encoding='utf-8')
+          print(f'Validated {len(urls)} canonical unique URLs; encoded portfolio URLs: {len(encoded)}.')
+          PY
+
+      - name: Confirm durable cache and stable AhrefsBot entry responses
+        shell: bash
+        run: |
+          set -euo pipefail
+          durable_seen=0
+          : > /tmp/entry-timings.tsv
+
+          for round in $(seq 1 8); do
+            curl -L --silent --show-error \
+              --connect-timeout 10 --max-time 10 \
+              -A "$AHREFS_UA" \
+              -D "/tmp/sitemap-${round}.headers" \
+              -o /dev/null \
+              -w 'sitemap\t%{http_code}\t%{time_starttransfer}\t%{time_total}\n' \
+              "$SITE_ORIGIN/sitemap.xml" >> /tmp/entry-timings.tsv
+            if grep -qi '^cache-status:.*Netlify Durable.*hit' "/tmp/sitemap-${round}.headers"; then
+              durable_seen=1
+            fi
+
+            curl -L --silent --show-error \
+              --connect-timeout 10 --max-time 10 \
+              -A "$AHREFS_UA" \
+              -o /dev/null \
+              -w 'robots\t%{http_code}\t%{time_starttransfer}\t%{time_total}\n' \
+              "$SITE_ORIGIN/robots.txt" >> /tmp/entry-timings.tsv
+          done
+
+          cat /tmp/entry-timings.tsv
+          test "$durable_seen" = '1'
+
+          python3 - <<'PY'
+          from pathlib import Path
+          from statistics import median
+
+          rows = []
+          for line in Path('/tmp/entry-timings.tsv').read_text().splitlines():
+              name, status, ttfb, total = line.split('\t')
+              assert status == '200', f'{name} returned HTTP {status}'
+              rows.append((name, float(ttfb), float(total)))
+
+          sitemap = [row for row in rows if row[0] == 'sitemap']
+          robots = [row for row in rows if row[0] == 'robots']
+          assert max(row[1] for row in sitemap) < 5.0, f'Sitemap TTFB >= 5 s: {sitemap}'
+          assert max(row[1] for row in robots) < 3.0, f'robots.txt TTFB >= 3 s: {robots}'
+          print(f'Sitemap max TTFB={max(row[1] for row in sitemap):.3f}s, median={median(row[1] for row in sitemap):.3f}s')
+          print(f'Robots max TTFB={max(row[1] for row in robots):.3f}s, median={median(row[1] for row in robots):.3f}s')
+          PY
+
+      - name: Crawl every sitemap URL as AhrefsBot
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import concurrent.futures
+          import subprocess
+          from pathlib import Path
+
+          ua = 'Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)'
+          urls = [line.strip() for line in Path('/tmp/sitemap-urls.txt').read_text().splitlines() if line.strip()]
+
+          def check(url):
+              proc = subprocess.run([
+                  'curl', '-L', '--silent', '--show-error',
+                  '--connect-timeout', '10', '--max-time', '20',
+                  '-A', ua, '-o', '/dev/null',
+                  '-w', '%{http_code}\t%{time_starttransfer}\t%{time_total}\t%{url_effective}',
+                  url,
+              ], capture_output=True, text=True)
+              parts = proc.stdout.strip().split('\t')
+              while len(parts) < 4:
+                  parts.append('')
+              return {
+                  'url': url,
+                  'rc': proc.returncode,
+                  'status': parts[0],
+                  'ttfb': float(parts[1] or 0),
+                  'total': float(parts[2] or 0),
+                  'final': parts[3],
+                  'error': proc.stderr.strip(),
+              }
+
+          with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+              results = list(executor.map(check, urls))
+
+          failures = [row for row in results if row['rc'] != 0 or row['status'] != '200']
+          for row in sorted(results, key=lambda item: item['ttfb'], reverse=True)[:10]:
+              print(f"http={row['status']} rc={row['rc']} ttfb={row['ttfb']:.3f}s total={row['total']:.3f}s {row['url']}")
+          if failures:
+              for row in failures:
+                  print(f"FAIL http={row['status']} rc={row['rc']} {row['url']} {row['error']}")
+              raise SystemExit(f'{len(failures)} sitemap URLs failed')
+          print(f'All {len(results)} sitemap URLs returned HTTP 200 to AhrefsBot.')
+          PY
