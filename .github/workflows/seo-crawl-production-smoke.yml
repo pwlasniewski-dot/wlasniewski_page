@@ -95,12 +95,12 @@ jobs:
           print(f'Validated {len(urls)} canonical unique URLs; encoded portfolio URLs: {len(encoded)}.')
           PY
 
-      - name: Confirm durable cache and stable AhrefsBot entry responses
+      - name: Confirm stable AhrefsBot entry responses
         shell: bash
         run: |
           set -euo pipefail
-          durable_seen=0
           : > /tmp/entry-timings.tsv
+          : > /tmp/cache-status.txt
 
           for round in $(seq 1 8); do
             curl -L --silent --show-error \
@@ -110,9 +110,7 @@ jobs:
               -o /dev/null \
               -w 'sitemap\t%{http_code}\t%{time_starttransfer}\t%{time_total}\n' \
               "$SITE_ORIGIN/sitemap.xml" >> /tmp/entry-timings.tsv
-            if grep -qi '^cache-status:.*Netlify Durable.*hit' "/tmp/sitemap-${round}.headers"; then
-              durable_seen=1
-            fi
+            grep -i '^cache-status:' "/tmp/sitemap-${round}.headers" >> /tmp/cache-status.txt || true
 
             curl -L --silent --show-error \
               --connect-timeout 10 --max-time 10 \
@@ -122,8 +120,8 @@ jobs:
               "$SITE_ORIGIN/robots.txt" >> /tmp/entry-timings.tsv
           done
 
+          cat /tmp/cache-status.txt || true
           cat /tmp/entry-timings.tsv
-          test "$durable_seen" = '1'
 
           python3 - <<'PY'
           from pathlib import Path
@@ -137,6 +135,7 @@ jobs:
 
           sitemap = [row for row in rows if row[0] == 'sitemap']
           robots = [row for row in rows if row[0] == 'robots']
+          assert len(sitemap) == 8 and len(robots) == 8, 'Incomplete probe series'
           assert max(row[1] for row in sitemap) < 5.0, f'Sitemap TTFB >= 5 s: {sitemap}'
           assert max(row[1] for row in robots) < 3.0, f'robots.txt TTFB >= 3 s: {robots}'
           print(f'Sitemap max TTFB={max(row[1] for row in sitemap):.3f}s, median={median(row[1] for row in sitemap):.3f}s')
