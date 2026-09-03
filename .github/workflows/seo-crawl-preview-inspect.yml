@@ -1,0 +1,35 @@
+name: SEO crawl preview inspect
+
+on:
+  push:
+    branches:
+      - qa/seo-crawl-preview-inspect-20260903
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect preview sitemap
+        shell: bash
+        run: |
+          set -uo pipefail
+          url='https://deploy-preview-64--helpful-axolotl-cc1cbb.netlify.app/sitemap.xml'
+          for round in 1 2 3; do
+            echo "=== ROUND $round ==="
+            curl -L --silent --show-error --connect-timeout 10 --max-time 40 \
+              -A 'Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)' \
+              -D /tmp/headers -o /tmp/body \
+              -w 'http=%{http_code} ttfb=%{time_starttransfer} total=%{time_total} final=%{url_effective}\n' \
+              "$url" || true
+            cat /tmp/headers || true
+            echo '--- relevant locs ---'
+            grep -o '<loc>[^<]*</loc>' /tmp/body 2>/dev/null | grep -E 'Sesja|%20|%25' || true
+            echo '--- body prefix ---'
+            head -c 500 /tmp/body 2>/dev/null || true
+            echo
+            sleep 2
+          done
