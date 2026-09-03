@@ -1,0 +1,55 @@
+name: Ahrefs fast probe
+
+on:
+  push:
+    branches:
+      - qa/ahrefs-fast-probe-20260903
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: qa/ahrefs-fast-probe-20260903
+
+      - name: Probe live entry points as AhrefsBot and Googlebot
+        shell: bash
+        run: |
+          set -uo pipefail
+          AHREFS='Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)'
+          GOOGLE='Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
+          NORMAL='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/152 Safari/537.36'
+
+          echo "UTC $(date -u --iso-8601=seconds)"
+          echo "DNS A: $(getent ahostsv4 wlasniewski.pl | awk '{print $1}' | sort -u | tr '\n' ' ')"
+          echo "DNS AAAA: $(getent ahostsv6 wlasniewski.pl | awk '{print $1}' | sort -u | tr '\n' ' ')"
+
+          probe() {
+            local name="$1" ua="$2" url="$3" round="$4"
+            local out="/tmp/${name}-${round}-$(echo "$url" | sha256sum | cut -c1-8)"
+            local metrics rc
+            metrics=$(curl -sS -L --compressed --connect-timeout 8 --max-time 25 \
+              -A "$ua" -H 'Cache-Control: no-cache, no-store' \
+              -D "${out}.h" -o "${out}.b" \
+              -w 'http=%{http_code} redirects=%{num_redirects} final=%{url_effective} remote=%{remote_ip} version=%{http_version} dns=%{time_namelookup} connect=%{time_connect} tls=%{time_appconnect} ttfb=%{time_starttransfer} total=%{time_total} bytes=%{size_download} type=%{content_type}' \
+              "$url" 2>"${out}.e")
+            rc=$?
+            echo "round=$round ua=$name url=$url rc=$rc $metrics error=$(tr '\n' ' ' < "${out}.e" | head -c 240)"
+            if [ "$round" = 1 ]; then
+              grep -iE '^(HTTP/|server:|date:|content-type:|cache-control:|age:|etag:|last-modified:|location:|x-nf-|netlify-|x-cache:|x-robots-tag:)' "${out}.h" || true
+              echo "body=$(head -c 180 "${out}.b" | tr '\r\n' ' ' | sed 's/[[:space:]]\+/ /g')"
+            fi
+          }
+
+          for round in 1 2 3; do
+            for url in https://wlasniewski.pl/robots.txt https://wlasniewski.pl/sitemap.xml https://wlasniewski.pl/; do
+              probe ahrefs "$AHREFS" "$url" "$round"
+              probe google "$GOOGLE" "$url" "$round"
+              probe normal "$NORMAL" "$url" "$round"
+            done
+          done
