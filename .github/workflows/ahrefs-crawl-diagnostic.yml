@@ -1,0 +1,350 @@
+name: Ahrefs crawl diagnostic
+
+on:
+  push:
+    branches:
+      - qa/ahrefs-crawl-diagnostic-20260903
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: qa/ahrefs-crawl-diagnostic-20260903
+
+      - name: Install diagnostic tools
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq dnsutils jq libxml2-utils
+
+      - name: Run DNS, TLS and repeated entry-point probes
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p diagnostic
+          REPORT=diagnostic/entry-points.txt
+          : > "$REPORT"
+
+          {
+            echo "AHREFS CRAWL DIAGNOSTIC"
+            echo "UTC: $(date -u --iso-8601=seconds)"
+            echo "Runner public IP: $(curl -sS --max-time 10 https://api.ipify.org || echo unavailable)"
+            echo
+            echo "=== DNS ==="
+            for resolver in 1.1.1.1 8.8.8.8; do
+              echo "--- resolver $resolver ---"
+              echo "A apex: $(dig +time=3 +tries=1 +short A wlasniewski.pl @$resolver | tr '\n' ' ')"
+              echo "AAAA apex: $(dig +time=3 +tries=1 +short AAAA wlasniewski.pl @$resolver | tr '\n' ' ')"
+              echo "CNAME apex: $(dig +time=3 +tries=1 +short CNAME wlasniewski.pl @$resolver | tr '\n' ' ')"
+              echo "A www: $(dig +time=3 +tries=1 +short A www.wlasniewski.pl @$resolver | tr '\n' ' ')"
+              echo "AAAA www: $(dig +time=3 +tries=1 +short AAAA www.wlasniewski.pl @$resolver | tr '\n' ' ')"
+              echo "CNAME www: $(dig +time=3 +tries=1 +short CNAME www.wlasniewski.pl @$resolver | tr '\n' ' ')"
+            done
+            echo
+            echo "=== TLS CERTIFICATE ==="
+            timeout 15 openssl s_client -connect wlasniewski.pl:443 -servername wlasniewski.pl </dev/null 2>/dev/null \
+              | openssl x509 -noout -subject -issuer -dates -ext subjectAltName 2>/dev/null || true
+            echo
+          } >> "$REPORT"
+
+          cat > /tmp/probe.sh <<'BASH'
+          #!/usr/bin/env bash
+          set -uo pipefail
+          ua_name="$1"
+          ua="$2"
+          url="$3"
+          round="$4"
+          tmpbase="/tmp/probe-${ua_name}-${round}-$(echo "$url" | sha256sum | cut -c1-10)"
+          header="${tmpbase}.headers"
+          body="${tmpbase}.body"
+          err="${tmpbase}.err"
+
+          metrics=$(curl -sS -L --compressed \
+            --connect-timeout 10 --max-time 30 \
+            -A "$ua" \
+            -H 'Cache-Control: no-cache, no-store' \
+            -H 'Pragma: no-cache' \
+            -D "$header" -o "$body" \
+            -w 'http=%{http_code} redirects=%{num_redirects} final=%{url_effective} remote=%{remote_ip} version=%{http_version} dns=%{time_namelookup} connect=%{time_connect} tls=%{time_appconnect} ttfb=%{time_starttransfer} total=%{time_total} bytes=%{size_download} type=%{content_type}' \
+            "$url" 2>"$err")
+          rc=$?
+
+          printf 'round=%s ua=%s url=%s rc=%s %s' "$round" "$ua_name" "$url" "$rc" "$metrics"
+          if [ -s "$err" ]; then
+            printf ' error=%q' "$(tr '\n' ' ' < "$err" | head -c 300)"
+          fi
+          echo
+
+          if [ "$round" = "1" ]; then
+            echo "--- response headers: $ua_name $url ---"
+            grep -iE '^(HTTP/|server:|date:|content-type:|content-length:|cache-control:|age:|etag:|last-modified:|location:|vary:|x-nf-|netlify-|cf-|via:|x-cache:|x-robots-tag:)' "$header" 2>/dev/null || true
+            echo "body-sha256=$(sha256sum "$body" 2>/dev/null | awk '{print $1}')"
+            echo "body-preview=$(head -c 250 "$body" 2>/dev/null | tr '\r\n' ' ' | sed 's/[[:space:]]\+/ /g')"
+          fi
+          BASH
+          chmod +x /tmp/probe.sh
+
+          NORMAL_UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/152 Safari/537.36'
+          AHREFS_UA='Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)'
+          GOOGLE_UA='Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
+          BING_UA='Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)'
+          GPT_UA='Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot'
+
+          URLS=(
+            'https://wlasniewski.pl/robots.txt'
+            'https://wlasniewski.pl/sitemap.xml'
+            'https://wlasniewski.pl/'
+            'https://www.wlasniewski.pl/robots.txt'
+            'https://www.wlasniewski.pl/sitemap.xml'
+            'https://www.wlasniewski.pl/'
+            'http://wlasniewski.pl/'
+          )
+
+          for round in $(seq 1 8); do
+            echo "=== ROUND $round $(date -u --iso-8601=seconds) ===" >> "$REPORT"
+            for url in "${URLS[@]}"; do
+              /tmp/probe.sh normal "$NORMAL_UA" "$url" "$round" >> "$REPORT"
+              /tmp/probe.sh ahrefs "$AHREFS_UA" "$url" "$round" >> "$REPORT"
+              /tmp/probe.sh google "$GOOGLE_UA" "$url" "$round" >> "$REPORT"
+            done
+            if [ "$round" = "1" ] || [ "$round" = "8" ]; then
+              /tmp/probe.sh bing "$BING_UA" 'https://wlasniewski.pl/' "$round" >> "$REPORT"
+              /tmp/probe.sh chatgpt "$GPT_UA" 'https://wlasniewski.pl/' "$round" >> "$REPORT"
+            fi
+            sleep 5
+          done
+
+          echo >> "$REPORT"
+          echo "=== HTTP/1.1 VS HTTP/2 ===" >> "$REPORT"
+          for proto in --http1.1 --http2; do
+            for path in robots.txt sitemap.xml ''; do
+              curl -sS -L "$proto" --compressed --connect-timeout 10 --max-time 30 \
+                -A "$AHREFS_UA" -o /dev/null \
+                -w "proto=$proto path=/$path http=%{http_code} version=%{http_version} ttfb=%{time_starttransfer} total=%{time_total} remote=%{remote_ip}\n" \
+                "https://wlasniewski.pl/$path" >> "$REPORT" 2>&1 || true
+            done
+          done
+
+          echo >> "$REPORT"
+          echo "=== LIVE ROBOTS BODY ===" >> "$REPORT"
+          curl -sS -L --connect-timeout 10 --max-time 30 -A "$AHREFS_UA" https://wlasniewski.pl/robots.txt >> "$REPORT" 2>&1 || true
+          echo >> "$REPORT"
+          echo "=== ENTRY-POINT SUMMARY ===" >> "$REPORT"
+          python3 - <<'PY' >> "$REPORT"
+          import re
+          from collections import defaultdict
+          from pathlib import Path
+
+          text = Path('diagnostic/entry-points.txt').read_text(encoding='utf-8', errors='replace')
+          rows = []
+          for line in text.splitlines():
+              if not line.startswith('round='):
+                  continue
+              fields = dict(re.findall(r'(\w+)=([^ ]+)', line))
+              try:
+                  rows.append({
+                      'ua': fields['ua'],
+                      'url': fields['url'],
+                      'rc': int(fields.get('rc', '-1')),
+                      'http': int(fields.get('http', '0')),
+                      'dns': float(fields.get('dns', '0')),
+                      'ttfb': float(fields.get('ttfb', '0')),
+                      'total': float(fields.get('total', '0')),
+                  })
+              except Exception:
+                  pass
+
+          grouped = defaultdict(list)
+          for row in rows:
+              grouped[(row['ua'], row['url'])].append(row)
+
+          failures = 0
+          for (ua, url), values in sorted(grouped.items()):
+              bad = [v for v in values if v['rc'] != 0 or v['http'] not in (200, 301, 302, 307, 308)]
+              slow = [v for v in values if v['ttfb'] >= 3]
+              failures += len(bad)
+              totals = sorted(v['total'] for v in values)
+              ttfbs = sorted(v['ttfb'] for v in values)
+              p95_index = max(0, min(len(values) - 1, int(round(0.95 * len(values) + 0.499)) - 1))
+              print(
+                  f'ua={ua} url={url} requests={len(values)} failures={len(bad)} '
+                  f'slow_ttfb_ge_3s={len(slow)} min_ttfb={ttfbs[0]:.3f} '
+                  f'median_ttfb={ttfbs[len(ttfbs)//2]:.3f} p95_ttfb={ttfbs[p95_index]:.3f} '
+                  f'max_ttfb={ttfbs[-1]:.3f} max_total={totals[-1]:.3f}'
+              )
+          print(f'TOTAL_PROBE_FAILURES={failures}')
+          PY
+
+          cat "$REPORT"
+
+      - name: Validate robots and sitemap, then crawl every sitemap URL once as AhrefsBot
+        shell: bash
+        run: |
+          set -uo pipefail
+          REPORT=diagnostic/sitemap-crawl.txt
+          : > "$REPORT"
+          AHREFS_UA='Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)'
+
+          curl -sS -L --compressed --connect-timeout 10 --max-time 30 \
+            -A "$AHREFS_UA" -H 'Cache-Control: no-cache, no-store' \
+            -o diagnostic/robots-live.txt https://wlasniewski.pl/robots.txt 2>diagnostic/robots-error.txt
+          robots_rc=$?
+
+          curl -sS -L --compressed --connect-timeout 10 --max-time 45 \
+            -A "$AHREFS_UA" -H 'Cache-Control: no-cache, no-store' \
+            -o diagnostic/sitemap-live.xml https://wlasniewski.pl/sitemap.xml 2>diagnostic/sitemap-error.txt
+          sitemap_rc=$?
+
+          python3 - <<'PY' | tee -a "$REPORT"
+          import pathlib
+          import xml.etree.ElementTree as ET
+
+          robots = pathlib.Path('diagnostic/robots-live.txt').read_text(encoding='utf-8', errors='replace')
+          print(f'robots_bytes={len(robots.encode())}')
+          print(f'robots_has_global_agent={"User-agent: *" in robots}')
+          print(f'robots_allows_root={"Allow: /" in robots}')
+          print(f'robots_has_sitemap={"Sitemap: https://wlasniewski.pl/sitemap.xml" in robots}')
+          print(f'robots_blocks_all={"Disallow: /\n" in robots or "Disallow: /\r\n" in robots}')
+
+          xml = pathlib.Path('diagnostic/sitemap-live.xml').read_bytes()
+          root = ET.fromstring(xml)
+          ns = {'sm': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
+          urls = [node.text.strip() for node in root.findall('.//sm:loc', ns) if node.text]
+          if not urls:
+              urls = [node.text.strip() for node in root.iter() if node.tag.endswith('loc') and node.text]
+          pathlib.Path('diagnostic/sitemap-urls.txt').write_text('\n'.join(urls) + '\n', encoding='utf-8')
+          print(f'sitemap_bytes={len(xml)}')
+          print(f'sitemap_url_count={len(urls)}')
+          print(f'sitemap_unique_count={len(set(urls))}')
+          print(f'sitemap_non_https_count={sum(not u.startswith("https://") for u in urls)}')
+          print(f'sitemap_wrong_host_count={sum(not u.startswith("https://wlasniewski.pl/") for u in urls)}')
+          PY
+
+          echo "robots_curl_rc=$robots_rc sitemap_curl_rc=$sitemap_rc" | tee -a "$REPORT"
+
+          cat > /tmp/crawl-sitemap.py <<'PY'
+          import concurrent.futures
+          import csv
+          import subprocess
+          import sys
+          import time
+          from pathlib import Path
+
+          ua = 'Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)'
+          urls = [line.strip() for line in Path('diagnostic/sitemap-urls.txt').read_text().splitlines() if line.strip()]
+
+          def probe(index_url):
+              index, url = index_url
+              started = time.monotonic()
+              cmd = [
+                  'curl', '-sS', '-L', '--compressed',
+                  '--connect-timeout', '10', '--max-time', '35',
+                  '-A', ua,
+                  '-H', 'Cache-Control: no-cache, no-store',
+                  '-o', '/dev/null',
+                  '-w', '%{http_code}\t%{num_redirects}\t%{url_effective}\t%{remote_ip}\t%{http_version}\t%{time_namelookup}\t%{time_starttransfer}\t%{time_total}\t%{size_download}\t%{content_type}',
+                  url,
+              ]
+              proc = subprocess.run(cmd, capture_output=True, text=True)
+              elapsed = time.monotonic() - started
+              parts = proc.stdout.strip().split('\t')
+              while len(parts) < 10:
+                  parts.append('')
+              return {
+                  'index': index,
+                  'url': url,
+                  'rc': proc.returncode,
+                  'http': parts[0],
+                  'redirects': parts[1],
+                  'final_url': parts[2],
+                  'remote_ip': parts[3],
+                  'http_version': parts[4],
+                  'dns': parts[5],
+                  'ttfb': parts[6],
+                  'total': parts[7],
+                  'bytes': parts[8],
+                  'content_type': parts[9],
+                  'wall': f'{elapsed:.3f}',
+                  'error': proc.stderr.strip().replace('\n', ' ')[:500],
+              }
+
+          rows = []
+          # Two concurrent requests are enough to reveal failures without stressing the site.
+          with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+              for result in executor.map(probe, enumerate(urls, 1)):
+                  rows.append(result)
+                  print(
+                      f"{result['index']:03d} http={result['http']} rc={result['rc']} "
+                      f"ttfb={result['ttfb']} total={result['total']} url={result['url']} "
+                      f"error={result['error']}",
+                      flush=True,
+                  )
+
+          fields = ['index', 'url', 'rc', 'http', 'redirects', 'final_url', 'remote_ip', 'http_version', 'dns', 'ttfb', 'total', 'bytes', 'content_type', 'wall', 'error']
+          with open('diagnostic/sitemap-crawl.csv', 'w', newline='', encoding='utf-8') as handle:
+              writer = csv.DictWriter(handle, fieldnames=fields)
+              writer.writeheader()
+              writer.writerows(rows)
+
+          def number(row, key):
+              try:
+                  return float(row[key])
+              except Exception:
+                  return 0.0
+
+          failures = [row for row in rows if row['rc'] != 0 or row['http'] != '200']
+          slow3 = [row for row in rows if number(row, 'ttfb') >= 3]
+          slow5 = [row for row in rows if number(row, 'ttfb') >= 5]
+          sorted_rows = sorted(rows, key=lambda row: number(row, 'ttfb'), reverse=True)
+
+          summary = [
+              f'CRAWLED={len(rows)}',
+              f'FAILURES={len(failures)}',
+              f'TTFB_GE_3S={len(slow3)}',
+              f'TTFB_GE_5S={len(slow5)}',
+              f'MAX_TTFB={number(sorted_rows[0], "ttfb"):.3f}' if sorted_rows else 'MAX_TTFB=0',
+              'SLOWEST_URLS:',
+          ]
+          summary.extend(
+              f"{number(row, 'ttfb'):.3f}s http={row['http']} rc={row['rc']} {row['url']} {row['error']}"
+              for row in sorted_rows[:15]
+          )
+          summary.append('FAILURE_URLS:')
+          summary.extend(
+              f"http={row['http']} rc={row['rc']} {row['url']} {row['error']}"
+              for row in failures[:30]
+          )
+          Path('diagnostic/sitemap-summary.txt').write_text('\n'.join(summary) + '\n', encoding='utf-8')
+          print('\n'.join(summary))
+          PY
+
+          python3 /tmp/crawl-sitemap.py | tee -a "$REPORT"
+          cat diagnostic/sitemap-summary.txt >> "$REPORT"
+
+      - name: Upload diagnostic evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ahrefs-crawl-diagnostic-20260903
+          path: diagnostic/
+          retention-days: 5
+
+      - name: Publish concise result
+        shell: bash
+        run: |
+          {
+            echo '## Ahrefs crawl diagnostic'
+            echo
+            echo '### Entry points'
+            grep -E '^ua=|^TOTAL_PROBE_FAILURES=' diagnostic/entry-points.txt | tail -n 40 || true
+            echo
+            echo '### Sitemap crawl'
+            cat diagnostic/sitemap-summary.txt || true
+          } >> "$GITHUB_STEP_SUMMARY"
