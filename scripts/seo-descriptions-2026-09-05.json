@@ -1,0 +1,32 @@
+[
+  {
+    "model": "page",
+    "slug": "o-mnie",
+    "expectedRenderedDescription": "Dowiedz się, dlaczego stawiam na naturalność i brak stresu podczas sesji.  Poznajmy się przy kawie i rozpocznij ze mną współpracę na sesji, evencie czy twoim ślubie. Indywidualne podejście do klienta. Oferuję również  specjalistyczne badania termowizyjne Mavic 3 Thermal.\n",
+    "description": "Poznaj Przemysława Właśniewskiego. Naturalne sesje, reportaże z uroczystości i ślubów w Toruniu oraz regionie. Sprawdź moje podejście do fotografii."
+  },
+  {
+    "model": "page",
+    "slug": "portfolio",
+    "expectedRenderedDescription": "Szukasz naturalnych zdjęć pełnych emocji? Zapraszam na artystyczne sesje portretowe, rodzinne i wizerunkowe w plenerze. Sprawdź moje portfolio i poczuj klimat! Fotografia w Toruniu, Grudziądzu i okolicach, ",
+    "description": "Zobacz portfolio Przemysława Właśniewskiego: sesje rodzinne, portrety, śluby i uroczystości. Fotografia w Toruniu, Grudziądzu i okolicach."
+  },
+  {
+    "model": "blogPost",
+    "slug": "komunia",
+    "expectedRenderedDescription": "Dzień Pierwszej Komunii to nie tylko białe stroje i uroczystość w kościele. To przede wszystkim emocje Twojego dziecka i rodzinne ciepło, które warto zachować na lata. Zobacz, jak mogę pomóc Wam stworzyć naturalną pamiątkę z tego dnia.",
+    "description": "Pierwsza Komunia to emocje dziecka i rodzinne chwile. Zobacz, jak zachować je na naturalnych zdjęciach i stworzyć pamiątkę na lata."
+  },
+  {
+    "model": "blogPost",
+    "slug": "m-yn-wiedzy-w-toruniu-tym-razem-dach-budynki",
+    "expectedRenderedDescription": "Dach Młyna Wiedzy, pełne słońce i wiatr, który nie dawał spokoju. Zobacz relację z niecodziennego wydarzenia szkoły Pascal w Toruniu, którą uwieczniłem z drona i z ziemi ",
+    "description": "Wydarzenie szkoły Pascal na dachu Młyna Wiedzy w Toruniu. Zobacz relację fotograficzną oraz ujęcia z drona, pełne słońca i wiatru."
+  },
+  {
+    "model": "blogPost",
+    "slug": "kadry-czasu-stacja-kolejowa-w-pluznicy",
+    "expectedRenderedDescription": "Stacja Płużnica\nStacja kolejowa w Płużnicy jest oddalona od mojego domu około 200 metrów. To miejsce ma swój urok przez surowe, stare mury. Budynek wygląda jak z czasów PRL. Tory zlikwidowano w latach 80., ale została po nich ścieżka. Chodzę tamtędy prawie codziennie z psem. Można dojść tym torowiskiem spacerem nad jezioro.",
+    "description": "Stacja kolejowa w Płużnicy w fotograficznej opowieści. Stare mury, ślad dawnego torowiska i codzienny spacer wśród miejsc z historią."
+  }
+]

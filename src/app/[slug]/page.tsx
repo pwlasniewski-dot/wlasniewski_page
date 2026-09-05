@@ -12,6 +12,7 @@ import { getServiceGrowthConfig, type ServiceGrowthConfig } from '@/lib/serviceG
 import CityLeadForm from '@/components/CityLeadForm';
 import { loadPhotoFunnelConfig } from '@/lib/marketing/photo-funnel.server';
 import type { PhotoFunnelConfig } from '@/lib/marketing/photo-funnel';
+import { hasServerRenderedPrimaryHeading } from '@/lib/seo/page-headings';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -371,10 +372,7 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
         ];
     }
 
-    const hasVisiblePrimaryHeading = sections.some((section) => {
-        const sectionData = section.data && typeof section.data === 'object' ? section.data : section;
-        return sectionData.isPrimaryHeading === true;
-    });
+    const hasVisiblePrimaryHeading = hasServerRenderedPrimaryHeading(sections);
     const isEditorialService = ['sesja', 'sesja-rodzinna'].includes(page!.slug.toLowerCase()) || sections.some((section) => {
         const sectionData = section.data && typeof section.data === 'object' ? section.data : section;
         return sectionData.pageStyle === 'editorial';

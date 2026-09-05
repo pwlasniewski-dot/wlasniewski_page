@@ -4111,7 +4111,7 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                     id: baseId(), type: 'image_text', layout: 'left', image: '', imagePosition: 'center center', sectionTone: 'paper',
                     subtitle: 'JAK WYGLĄDA SESJA', title: 'Nie musicie umieć pozować.',
                     content: '<p>Najpierw się poznajemy i dajemy sobie chwilę. Dzieci mogą być sobą, a Wy nie musicie patrzeć w aparat. Podpowiadam tylko tyle, ile trzeba, żeby zdjęcia wyglądały naturalnie.</p><p>Sesję możemy zrobić w plenerze, w Waszym domu albo w miejscu, które po prostu lubicie.</p>',
-                    buttonText: 'Zobacz portfolio rodzinne', buttonLink: '/portfolio/family'
+                    buttonText: 'Zobacz portfolio rodzinne', buttonLink: '/portfolio/Sesja%20Rodzinna'
                 },
                 {
                     id: baseId(), type: 'features', sectionLayout: 'centered', featureSize: 'normal',

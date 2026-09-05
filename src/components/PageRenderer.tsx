@@ -488,7 +488,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                         }));
                         return (
                             <section key={section.id} className="w-full">
-                                <HeroSlider slides={formattedSlides} />
+                                <HeroSlider slides={formattedSlides} documentTitle={null} />
                             </section>
                         );
 

@@ -118,9 +118,7 @@ const baseMetadata: Metadata = {
         description: 'Profesjonalna fotografia rodzinna, ślubna, portretowa i komunijna. Naturalne zdjęcia w Toruniu i okolicach.',
         images: [
             {
-                url: '/og-image.jpg',
-                width: 1200,
-                height: 630,
+                url: '/assets/slider/fotografia-rodzinna-grudziadz-01.webp',
                 alt: 'Przemysław Właśniewski — Fotograf',
             }
         ],
@@ -129,7 +127,7 @@ const baseMetadata: Metadata = {
         card: 'summary_large_image',
         title: 'Przemysław Właśniewski — Fotograf Toruń',
         description: 'Profesjonalna fotografia rodzinna, ślubna i portretowa w Toruniu.',
-        images: ['/og-image.jpg'],
+        images: ['/assets/slider/fotografia-rodzinna-grudziadz-01.webp'],
     },
     robots: {
         index: true,
@@ -252,7 +250,7 @@ export default async function RootLayout({
                                         "@id": "https://wlasniewski.pl/#business",
                                         "name": "Przemysław Właśniewski — Fotograf",
                                         
-                                        "image": "https://wlasniewski.pl/og-image.jpg",
+                                        "image": "https://wlasniewski.pl/assets/slider/fotografia-rodzinna-grudziadz-01.webp",
                                         "description": "Sesje rodzinne, reportaże ślubne, portrety i fotografia uroczystości w Toruniu oraz województwie kujawsko-pomorskim.",
                                         "url": "https://wlasniewski.pl",
                                         "telephone": "+48530788694",
@@ -298,7 +296,7 @@ export default async function RootLayout({
                                         "@id": "https://wlasniewski.pl/#person",
                                         "name": "Przemysław Właśniewski",
                                         "jobTitle": "Fotograf",
-                                        "image": "https://wlasniewski.pl/og-image.jpg",
+                                        "image": "https://wlasniewski.pl/assets/slider/fotografia-rodzinna-grudziadz-01.webp",
                                         "url": "https://wlasniewski.pl",
                                         "telephone": "+48 530 788 694",
                                         "email": "pwlasniewski@gmail.com",
