@@ -2,6 +2,8 @@
 "use client";
 
 import { useState } from "react";
+import { trackPhotoInquiryConversion } from "@/lib/analytics/photoInquiryConversion";
+import { readConsentedClientAttribution } from "@/lib/analytics/clientAttribution";
 import { motion } from "framer-motion";
 import { Send, CheckCircle, AlertCircle } from "lucide-react";
 
@@ -22,12 +24,12 @@ export default function ContactForm() {
             const res = await fetch('/api/contact', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({ ...formData, ...readConsentedClientAttribution() }),
             });
 
             const data = await res.json();
 
-            if (!res.ok) {
+            if (!res.ok || !data?.inquiryId) {
                 console.error('Contact form error:', data);
                 // Wyodrębnij email z komunikatu błędu - jeśli zawiera "Kontakt:"
                 if (data.error && data.error.includes('Kontakt:')) {
@@ -43,10 +45,7 @@ export default function ContactForm() {
             setStatus('success');
             setFormData({ name: '', email: '', message: '' });
 
-            // Event snippet for Przesłanie formularza kontaktowego conversion page
-            if (typeof window !== 'undefined' && (window as any).gtag) {
-                (window as any).gtag('event', 'conversion', { 'send_to': 'AW-17548893646/mNauCJy3h-YbEM67-69B' });
-            }
+            trackPhotoInquiryConversion(data.inquiryId);
         } catch (error: any) {
             console.error('Contact form error:', error);
             setStatus('error');

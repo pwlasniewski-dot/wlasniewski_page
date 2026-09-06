@@ -1,7 +1,9 @@
+import { revalidatePublicOffer } from '@/lib/revalidate-public-offer';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/auth/middleware';
 import { loadActivePromotionsForPackages, type PublicPackagePromotion } from '@/lib/packagePromotions';
+import { applyPublicPackagePrices } from '@/lib/packagePromotionPricing';
 
 const PACKAGE_PROMOTION_RELEASE = 'package-promotion-save-v2';
 
@@ -33,20 +35,15 @@ export async function GET(request: NextRequest) {
             success: true,
             serviceTypes: serviceTypes.map(service => ({
                 ...service,
-                packages: service.packages.map(pkg => {
-                    const promotion = promotions.get(pkg.id) || null;
-                    return {
-                        ...pkg,
-                        regular_price: pkg.price,
-                        effective_price: promotion?.price ?? pkg.price,
-                        price: adminView ? pkg.price : (promotion?.price ?? pkg.price),
-                        promotion,
-                    };
-                }),
+                packages: applyPublicPackagePrices(service.packages, promotions).map(pkg => ({
+                    ...pkg,
+                    price: adminView ? pkg.regular_price : pkg.price,
+                })),
             })),
         }, {
             headers: {
                 'X-Wlasniewski-Release': PACKAGE_PROMOTION_RELEASE,
+                'Cache-Control': 'no-store',
             },
         });
     } catch (error) {
@@ -92,6 +89,7 @@ export async function POST(request: NextRequest) {
                     packages: { orderBy: { order: 'asc' } },
                 },
             });
+            revalidatePublicOffer();
             return NextResponse.json({ success: true, serviceType });
         }
 
@@ -107,6 +105,7 @@ export async function POST(request: NextRequest) {
                 packages: { orderBy: { order: 'asc' } },
             },
         });
+        revalidatePublicOffer();
         return NextResponse.json({ success: true, serviceType });
     } catch (error) {
         console.error('Error updating service type:', error);
@@ -133,6 +132,7 @@ export async function DELETE(request: NextRequest) {
         await prisma.serviceType.delete({
             where: { id: parseInt(id) },
         });
+        revalidatePublicOffer();
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Error deleting service type:', error);

@@ -8,7 +8,8 @@ import ParallaxSection from '@/components/ParallaxSection';
 import type { PageSection } from '@/components/admin/PageBuilder';
 import { getPortfolioCategories } from '@/lib/portfolio';
 import { loadPhotoFunnelConfig } from '@/lib/marketing/photo-funnel.server';
-import { loadPublicMinimumPrices, publicPriceLabel, type PublicMinimumPricesInCents } from '@/lib/publicPackagePricing';
+import { loadPublicMinimumPrices, loadPublicPricingSnapshot, publicPriceLabel, type PublicMinimumPricesInCents } from '@/lib/publicPackagePricing';
+import PromotionPriceBlock from '@/components/promotions/PromotionPriceBlock';
 
 // ─── City Data with FAQs ─────────────────────────────────────────
 interface CityInfo {
@@ -628,10 +629,11 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
     const key = getCityKey(citySlug);
     if (!key) notFound();
     const data = CITIES[key];
-    const [publicMinimumPrices, photoFunnelConfig] = await Promise.all([
-        loadPublicMinimumPrices(),
+    const [publicPricing, photoFunnelConfig] = await Promise.all([
+        loadPublicPricingSnapshot(),
         loadPhotoFunnelConfig(),
     ]);
+    const publicMinimumPrices = publicPricing.minimumPrices;
 
     let cityGalleryImages: CityStoryPhoto[] = [];
     try {
@@ -893,14 +895,16 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
                             ].map((item, index) => (
                                 <Link
                                     key={item.title}
-                                    href={`/rezerwacja?source=city-funnel&city=${encodeURIComponent(data.city)}&service=${encodeURIComponent(item.service)}`}
+                                    href={`/rezerwacja?source=city-funnel&city=${encodeURIComponent(data.city)}&service=${encodeURIComponent(item.service)}${publicPricing.minimumPromotions[item.service] ? `&package_id=${publicPricing.minimumPromotions[item.service].packageId}` : ''}`}
                                     className="group flex min-h-64 flex-col bg-[#faf8f4] p-7 transition hover:bg-white"
                                 >
                                     <span className="text-xs tracking-[0.2em] text-[#918577]">0{index + 1}</span>
                                     <h3 className="mt-8 font-serif text-2xl font-medium">{item.title}</h3>
                                     <p className="mt-3 text-sm leading-relaxed text-[#716a62]">{item.text}</p>
                                     <div className="mt-auto flex items-end justify-between gap-3 pt-8">
-                                        <span className="font-semibold text-[#413c36]">{publicPriceLabel(publicMinimumPrices, item.service)}</span>
+                                        {publicPricing.minimumPromotions[item.service] ? (
+                                            <PromotionPriceBlock promotion={publicPricing.minimumPromotions[item.service]} variant="compact" />
+                                        ) : <span className="font-semibold text-[#413c36]">{publicPriceLabel(publicMinimumPrices, item.service)}</span>}
                                         <span className="text-[#8d7f6d] transition group-hover:translate-x-1" aria-hidden="true">→</span>
                                     </div>
                                 </Link>

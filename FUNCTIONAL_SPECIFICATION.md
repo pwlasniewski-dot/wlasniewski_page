@@ -1,3 +1,11 @@
+## 2026-09-06 — ceny i opinie publiczne (kod oczekujący na wdrożenie)
+
+Publiczne pakiety i minimalne ceny podstron stosują tę samą aktywną promocję co API rezerwacji, z początkiem włącznie i końcem wyłącznie. Karty wyświetlają cenę obniżoną, regularną, wymagany punkt odniesienia oraz koniec w strefie Europe/Warsaw. Wybór promowanego pakietu przekazuje jego ID do rezerwacji. Ukrycie promocji na stronie głównej nie zmienia ceny obowiązującej w rezerwacji ani minimalnej ceny usługi.
+
+Opinie pochodzą ze wspólnej kolekcji CMS, z zachowaniem flag wyróżnienia i widoczności w rezerwacji. Średnia Google uwzględnia wyłącznie rekordy Google; Facebook pozostaje osobno oznaczony. Jednorazowy import nie jest automatyczną synchronizacją z Google. Liczba ukończonych sesji nie jest liczbą opinii produktu — usunięto takie nieudokumentowane aggregateRating z Foto Wyzwania.
+
+Konwersja Google Ads wymaga sukcesu API, dodatniego inquiryId i aktualnej zgody. Stabilny transaction_id pozwala Google deduplikować zapytanie. Samo wejście na /kontakt nie uruchamia konwersji. Szczegóły i status kampanii w docs/marketing/google-ads-2026-09-06.
+
 # System Specyfikacji Funkcjonalnej (v2.1) - wlasniewski.pl
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).

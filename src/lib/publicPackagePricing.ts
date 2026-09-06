@@ -1,4 +1,6 @@
 import prisma from '@/lib/db/prisma';
+import { unstable_noStore as noStore } from 'next/cache';
+import { applyPublicPackagePrices } from '@/lib/packagePromotionPricing';
 import {
     loadActivePromotionsForPackages,
     loadFeaturedPromotionsByService,
@@ -15,6 +17,7 @@ export type PublicMinimumPricesInCents = Record<string, number>;
 
 export type PublicPricingSnapshot = {
     minimumPrices: PublicMinimumPricesInCents;
+    minimumPromotions: Record<string, PublicPackagePromotion>;
     featuredPromotions: Record<string, PublicPackagePromotion>;
 };
 
@@ -40,6 +43,19 @@ export async function findActivePublicPackages(filter: PublicPackageFilter = {})
     });
 }
 
+/** Request-time pricing: an ended or scheduled promotion must not remain in ISR. */
+export async function findPricedPublicPackages(filter: PublicPackageFilter = {}) {
+    noStore();
+    const packages = await findActivePublicPackages(filter);
+    let promotions = new Map<number, PublicPackagePromotion>();
+    try {
+        promotions = await loadActivePromotionsForPackages(packages.map(pkg => pkg.id));
+    } catch (error) {
+        console.warn('[public-pricing] Promotions unavailable; using regular prices.', error);
+    }
+    return applyPublicPackagePrices(packages, promotions);
+}
+
 export function summarizeMinimumPrices(packages: PriceSourcePackage[]): PublicMinimumPricesInCents {
     return packages.reduce<PublicMinimumPricesInCents>((minimums, pkg) => {
         if (!Number.isFinite(pkg.price) || pkg.price <= 0 || !pkg.service?.name) return minimums;
@@ -50,7 +66,7 @@ export function summarizeMinimumPrices(packages: PriceSourcePackage[]): PublicMi
 }
 
 export async function loadPublicMinimumPrices(
-    loader: () => Promise<PriceSourcePackage[]> = findActivePublicPackages,
+    loader: () => Promise<PriceSourcePackage[]> = findPricedPublicPackages,
 ): Promise<PublicMinimumPricesInCents> {
     try {
         return summarizeMinimumPrices(await loader());
@@ -61,35 +77,36 @@ export async function loadPublicMinimumPrices(
 }
 
 /**
- * Public homepage snapshot. Promotions are additive and fail open: during the
+ * Public pricing snapshot. Promotions are additive and fail open: during the
  * migration rollout the site keeps showing regular prices instead of failing.
  */
 export async function loadPublicPricingSnapshot(): Promise<PublicPricingSnapshot> {
     try {
-        const packages = await findActivePublicPackages();
-        let activePromotions = new Map<number, PublicPackagePromotion>();
+        const packages = await findPricedPublicPackages();
         let featuredPromotions: Record<string, PublicPackagePromotion> = {};
 
         try {
-            [activePromotions, featuredPromotions] = await Promise.all([
-                loadActivePromotionsForPackages(packages.map(pkg => pkg.id)),
-                loadFeaturedPromotionsByService(),
-            ]);
+            featuredPromotions = await loadFeaturedPromotionsByService();
         } catch (promotionError) {
             console.warn('[public-pricing] Promotions unavailable; using regular prices.', promotionError);
         }
 
+        const minimumPrices = summarizeMinimumPrices(packages);
+        const minimumPromotions: Record<string, PublicPackagePromotion> = {};
+        for (const pkg of packages) {
+            if (pkg.promotion && pkg.price === minimumPrices[pkg.service.name]
+                && !minimumPromotions[pkg.service.name]) {
+                minimumPromotions[pkg.service.name] = pkg.promotion;
+            }
+        }
         return {
-            minimumPrices: summarizeMinimumPrices(packages.map(pkg => ({
-                id: pkg.id,
-                price: activePromotions.get(pkg.id)?.price ?? pkg.price,
-                service: pkg.service,
-            }))),
+            minimumPrices,
+            minimumPromotions,
             featuredPromotions,
         };
     } catch (error) {
         console.warn('[public-pricing] Pricing snapshot unavailable.', error);
-        return { minimumPrices: {}, featuredPromotions: {} };
+        return { minimumPrices: {}, minimumPromotions: {}, featuredPromotions: {} };
     }
 }
 

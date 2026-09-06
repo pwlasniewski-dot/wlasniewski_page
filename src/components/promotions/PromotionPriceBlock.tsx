@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ArrowRight, Clock3 } from 'lucide-react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { formatPricePln, type PublicPackagePromotion } from '@/lib/packagePromotionPricing';
 
 type PromotionPriceBlockProps = {
     promotion: PublicPackagePromotion;
-    variant: 'home' | 'booking' | 'summary';
+    variant: 'home' | 'booking' | 'summary' | 'compact';
+    tone?: 'light' | 'dark';
     className?: string;
 };
 
@@ -28,6 +29,7 @@ function formatEndDate(value: string | null): string | null {
 export default function PromotionPriceBlock({
     promotion,
     variant,
+    tone = 'light',
     className = '',
 }: PromotionPriceBlockProps) {
     const endsAt = formatEndDate(promotion.endsAt);
@@ -45,6 +47,22 @@ export default function PromotionPriceBlock({
             placement: variant,
         });
     }, [promotion.id, promotion.packageId, promotion.serviceName, trackEvent, variant]);
+
+    if (variant === 'compact') {
+        return (
+            <div className={`min-w-0 text-left ${tone === 'dark' ? 'text-white' : 'text-[#413c36]'} ${className}`}
+                data-promotion-id={promotion.id} data-package-id={promotion.packageId}>
+                <span className="inline-block rounded-full bg-[#a84631] px-2.5 py-1 text-[10px] font-bold text-white">{promotion.label}</span>
+                <p className="mt-2 text-xs opacity-80">{promotion.packageName}</p>
+                <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <strong className="text-2xl font-semibold">{formatPricePln(promotion.price)}</strong>
+                    <span className="text-sm line-through opacity-65">{formatPricePln(promotion.regularPrice)}</span>
+                </div>
+                <p className="mt-2 text-xs leading-relaxed opacity-85">{promotion.legalText}</p>
+                {endsAt && <p className="mt-1 text-xs leading-relaxed opacity-85">Do {endsAt}</p>}
+            </div>
+        );
+    }
 
     if (variant === 'home') {
         return (

@@ -7,7 +7,9 @@ import Link from 'next/link';
 import { PageSection } from '@/components/admin/PageBuilder';
 import CityLandingPage, { generateMetadata as cityGenerateMetadata } from '@/app/fotograf-[city]/page';
 import { b2bPublicPath, isB2bCmsPage } from '@/lib/sites/b2b-routing';
-import { findActivePublicPackages } from '@/lib/publicPackagePricing';
+import { findPricedPublicPackages } from '@/lib/publicPackagePricing';
+import { formatPricePln, type PublicPackagePromotion } from '@/lib/packagePromotionPricing';
+import PromotionPriceBlock from '@/components/promotions/PromotionPriceBlock';
 import { getServiceGrowthConfig, type ServiceGrowthConfig } from '@/lib/serviceGrowth';
 import CityLeadForm from '@/components/CityLeadForm';
 import { loadPhotoFunnelConfig } from '@/lib/marketing/photo-funnel.server';
@@ -33,6 +35,7 @@ type GrowthPackage = {
     hours: number;
     price: number;
     subtitle: string | null;
+    promotion: PublicPackagePromotion | null;
 };
 
 const GROWTH_CITIES = new Set(['Toruń', 'Grudziądz', 'Wąbrzeźno', 'Chełmno', 'Świecie']);
@@ -57,7 +60,7 @@ function inquiryHref(config: ServiceGrowthConfig, source: string, city?: string 
 }
 
 function formatPrice(priceInCents: number) {
-    return `${new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 0 }).format(priceInCents / 100)} zł`;
+    return formatPricePln(priceInCents);
 }
 
 function ServiceGrowthOffer({
@@ -134,7 +137,9 @@ function ServiceGrowthOffer({
                                 </p>
                                 {item.subtitle && <p className={`mt-2 text-sm leading-relaxed ${mutedClass}`}>{item.subtitle}</p>}
                                 <div className="mt-auto pt-7">
-                                    <span className="text-lg font-semibold">{formatPrice(item.price)}</span>
+                                    {item.promotion ? (
+                                        <PromotionPriceBlock promotion={item.promotion} variant="compact" tone={editorial ? 'light' : 'dark'} />
+                                    ) : <span className="text-lg font-semibold">{formatPrice(item.price)}</span>}
                                     <div className="mt-5 grid gap-2">
                                         <Link
                                             href={bookingHref(config, `${config.slug}-package`, city, item.id)}
@@ -266,7 +271,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         const canonical = `https://wlasniewski.pl/${slug}`;
         let minimumPrice: number | null = null;
         try {
-            const packages = await findActivePublicPackages({ serviceName: growthConfig.bookingService });
+            const packages = await findPricedPublicPackages({ serviceName: growthConfig.bookingService });
             minimumPrice = packages.length > 0 ? Math.min(...packages.map(pkg => pkg.price)) : null;
         } catch (error) {
             console.warn(`[service-growth] Metadata price unavailable for ${slug}`, error);
@@ -382,12 +387,13 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
     let growthPackages: GrowthPackage[] = [];
     if (growthConfig) {
         try {
-            growthPackages = (await findActivePublicPackages({ serviceName: growthConfig.bookingService })).map((item) => ({
+            growthPackages = (await findPricedPublicPackages({ serviceName: growthConfig.bookingService })).map((item) => ({
                 id: item.id,
                 name: item.name,
                 hours: item.hours,
                 price: item.price,
                 subtitle: item.subtitle,
+                promotion: item.promotion,
             }));
         } catch (error) {
             console.warn(`[service-growth] Packages unavailable for ${slug}`, error);
@@ -469,6 +475,7 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
                                 name: pkg.name,
                                 price: (pkg.price / 100).toFixed(2),
                                 priceCurrency: 'PLN',
+                                ...(pkg.promotion?.endsAt ? { priceValidUntil: pkg.promotion.endsAt } : {}),
                                 availability: 'https://schema.org/InStock',
                                 url: `https://wlasniewski.pl/rezerwacja?service=${encodeURIComponent(growthConfig?.bookingService || serviceLabel)}&package_id=${pkg.id}`,
                             })),

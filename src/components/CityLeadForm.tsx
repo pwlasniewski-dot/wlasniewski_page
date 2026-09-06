@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Send, CheckCircle, AlertCircle, Phone, MessageCircle } from 'lucide-react';
+import { trackPhotoInquiryConversion } from '@/lib/analytics/photoInquiryConversion';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { readConsentedClientAttribution } from '@/lib/analytics/clientAttribution';
 import {
@@ -168,10 +169,7 @@ export default function CityLeadForm({
                 ...analyticsMetadata(),
                 inquiry_id: result.inquiryId,
             });
-            if (typeof window !== 'undefined' && (window as any).gtag) {
-                (window as any).gtag('event', 'conversion', { send_to: 'AW-17548893646/mNauCJy3h-YbEM67-69B' });
-                (window as any).gtag('event', 'generate_lead', analyticsMetadata());
-            }
+            trackPhotoInquiryConversion(result.inquiryId, analyticsMetadata());
 
             setStatus('success');
             setData(current => ({

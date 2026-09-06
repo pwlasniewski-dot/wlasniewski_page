@@ -1,3 +1,11 @@
+## 2026-09-06 — wspólne źródła oferty i opinii (przygotowane)
+
+`applyPublicPackagePrices` centralizuje przeliczanie cen, a `findPricedPublicPackages` łączy aktywne pakiety z aktywnymi promocjami i wyłącza cache danych cenowych. Publiczne minimum, oferty usług, miasta, API i dane oferty w schema używają tego źródła. `revalidatePublicOffer` odświeża layout po zapisach istniejących modułów CMS.
+
+`public-reviews.server.ts` ładuje całą kolekcję testimonials. Czyste selektory `public-reviews.ts` obsługują kolejność, widoczność oraz podsumowanie wyłącznie Google. Strona główna, miasta i komponent TestimonialsSection stosują te same selektory. `scripts/import-google-reviews.ts` ma tryb dry-run, transakcję, blokadę, naprawę sekwencji bez cofania i rozpoznawanie aliasów istniejącego autora. Przykład importu zawiera wyłącznie publiczne dane opinii.
+
+`analytics/photoInquiryConversion.ts` chroni zdarzenie Google przed brakiem zgody, brakiem zapisanej sprawy i błędem trackera. Dotychczasowe etykiety Ads zachowano. Szkic reklamy nie tworzy ani nie uruchamia konta.
+
 # ARCHITEKTURA SYSTEMU - wlasniewski.pl
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.

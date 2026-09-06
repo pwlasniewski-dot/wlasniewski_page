@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { selectPublicReviews, summarizeGoogleReviews, googleReviewSummaryLabel } from '@/lib/public-reviews';
+import { useState, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -44,6 +45,7 @@ interface Testimonial {
     source: string | null;
     photo_size: number | null;
     is_featured: boolean;
+    display_order?: number;
 }
 
 interface Section {
@@ -104,7 +106,9 @@ interface HomeContentProps {
     publicGuidePromo: { title: string; image: string; imageAlt: string } | null;
 }
 
-export default function HomeContent({ heroSlides, sections, homeData, orderedSections, testimonials, heroSliderInterval = 6000, publicPriceLabels, featuredPromotions, publicGuidePromo }: HomeContentProps) {
+export default function HomeContent({ heroSlides, sections, homeData, orderedSections, testimonials: allTestimonials, heroSliderInterval = 6000, publicPriceLabels, featuredPromotions, publicGuidePromo }: HomeContentProps) {
+    const testimonials = useMemo(() => selectPublicReviews(allTestimonials), [allTestimonials]);
+    const googleSummary = summarizeGoogleReviews(allTestimonials);
     const fallbackPublicPriceLabel = 'Aktualne pakiety i ceny';
     const { trackEvent } = useAnalytics();
     const [currentTestimonial, setCurrentTestimonial] = useState(0);
@@ -532,6 +536,7 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                             <h2 className="mb-12 font-display text-5xl font-normal leading-none tracking-[-.035em] text-[#fffaf1] md:text-7xl">
                                 {section.data.title || 'Co mówią klienci'}
                             </h2>
+                            {googleSummary && <p className="mb-6 text-sm text-[#d4b77c]">{googleReviewSummaryLabel(googleSummary)}</p>}
                             <div key={testimonial.id} className="relative">
                                     <div>
                                         <div className="border-y border-[#6b5a46] px-3 py-10 sm:px-10 md:py-14">

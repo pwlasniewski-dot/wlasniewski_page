@@ -1,3 +1,9 @@
+## 2026-09-06 — aktualizacja opinii i spójności promocji (przygotowane wdrożenie)
+
+Na produkcji zaimportowano 6 nowych publicznych opinii Google i uaktualniono istniejącą opinię Malgorzaty Sosnowskiej na podstawie aktualnego profilu firmy. Łącznie 7 Google, średnia 5,0/5; 3 Facebook pozostają bez zmian. Import przetestowano na izolowanej gałęzi Neon oraz powtórzono, potwierdzając brak duplikatów. Odczyt publicznego API i render strony głównej, rezerwacji oraz 8 miast potwierdzają aktualizację.
+
+W kodzie przygotowano wspólne ceny/promocje, wspólne opinie, Google-only licznik oraz poprawkę pomiaru kontaktów. Gałąź `fix/public-pricing-reviews-ads` pozostaje lokalna: automatyczna kontrola odrzuciła push do publicznego repozytorium i wymaga zgody użytkownika na tę konkretną publikację. Nie wdrożono zmian kodu. Kampania Google Ads przygotowana w `docs/marketing/google-ads-2026-09-06`, bez połączonego konta i bez budżetu.
+
 Warning: truncated output (original token count: 36949)
 Total output lines: 2270
 

@@ -1,9 +1,9 @@
+import { revalidatePublicOffer } from '@/lib/revalidate-public-offer';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { acquireAdvisoryTransactionLock } from '@/lib/db/advisoryLock';
 import { requireAuth } from '@/lib/auth/middleware';
-import { findActivePublicPackages } from '@/lib/publicPackagePricing';
-import { loadActivePromotionsForPackages, type PublicPackagePromotion } from '@/lib/packagePromotions';
+import { findPricedPublicPackages } from '@/lib/publicPackagePricing';
 
 // GET packages by service (public endpoint)
 export async function GET(request: NextRequest) {
@@ -12,27 +12,14 @@ export async function GET(request: NextRequest) {
     const serviceName = searchParams.get('serviceName');
 
     try {
-        const packages = await findActivePublicPackages({
+        const packages = await findPricedPublicPackages({
             ...(serviceId ? { serviceId: parseInt(serviceId, 10) } : {}),
             ...(serviceName ? { serviceName } : {}),
         });
-        let promotions = new Map<number, PublicPackagePromotion>();
-        try {
-            promotions = await loadActivePromotionsForPackages(packages.map(pkg => pkg.id));
-        } catch (promotionError) {
-            console.warn('[packages] Package promotions unavailable; using regular prices.', promotionError);
-        }
-
         return NextResponse.json({
             success: true,
-            packages: packages.map(pkg => ({
-                ...pkg,
-                regular_price: pkg.price,
-                effective_price: promotions.get(pkg.id)?.price ?? pkg.price,
-                price: promotions.get(pkg.id)?.price ?? pkg.price,
-                promotion: promotions.get(pkg.id) || null,
-            })),
-        });
+            packages,
+        }, { headers: { 'Cache-Control': 'no-store' } });
     } catch (error) {
         console.error('Failed to fetch packages:', error);
         return NextResponse.json({ error: 'Failed to fetch packages' }, { status: 500 });
@@ -164,6 +151,7 @@ export async function POST(request: NextRequest) {
                     code: 'PACKAGE_PRICE_LOCKED_BY_PROMOTION',
                 }, { status: 409 });
             }
+            revalidatePublicOffer();
             return NextResponse.json({ success: true, package: result.package });
         }
 
@@ -184,6 +172,7 @@ export async function POST(request: NextRequest) {
             } as any,
             include: { service: true },
         });
+        revalidatePublicOffer();
         return NextResponse.json({ success: true, package: pkg });
     } catch (error) {
         console.error('Error updating package:', error);
@@ -206,6 +195,7 @@ export async function DELETE(request: NextRequest) {
         await prisma.package.delete({
             where: { id: parseInt(id) },
         });
+        revalidatePublicOffer();
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Error deleting package:', error);

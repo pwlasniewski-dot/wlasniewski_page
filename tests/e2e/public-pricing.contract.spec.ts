@@ -34,7 +34,7 @@ test('home, city pages and packages API share the public pricing helper', async 
 
     expect(home).toContain("from '@/lib/publicPackagePricing'");
     expect(city).toContain("from '@/lib/publicPackagePricing'");
-    expect(api).toContain('findActivePublicPackages');
+    expect(api).toContain('findPricedPublicPackages');
     expect(helper).toContain('is_active: true');
     expect(helper).toContain('service: {');
 });
