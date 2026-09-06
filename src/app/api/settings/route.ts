@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth, requireAuth } from '@/lib/auth/middleware';
+import { validFloatingFacebookConfig } from '@/lib/floating-facebook';
 import {
     PHOTO_FUNNEL_SETTING_KEY,
     serializePhotoFunnelConfig,
@@ -98,6 +99,15 @@ export async function POST(request: NextRequest) {
     return withAuth(request, async (req) => {
         try {
             const body = await request.json();
+
+            if (Object.prototype.hasOwnProperty.call(body, 'footer_config')) {
+                try {
+                    const footer = JSON.parse(body.footer_config);
+                    if (!footer || typeof footer !== 'object' || Array.isArray(footer) || !validFloatingFacebookConfig(footer)) throw new Error('Invalid footer widget');
+                } catch {
+                    return NextResponse.json({ success: false, error: 'Nieprawidłowa konfiguracja odnośnika Facebook' }, { status: 400 });
+                }
+            }
 
             if (Object.prototype.hasOwnProperty.call(body, PHOTO_FUNNEL_SETTING_KEY)) {
                 const validation = validatePhotoFunnelConfig(body[PHOTO_FUNNEL_SETTING_KEY]);
