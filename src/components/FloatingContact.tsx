@@ -2,26 +2,44 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Phone, Mail } from 'lucide-react';
+import { MessageCircle, X, Send, Phone, Mail, Facebook } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { hideFloatingContact, readFloatingFacebook } from '@/lib/floating-facebook';
 
 export default function FloatingContact() {
     const [isOpen, setIsOpen] = useState(false);
-    const [isAdminPanel, setIsAdminPanel] = useState(false);
+    const [facebook, setFacebook] = useState(() => readFloatingFacebook(null));
+    const [cookiesVisible, setCookiesVisible] = useState(true);
     const pathname = usePathname();
     const whatsappUrl = 'https://wa.me/48530788694?text=' + encodeURIComponent('Cześć Przemek! Piszę ze strony wlasniewski.pl — chciał(a)bym zapytać o sesję.');
     const phoneUrl = 'tel:+48530788694';
     const emailUrl = 'mailto:pwlasniewski@gmail.com?subject=Zapytanie%20o%20sesj%C4%99';
 
     useEffect(() => {
-        setIsAdminPanel(pathname?.startsWith('/admin') || false);
-    }, [pathname]);
-
-    const isGalleryPage = pathname?.startsWith('/galeria');
-    const [isMobile, setIsMobile] = useState(false);
-    useEffect(() => {
-        setIsMobile(typeof window !== 'undefined' && window.innerWidth < 768);
+        const controller = new AbortController();
+        fetch('/api/settings/public', { signal: controller.signal })
+            .then(response => response.ok ? response.json() : null)
+            .then(data => {
+                if (data?.success && data.settings?.footer_config) {
+                    setFacebook(readFloatingFacebook(JSON.parse(data.settings.footer_config)));
+                }
+            }).catch(() => { /* Safe defaults when CMS is unavailable. */ });
+        return () => controller.abort();
     }, []);
+
+    useEffect(() => {
+        try { setCookiesVisible(!localStorage.getItem('cookie_consent')); } catch { setCookiesVisible(true); }
+        const visibility = (event: Event) => setCookiesVisible(Boolean((event as CustomEvent).detail));
+        const decision = () => setCookiesVisible(false);
+        window.addEventListener('cookie-banner-visibility', visibility);
+        window.addEventListener('cookie-consent-changed', decision);
+        return () => {
+            window.removeEventListener('cookie-banner-visibility', visibility);
+            window.removeEventListener('cookie-consent-changed', decision);
+        };
+    }, []);
+
+    useEffect(() => { setIsOpen(false); }, [pathname]);
 
     const trackClick = (channel: string) => {
         if (typeof window !== 'undefined' && (window as any).gtag) {
@@ -29,11 +47,10 @@ export default function FloatingContact() {
         }
     };
 
-    if (isAdminPanel) return null;
-    if (isGalleryPage && isMobile) return null;
+    if (hideFloatingContact(pathname) || cookiesVisible) return null;
 
     return (
-        <div className="fixed bottom-5 right-5 z-[100] flex flex-col items-end gap-3 pointer-events-none">
+        <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] md:bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 z-40 flex flex-col items-end gap-3 pointer-events-none print:hidden">
             <AnimatePresence>
                 {isOpen && (
                     <div className="flex flex-col gap-2.5 pointer-events-auto mb-2">
@@ -92,12 +109,20 @@ export default function FloatingContact() {
 
             {/* Główny przycisk + label "Napisz do mnie!" */}
             <div className="flex items-center gap-3 pointer-events-auto">
+                {!isOpen && facebook.enabled && facebook.url && (
+                    <a href={facebook.url} target="_blank" rel="noopener noreferrer"
+                        aria-label={`${facebook.label} — otwiera się w nowej karcie`}
+                        className="inline-flex min-h-12 items-center gap-2 rounded-full border border-stone-200 bg-white px-4 text-sm font-semibold text-stone-800 shadow-lg hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700">
+                        <Facebook aria-hidden="true" className="h-5 w-5 text-[#0866ff]" />
+                        <span>{facebook.label}</span>
+                    </a>
+                )}
                 {!isOpen && (
                     <motion.span
                         initial={{ opacity: 0, x: 10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 1.5 }}
-                        className="hidden sm:inline-block bg-zinc-900/95 text-white text-sm font-medium px-3 py-2 rounded-lg shadow-lg border border-white/10"
+                        className="hidden lg:inline-block bg-zinc-900/95 text-white text-sm font-medium px-3 py-2 rounded-lg shadow-lg border border-white/10"
                     >
                         Napisz do mnie!
                     </motion.span>
@@ -105,6 +130,7 @@ export default function FloatingContact() {
                 <motion.button
                     layout
                     aria-label={isOpen ? 'Zamknij menu kontaktu' : 'Otwórz menu kontaktu'}
+                    aria-expanded={isOpen}
                     onClick={() => setIsOpen(!isOpen)}
                     className={`h-14 w-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 relative ${isOpen ? 'bg-zinc-900 text-white rotate-90' : 'bg-[#5b554e] text-white hover:scale-105 hover:bg-[#3d3934]'}`}
                 >
