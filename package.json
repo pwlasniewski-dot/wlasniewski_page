@@ -22,7 +22,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:preparation-guide": "playwright test --config=playwright.preparation.config.ts",
     "test:public-guide": "playwright test --config=playwright.public-guide.config.ts",
-    "test:homepage": "playwright test --config=playwright.homepage.config.ts"
+    "test:homepage": "playwright test --config=playwright.homepage.config.ts",
+    "test:client-portal": "playwright test --config=playwright.client-portal.config.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
