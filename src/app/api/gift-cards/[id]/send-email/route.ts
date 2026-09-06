@@ -112,7 +112,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 card.message || '',
                 logoUrl,
                 card.card_title || 'KARTA PODARUNKOWA',
-                card.card_description || undefined
+                card.card_description || undefined,
+                { showPrice: card.show_price, validUntil: card.valid_until }
             );
 
             // Send email to recipient
@@ -194,4 +195,3 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         }
     });
 }
-

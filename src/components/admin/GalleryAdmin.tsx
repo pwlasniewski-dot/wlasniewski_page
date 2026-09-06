@@ -444,15 +444,45 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, clien
                         continue;
                     }
 
-                    const formData = new FormData();
-                    formData.append('photos', fileToUpload);
-                    formData.append('is_standard', isStandard.toString());
-                    formData.append('skip_optimization', 'true');
+                    const presignedResponse = await fetch(getApiUrl(`admin/galleries/${galleryId}/upload/presigned`), {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            fileName: fileToUpload.name,
+                            fileType: fileToUpload.type,
+                            fileSize: fileToUpload.size,
+                        }),
+                    });
+
+                    const presignedPayload = await presignedResponse.json().catch(() => null);
+                    if (!presignedResponse.ok || !presignedPayload?.uploadUrl || !presignedPayload?.s3Key) {
+                        throw new Error(presignedPayload?.error || 'Nie udało się przygotować bezpośredniego uploadu');
+                    }
+
+                    const storageResponse = await fetch(presignedPayload.uploadUrl, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': fileToUpload.type },
+                        body: fileToUpload,
+                    });
+                    if (!storageResponse.ok) {
+                        throw new Error(`Magazyn zdjęć odrzucił plik (${storageResponse.status})`);
+                    }
 
                     const res = await fetch(getApiUrl(`admin/galleries/${galleryId}/upload`), {
                         method: 'POST',
-                        headers: { 'Authorization': `Bearer ${token}` },
-                        body: formData,
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            s3Key: presignedPayload.s3Key,
+                            originalName: fileToUpload.name,
+                            isStandard,
+                            skipOptimization: true,
+                        }),
                     });
 
                     const payload = await res.json().catch(() => null);

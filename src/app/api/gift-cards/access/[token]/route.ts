@@ -20,6 +20,8 @@ export async function GET(
                         theme: true,
                         card_title: true,
                         card_description: true,
+                        show_price: true,
+                        valid_until: true,
                     },
                 },
             },

@@ -3,6 +3,19 @@ Total output lines: 2270
 
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## 2026-08-29 — bezpośredni upload dużych zdjęć galerii
+
+- Produkcja zwracała `413 Content Too Large`, ponieważ zdjęcia do 30 MB przechodziły jako binarny `FormData` przez funkcję Netlify, której efektywny limit dla danych binarnych jest niższy.
+- Panel pobiera teraz krótko ważny, autoryzowany adres PUT i wysyła zdjęcie bezpośrednio do prywatnego prefiksu S3. Funkcja otrzymuje wyłącznie mały JSON, pobiera obiekt do dotychczasowego procesu galerii, zapisuje miniatury i usuwa plik tymczasowy.
+
+## 2026-08-29 — Studio voucherów prezentowych
+
+- Istniejący moduł `/admin/gift-cards` przebudowano na czytelne Studio voucherów dostępne z menu `Vouchery / prezenty`. Administrator korzysta z wzorów rodzinnego, dla dwojga, urodzinowego i ślubnego, a następnie edytuje odbiorcę, nadawcę, treść, wzór, kod, wartość rozliczeniową i ważność.
+- E-mail odbiorcy jest opcjonalny przy wydruku i odbiorze osobistym. Cena może pozostać ukryta na grafice oraz w wiadomości e-mail, ale wartość nadal istnieje w systemie i służy prawidłowemu rozliczeniu kodu.
+- Wydruk i podgląd korzystają z jasnej palety pastelowej dopasowanej do okazji, firmowego znaku aparatu i spokojnej typografii. Na samym voucherze nie ma przycisku ani adresu rezerwacji; pozostaje dyskretny kontakt telefoniczny, kod i data ważności.
+- Dodano addytywne pole `GiftCard.show_price`, zgodny odczyt publicznej karty oraz testy ceny, bezpieczeństwa HTML, wydruku i kontraktu panelu.
+- Testy celowane przeszły 5/5, pełny zestaw 234/235 (jedyny zastany test galerii wymaga `DATABASE_URL`), a build wygenerował 253/253 trasy.
+
 ## 2026-08-28 — statyczny robots.txt po przerwanym audycie SEO
 
 - Zewnętrzny crawler zakończył audyt z wynikiem 0, ponieważ nie przeanalizował żadnego URL-a i zgłosił niedostępny `robots.txt`. Kontrola produkcji wykazała poprawny status i treść, ale czas odpowiedzi 5–8 sekund.

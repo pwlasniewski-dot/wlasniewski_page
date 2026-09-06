@@ -7,8 +7,24 @@ export function generateGiftCardEmail(
     message: string,
     logoUrl?: string,
     cardTitle?: string,
-    cardDescription?: string
+    cardDescription?: string,
+    options?: { showPrice?: boolean; validUntil?: Date | string | null }
 ): string {
+    const escapeHtml = (input: unknown) => String(input ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    const safeUrl = (input?: string) => {
+        if (!input) return '';
+        try {
+            const parsed = new URL(input);
+            return ['http:', 'https:'].includes(parsed.protocol) ? escapeHtml(parsed.toString()) : '';
+        } catch {
+            return '';
+        }
+    };
     const themeConfigs: any = {
         christmas: { bg: 'linear-gradient(135deg, #8b0000 0%, #d42424 100%)', icon: '🎄', title: 'Boże Narodzenie', color: '#ffffff' },
         wosp: { bg: 'linear-gradient(135deg, #dc143c 0%, #ff4d4d 100%)', icon: '❤️', title: 'WOŚP', color: '#ffffff' },
@@ -25,8 +41,17 @@ export function generateGiftCardEmail(
     const backgroundColor = config.bg;
     const textColor = config.color;
 
-    const displayTitle = (cardTitle || 'KARTA PODARUNKOWA').toUpperCase();
-    const displayDescription = cardDescription || 'Prezent pełen wspomnień i emocji';
+    const displayTitle = escapeHtml((cardTitle || 'KARTA PODARUNKOWA').toUpperCase());
+    const displayDescription = escapeHtml(cardDescription || 'Prezent pełen wspomnień i emocji');
+    const safeRecipientName = escapeHtml(recipientName);
+    const safeSenderName = escapeHtml(senderName);
+    const safeMessage = escapeHtml(message);
+    const safeCode = escapeHtml(code);
+    const safeLogoUrl = safeUrl(logoUrl);
+    const showPrice = options?.showPrice !== false;
+    const validityText = options?.validUntil
+        ? `Voucher ważny do: ${new Date(options.validUntil).toLocaleDateString('pl-PL')}`
+        : 'Termin realizacji ustalany indywidualnie.';
 
     return `
     <!DOCTYPE html>
@@ -46,7 +71,7 @@ export function generateGiftCardEmail(
                         <!-- Header / Logo -->
                         <tr>
                             <td align="center" style="padding: 40px 20px;">
-                                ${logoUrl ? `<img src="${logoUrl}" alt="Logo" width="100" style="display: block; max-width: 120px; height: auto;">` : '<h1 style="color: #ffffff; margin: 0; font-size: 20px; letter-spacing: 4px; font-weight: 300; text-transform: uppercase;">PRZEMYSŁAW WŁAŚNIEWSKI</h1>'}
+                                ${safeLogoUrl ? `<img src="${safeLogoUrl}" alt="Logo" width="100" style="display: block; max-width: 120px; height: auto;">` : '<h1 style="color: #ffffff; margin: 0; font-size: 20px; letter-spacing: 4px; font-weight: 300; text-transform: uppercase;">PRZEMYSŁAW WŁAŚNIEWSKI</h1>'}
                                 <p style="color: #666666; font-size: 9px; text-transform: uppercase; letter-spacing: 5px; margin: 15px 0 0 0;">FOTOGRAFIA TORUŃ</p>
                             </td>
                         </tr>
@@ -64,11 +89,12 @@ export function generateGiftCardEmail(
                                         <div style="font-size: 13px; opacity: 0.9; margin-bottom: 35px; min-height: 40px; font-weight: 500;">${displayDescription}</div>
 
                                         <div style="margin-bottom: 30px;">
-                                            <div style="font-size: 9px; text-transform: uppercase; opacity: 0.6; letter-spacing: 2px; margin-bottom: 5px;">Wartość vouchera</div>
-                                            <div style="font-size: 56px; font-weight: 900; line-height: 1;">${value} zł</div>
+                                            ${showPrice
+                                                ? `<div style="font-size: 9px; text-transform: uppercase; opacity: 0.6; letter-spacing: 2px; margin-bottom: 5px;">Wartość vouchera</div><div style="font-size: 56px; font-weight: 900; line-height: 1;">${value} zł</div>`
+                                                : '<div style="font-size: 9px; text-transform: uppercase; opacity: 0.6; letter-spacing: 2px; margin-bottom: 8px;">Prezent</div><div style="font-family: Georgia, serif; font-size: 32px; font-weight: 700; line-height: 1.1;">Sesja fotograficzna</div>'}
                                         </div>
 
-                                        ${recipientName ? `<div style="font-size: 14px; font-style: italic; opacity: 1; font-weight: 600;">Dla: ${recipientName}</div>` : ''}
+                                        ${safeRecipientName ? `<div style="font-size: 14px; font-style: italic; opacity: 1; font-weight: 600;">Dla: ${safeRecipientName}</div>` : ''}
                                     </div>
 
                                     <!-- Decorative Icon Background -->
@@ -84,7 +110,7 @@ export function generateGiftCardEmail(
                                     <tr>
                                         <td align="center">
                                             <p style="margin: 0 0 15px 0; font-size: 11px; color: #888888; text-transform: uppercase; letter-spacing: 3px; font-weight: bold;">TWÓJ KOD RABATOWY</p>
-                                            <div style="font-family: 'Monaco', 'Consolas', monospace; font-size: 36px; font-weight: 900; color: #ffffff; letter-spacing: 8px; background-color: #0a0a0a; padding: 15px 30px; border-radius: 8px; border: 1px solid #444444; display: inline-block; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">${code}</div>
+                                            <div style="font-family: 'Monaco', 'Consolas', monospace; font-size: 36px; font-weight: 900; color: #ffffff; letter-spacing: 8px; background-color: #0a0a0a; padding: 15px 30px; border-radius: 8px; border: 1px solid #444444; display: inline-block; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">${safeCode}</div>
                                         </td>
                                     </tr>
                                 </table>
@@ -92,12 +118,12 @@ export function generateGiftCardEmail(
                         </tr>
 
                         <!-- Message -->
-                        ${message ? `
+                        ${safeMessage ? `
                         <tr>
                             <td align="center" style="padding: 0 40px 40px;">
-                                <div style="border-left: 2px solid #gold-500; padding: 0 25px; text-align: left;">
-                                    <p style="margin: 0; font-size: 15px; color: #bbbbbb; font-style: italic; line-height: 1.8;">"${message}"</p>
-                                    ${senderName ? `<p style="margin: 15px 0 0 0; font-size: 12px; color: #ffffff; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">— ${senderName}</p>` : ''}
+                                <div style="border-left: 2px solid #d8b15e; padding: 0 25px; text-align: left;">
+                                    <p style="margin: 0; font-size: 15px; color: #bbbbbb; font-style: italic; line-height: 1.8;">"${safeMessage}"</p>
+                                    ${safeSenderName ? `<p style="margin: 15px 0 0 0; font-size: 12px; color: #ffffff; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">— ${safeSenderName}</p>` : ''}
                                 </div>
                             </td>
                         </tr>
@@ -124,7 +150,7 @@ export function generateGiftCardEmail(
                                 
                                 <!-- INJECT_ACCESS_BUTTON -->
 
-                                <p style="margin: 20px 0 0 0; font-size: 11px; color: #555555; text-align: center; font-style: italic;">Karta ważna przez 12 miesięcy. Realizacja jednorazowa.</p>
+                                <p style="margin: 20px 0 0 0; font-size: 11px; color: #777777; text-align: center; font-style: italic;">${validityText} Realizacja jednorazowa.</p>
                             </td>
                         </tr>
 

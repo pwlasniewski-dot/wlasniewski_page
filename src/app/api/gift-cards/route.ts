@@ -2,6 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 import { generateGiftCardCode } from '@/lib/gift-cards';
+import { z } from 'zod';
+
+const optionalEmail = z.union([z.literal(''), z.string().trim().email()]).optional().nullable();
+const giftCardInput = z.object({
+    code: z.string().trim().toUpperCase().regex(/^[A-Z0-9-]{4,32}$/).optional(),
+    value: z.coerce.number().int().min(1).max(1_000_000),
+    theme: z.string().trim().min(1).max(40).default('gold'),
+    recipientName: z.string().trim().max(120).optional().nullable(),
+    recipientEmail: optionalEmail,
+    senderName: z.string().trim().max(120).optional().nullable(),
+    message: z.string().trim().max(500).optional().nullable(),
+    card_title: z.string().trim().max(100).optional().nullable(),
+    card_description: z.string().trim().max(180).optional().nullable(),
+    valid_until: z.union([z.literal(''), z.string().datetime({ offset: true }), z.string().date()]).optional().nullable(),
+    notes: z.string().trim().max(1000).optional().nullable(),
+    lowest_price_30d: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
+    showPrice: z.boolean().default(true),
+});
 
 // GET: List all gift cards (with optional filtering)
 export async function GET(request: NextRequest) {
@@ -13,15 +31,16 @@ export async function GET(request: NextRequest) {
             const where: any = {};
 
             if (status === 'used') {
-                where.is_used = true;
+                where.OR = [{ redeemed_at: { not: null } }, { status: 'used' }];
             } else if (status === 'active') {
-                where.is_used = false;
+                where.is_active = true;
+                where.redeemed_at = null;
                 where.OR = [
                     { valid_until: null },
                     { valid_until: { gte: new Date() } }
                 ];
             } else if (status === 'expired') {
-                where.is_used = false;
+                where.redeemed_at = null;
                 where.valid_until = { lt: new Date() };
             }
 
@@ -42,61 +61,38 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     return withAuth(request, async () => {
         try {
-            const body = await request.json();
-            const {
-                code,
-                value,
-                theme = 'christmas',
-                recipientName,
-                recipientEmail,
-                senderName,
-                message,
-                card_title,
-                card_description,
-                // Legacy support
-                recipient_name,
-                recipient_email,
-                amount,
-                discount_type = 'percentage',
-                card_template = 'gold',
-                valid_until,
-                notes
-            } = body;
-
-            // Use new fields if provided, fall back to legacy fields
-            const finalCode = code;
-            const finalValue = value || amount;
-            const finalRecipientName = recipientName || recipient_name;
-            const finalRecipientEmail = recipientEmail || recipient_email;
-            const finalMessage = message;
-            const finalSenderName = senderName;
-            const finalTheme = theme;
-            const finalCardTitle = card_title;
-            const finalCardDescription = card_description;
-
-            if (!finalCode || !finalValue || !finalRecipientEmail) {
-                return NextResponse.json(
-                    { error: 'Missing required fields: code, value, recipientEmail' },
-                    { status: 400 }
-                );
+            const raw = await request.json();
+            const parsed = giftCardInput.safeParse({
+                ...raw,
+                value: raw.value ?? raw.amount,
+                recipientName: raw.recipientName ?? raw.recipient_name,
+                recipientEmail: raw.recipientEmail ?? raw.recipient_email,
+                senderName: raw.senderName ?? raw.sender_name,
+                showPrice: raw.showPrice ?? raw.show_price ?? true,
+            });
+            if (!parsed.success) {
+                return NextResponse.json({ error: 'Nieprawidłowe dane vouchera', details: parsed.error.flatten() }, { status: 400 });
             }
+            const data = parsed.data;
 
             const giftCard = await prisma.giftCard.create({
                 data: {
-                    code: finalCode,
-                    recipient_name: finalRecipientName,
-                    recipient_email: finalRecipientEmail,
-                    amount: parseInt(finalValue),
-                    discount_type,
-                    card_template,
-                    theme: finalTheme,
-                    sender_name: finalSenderName,
-                    message: finalMessage,
-                    valid_until: valid_until ? new Date(valid_until) : null,
-                    value: parseInt(finalValue),
-                    notes,
-                    card_title: finalCardTitle,
-                    card_description: finalCardDescription
+                    code: data.code || generateGiftCardCode(),
+                    recipient_name: data.recipientName || null,
+                    recipient_email: data.recipientEmail || null,
+                    amount: data.value,
+                    value: data.value,
+                    discount_type: 'amount',
+                    card_template: 'premium',
+                    theme: data.theme,
+                    sender_name: data.senderName || null,
+                    message: data.message || null,
+                    valid_until: data.valid_until ? new Date(data.valid_until) : null,
+                    notes: data.notes || null,
+                    card_title: data.card_title || null,
+                    card_description: data.card_description || null,
+                    lowest_price_30d: data.lowest_price_30d || null,
+                    show_price: data.showPrice,
                 }
             });
 
@@ -113,37 +109,39 @@ export async function PATCH(request: NextRequest) {
     return withAuth(request, async () => {
         try {
             const body = await request.json();
-            const {
-                id,
-                is_used,
-                notes,
-                card_title,
-                card_description,
-                recipient_name,
-                recipient_email,
-                value
-            } = body;
+            const { id } = body;
 
             if (!id) {
                 return NextResponse.json({ error: 'Gift card ID is required' }, { status: 400 });
             }
 
-            const updateData: any = {};
-            if (typeof is_used === 'boolean') {
-                updateData.is_used = is_used;
-                if (is_used) {
-                    updateData.used_at = new Date();
-                }
+            const parsed = giftCardInput.safeParse({
+                ...body,
+                recipientName: body.recipientName ?? body.recipient_name,
+                recipientEmail: body.recipientEmail ?? body.recipient_email,
+                senderName: body.senderName ?? body.sender_name,
+                showPrice: body.showPrice ?? body.show_price ?? true,
+            });
+            if (!parsed.success) {
+                return NextResponse.json({ error: 'Nieprawidłowe dane vouchera', details: parsed.error.flatten() }, { status: 400 });
             }
-            if (notes !== undefined) updateData.notes = notes;
-            if (card_title !== undefined) updateData.card_title = card_title;
-            if (card_description !== undefined) updateData.card_description = card_description;
-            if (recipient_name !== undefined) updateData.recipient_name = recipient_name;
-            if (recipient_email !== undefined) updateData.recipient_email = recipient_email;
-            if (value !== undefined) {
-                updateData.value = parseInt(value);
-                updateData.amount = parseInt(value); // Sync amount just in case
-            }
+            const data = parsed.data;
+            const updateData = {
+                code: data.code || undefined,
+                value: data.value,
+                amount: data.value,
+                theme: data.theme,
+                recipient_name: data.recipientName || null,
+                recipient_email: data.recipientEmail || null,
+                sender_name: data.senderName || null,
+                message: data.message || null,
+                card_title: data.card_title || null,
+                card_description: data.card_description || null,
+                valid_until: data.valid_until ? new Date(data.valid_until) : null,
+                notes: data.notes || null,
+                lowest_price_30d: data.lowest_price_30d || null,
+                show_price: data.showPrice,
+            };
 
             const giftCard = await prisma.giftCard.update({
                 where: { id: parseInt(id) },

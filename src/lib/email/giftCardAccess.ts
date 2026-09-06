@@ -59,7 +59,8 @@ export async function sendGiftCardAccessEmail(
         message || '',
         logoUrl,
         giftCard.card_title,
-        giftCard.card_description
+        giftCard.card_description,
+        { showPrice: giftCard.show_price, validUntil: giftCard.valid_until }
     );
 
     // Add access button to the HTML (injecting into the template)
