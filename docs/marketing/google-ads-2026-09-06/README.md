@@ -14,11 +14,11 @@ CSV nie tworzą kompletnego konta ani ustawień lokalizacji i rozliczeń. Najpie
 
 ## Połączenie i uruchomienie
 
-Połączyć Google Ads przez zaproponowaną integrację Adspirer. Dopiero wtedy można sprawdzić identyfikator konta, strefę czasową, konwersje, dane słów kluczowych i zapisać szkic w koncie. Nie zakładać, że zalogowanie do Google Firma oznacza dostęp do Google Ads.
+Zgodnie z decyzją właściciela nie używamy Adspirer. Przygotowane pliki można zaimportować w Google Ads Editor. Dostęp do konta jest potrzebny do potwierdzenia identyfikatora konta, strefy czasowej, konwersji, danych słów kluczowych oraz zapisania szkicu. Nie zakładać, że zalogowanie do Google Firma oznacza dostęp do Google Ads.
 
 Docelowy formularz zbiera zapytanie o sesję. Cel główny: jeden kontakt zapisany w bazie, identyfikowany przez inquiryId. Kliknięcie telefonu i otwarcie kontaktu nie są potwierdzonymi zleceniami. W Google Ads ustawić zliczanie „Jedna”; nie dodawać drugiej głównej konwersji GA4 dla tego samego formularza.
 
-Przygotowany kod usuwa błędną konwersję przy otwarciu /kontakt i przekazuje stabilny identyfikator przy wysłaniu formularza. Wymaga aktualnej zgody na pomiar. Zmiana nie jest jeszcze wdrożona — wysłanie gałęzi do publicznego GitHub zostało zablokowane przez automatyczną kontrolę uprawnień.
+Przygotowany kod usuwa błędną konwersję przy otwarciu /kontakt i przekazuje stabilny identyfikator przy wysłaniu formularza. Wymaga aktualnej zgody na pomiar. Zmiana nie jest jeszcze wdrożona — właściciel zatwierdził wysłanie i utworzono draft PR #67; podgląd jest sprawdzany przed wdrożeniem.
 
 Po wdrożeniu sprawdzić zapis zapytania w panelu, wynik konwersji w narzędziu diagnostycznym Google, brak konwersji przy samej wizycie i po odmowie zgody. Nie wysyłać testowych kontaktów z danymi prawdziwych klientów.
 

@@ -284,7 +284,7 @@
     "komfort_promotion_end_warsaw": "2026-10-01T21:27:00+02:00"
   },
   "launch_gates": [
-    "Połączenie Google Ads przez Adspirer",
+    "Dostęp właściciela do Google Ads lub Google Ads Editor; import do wstrzymanej kampanii",
     "Wdrożenie i kontrola strony z aktualnymi promocjami",
     "Potwierdzenie działania głównej konwersji i zgód",
     "Dane słów kluczowych i limit CPC",
@@ -297,5 +297,6 @@
     "Po 14 dniach: poprawić frazy i reklamy na podstawie rzeczywistych kontaktów.",
     "Po 30 dniach: policzyć potwierdzone zlecenia, koszt pozyskania i przychód."
   ],
-  "forecast": "Brak wiarygodnej prognozy liczby zleceń bez budżetu, danych CPC i konwersji. Wzór do oceny: budżet / CPC × współczynnik zapytań × odsetek zamkniętych zleceń."
+  "forecast": "Brak wiarygodnej prognozy liczby zleceń bez budżetu, danych CPC i konwersji. Wzór do oceny: budżet / CPC × współczynnik zapytań × odsetek zamkniętych zleceń.",
+  "account_workflow": "Google Ads Editor — import przygotowanych plików CSV bez Adspirer"
 }
