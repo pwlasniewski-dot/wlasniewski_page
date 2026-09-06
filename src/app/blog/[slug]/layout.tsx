@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import prisma from '@/lib/db/prisma';
+import { getPublishedBlogPost } from '@/lib/blog/public-post';
 
 type Props = {
     children: React.ReactNode;
@@ -11,19 +11,9 @@ export async function generateMetadata({ params }: Omit<Props, 'children'>): Pro
     const canonical = `https://wlasniewski.pl/blog/${encodeURIComponent(slug)}`;
 
     try {
-        const post = await prisma.blogPost.findUnique({
-            where: { slug },
-            select: {
-                title: true,
-                excerpt: true,
-                meta_title: true,
-                meta_description: true,
-                status: true,
-                featured_image: { select: { file_path: true, alt_text: true } },
-            },
-        });
+        const post = await getPublishedBlogPost(slug);
 
-        if (!post || post.status !== 'published') {
+        if (!post) {
             return {
                 title: 'Wpis nie znaleziony',
                 robots: { index: false, follow: true },

@@ -31,6 +31,7 @@ const nextConfig = {
             { source: '/foto-wyzwania', destination: '/foto-wyzwanie', permanent: true },
             { source: '/sklep', destination: '/karta-podarunkowa', permanent: true },
             { source: '/sklep-karty-podarunkowe', destination: '/karta-podarunkowa', permanent: true },
+            { source: '/portfolio/family', destination: '/portfolio/Sesja%20Rodzinna', permanent: true },
         ];
     },
     async headers() {

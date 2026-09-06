@@ -18,25 +18,25 @@ export const revalidate = 600; // ISR: 10 min
 export const metadata: Metadata = {
     title: 'Foto Wyzwanie — sesja fotograficzna w prezencie | Toruń, Bydgoszcz | Przemysław Właśniewski',
     description:
-        'Foto Wyzwanie to nietypowy prezent — zaproś bliską osobę na wspólną sesję fotograficzną w Toruniu, Bydgoszczy lub okolicy. Pakiety od 200 zł, rabat do 21%, 100% gwarancja zwrotu jeśli osoba odrzuci. Bez logowania, decyzja w 24 h, profesjonalny fotograf z 10-letnim doświadczeniem.',
+        'Zaproś bliską osobę na wspólną sesję fotograficzną w Toruniu, Bydgoszczy lub okolicy. Poznaj Foto Wyzwanie i sprawdź zasady fotograficznego prezentu.',
     keywords:
         'foto wyzwanie, prezent sesja zdjęciowa, sesja fotograficzna w prezencie toruń, sesja fotograficzna w prezencie bydgoszcz, fotograf w prezencie, voucher na sesję foto, sesja dla pary toruń, sesja dla mamy prezent, sesja dla taty, sesja narzeczeńska, sesja boudoir toruń, sesja rodzinna prezent, fotograf toruń bydgoszcz, sesja portretowa w prezencie, oryginalny prezent na urodziny, prezent na rocznicę, prezent dzień matki, prezent dzień ojca, prezent walentynki',
     alternates: { canonical: 'https://wlasniewski.pl/foto-wyzwanie' },
     openGraph: {
         title: 'Foto Wyzwanie — sesja fotograficzna w prezencie | Toruń, Bydgoszcz',
         description:
-            'Zaproś bliską osobę na sesję fotograficzną. Pakiety w cenie nawet 21% niższej niż standardowe. 100% gwarancja zwrotu jeśli osoba odrzuci. Toruń, Bydgoszcz i okolice.',
+            'Zaproś bliską osobę na wspólną sesję fotograficzną w Toruniu, Bydgoszczy lub okolicy. Poznaj Foto Wyzwanie i sprawdź zasady fotograficznego prezentu.',
         type: 'website',
         locale: 'pl_PL',
         url: 'https://wlasniewski.pl/foto-wyzwanie',
         siteName: 'Przemysław Właśniewski — Fotograf',
-        images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Foto Wyzwanie — sesja fotograficzna w prezencie' }],
+        images: [{ url: '/assets/slider/fotografia-rodzinna-grudziadz-01.webp', alt: 'Foto Wyzwanie — sesja fotograficzna w prezencie' }],
     },
     twitter: {
         card: 'summary_large_image',
         title: 'Foto Wyzwanie — sesja fotograficzna w prezencie',
-        description: 'Podaruj komuś wspólną sesję foto. Rabat do 21%, gwarancja zwrotu.',
-        images: ['/og-image.jpg'],
+        description: 'Zaproś bliską osobę na wspólną sesję fotograficzną w Toruniu, Bydgoszczy lub okolicy. Poznaj Foto Wyzwanie i sprawdź zasady fotograficznego prezentu.',
+        images: ['/assets/slider/fotografia-rodzinna-grudziadz-01.webp'],
     },
     robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 } },
 };
@@ -454,7 +454,7 @@ export default async function FotoWyzwaniePage() {
                         '@context': 'https://schema.org',
                         '@type': 'Product',
                         name: 'Foto Wyzwanie — sesja fotograficzna w prezencie',
-                        image: 'https://wlasniewski.pl/og-image.jpg',
+                        image: 'https://wlasniewski.pl/assets/slider/fotografia-rodzinna-grudziadz-01.webp',
                         description: 'Pakiety sesji fotograficznych w formie prezentu dla bliskiej osoby. Toruń, Bydgoszcz, całe województwo kujawsko-pomorskie.',
                         brand: { '@type': 'Brand', name: 'Przemysław Właśniewski Fotograf' },
                         aggregateRating: {

@@ -597,6 +597,9 @@ export default function RezerwacjaPage() {
         return (
             <main className="min-h-screen bg-[#f4f1eb] py-20 px-4">
                 <div className="text-center text-[#25221f]">
+                    <h1 className="font-display text-4xl md:text-5xl font-medium mb-4">
+                        {photoFunnelConfig.bookingCopy.heroTitle}
+                    </h1>
                     <p className="text-lg">Ładowanie usług...</p>
                 </div>
             </main>

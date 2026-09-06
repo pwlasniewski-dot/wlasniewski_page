@@ -32,7 +32,8 @@ interface HeroSlide {
 
 interface HeroSliderProps {
     slides?: HeroSlide[];
-    documentTitle?: string;
+    // Null allows embedding a slider under the page's existing heading.
+    documentTitle?: string | null;
 }
 
 // Text animation variants
@@ -104,7 +105,7 @@ export default function HeroSlider({ slides = [], interval = 6000, documentTitle
     if (!enabledSlides || enabledSlides.length === 0) {
         return (
             <section className="home-hero relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-[#151310]" aria-label="Fotografia rodzinna i ślubna">
-                <h1 className="sr-only">{documentTitle}</h1>
+                {documentTitle && <h1 className="sr-only">{documentTitle}</h1>}
                 <Image
                     src="/assets/slider/fotografia-rodzinna-grudziadz-01.webp"
                     alt=""
@@ -175,7 +176,7 @@ export default function HeroSlider({ slides = [], interval = 6000, documentTitle
     if (currentSlideData?.is_before_after && currentSlideData.image && currentSlideData.before_image) {
         return (
             <div className="relative h-[100svh] min-h-[600px] w-full bg-black">
-                <h1 className="sr-only">{documentTitle}</h1>
+                {documentTitle && <h1 className="sr-only">{documentTitle}</h1>}
                 <BeforeAfterSlide
                     beforeImage={typeof currentSlideData.before_image === 'string' ? currentSlideData.before_image : currentSlideData.before_image.file_path}
                     afterImage={typeof currentSlideData.image === 'string' ? currentSlideData.image : currentSlideData.image.file_path}
@@ -211,7 +212,7 @@ export default function HeroSlider({ slides = [], interval = 6000, documentTitle
 
     return (
         <section className="home-hero relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-[#151310]" aria-label="Najważniejsze oferty fotograficzne">
-            <h1 className="sr-only">{documentTitle}</h1>
+            {documentTitle && <h1 className="sr-only">{documentTitle}</h1>}
             {/* Background Images */}
             <AnimatePresence mode="popLayout">
                 <motion.div

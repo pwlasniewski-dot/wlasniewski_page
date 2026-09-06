@@ -1,70 +1,16 @@
-"use client";
-
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
-import { getApiUrl } from "@/lib/api-config";
+import { notFound } from "next/navigation";
 import { ArrowLeft, Calendar, Tag } from "lucide-react";
+import { getPublishedBlogPost } from "@/lib/blog/public-post";
 
-interface BlogPost {
-    id: number;
-    title: string;
-    slug: string;
-    content: string;
-    excerpt: string;
-    published_at: string;
-    category: string;
-    author: string;
-    cover_image?: string;
-}
+// Render current CMS content on the server, including after an admin edit.
+export const dynamic = 'force-dynamic';
 
-export default function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
-    const [resolvedParams, setResolvedParams] = useState<{ slug: string } | null>(null);
-    const [post, setPost] = useState<BlogPost | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        params.then(p => setResolvedParams(p));
-    }, [params]);
-
-    useEffect(() => {
-        if (!resolvedParams) return;
-
-        const fetchPost = async () => {
-            try {
-                const res = await fetch(`${getApiUrl('blog')}?slug=${resolvedParams.slug}`);
-                const data = await res.json();
-                if (data.success && data.post) {
-                    setPost(data.post);
-                }
-            } catch (error) {
-                console.error('Failed to fetch blog post');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchPost();
-    }, [resolvedParams]);
-
-    if (loading) {
-        return (
-            <main className="min-h-screen bg-zinc-950 flex items-center justify-center">
-                <div className="text-zinc-400">Ładowanie...</div>
-            </main>
-        );
-    }
-
-    if (!post) {
-        return (
-            <main className="min-h-screen bg-zinc-950 flex items-center justify-center">
-                <div className="text-center">
-                    <h1 className="text-4xl font-bold text-white mb-4">Wpis nie znaleziony</h1>
-                    <Link href="/blog" className="text-amber-400 hover:text-amber-300">
-                        ← Wróć do bloga
-                    </Link>
-                </div>
-            </main>
-        );
-    }
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
+    const post = await getPublishedBlogPost(slug);
+    if (!post) notFound();
 
     return (
         <main className="min-h-screen bg-zinc-950">
@@ -81,16 +27,16 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
                 {/* Header */}
                 <header className="mb-12">
                     <div className="flex items-center gap-4 text-sm text-zinc-500 mb-4">
-                        <div className="flex items-center gap-2">
+                        {post.published_at && <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
-                            <time>
-                                {new Date(post.published_at).toLocaleDateString('pl-PL', {
+                            <time dateTime={post.published_at.toISOString()}>
+                                {post.published_at.toLocaleDateString('pl-PL', {
                                     year: 'numeric',
                                     month: 'long',
                                     day: 'numeric'
                                 })}
                             </time>
-                        </div>
+                        </div>}
                         {post.category && (
                             <div className="flex items-center gap-2">
                                 <Tag className="w-4 h-4" />
@@ -103,11 +49,11 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
                         {post.title}
                     </h1>
 
-                    {post.cover_image && (
+                    {post.featured_image?.file_path && (
                         <div className="mb-8 rounded-2xl overflow-hidden aspect-video relative">
                             <img
-                                src={post.cover_image}
-                                alt={post.title}
+                                src={post.featured_image?.file_path}
+                                alt={post.featured_image.alt_text || post.title}
                                 className="w-full h-full object-cover"
                             />
                         </div>
@@ -137,12 +83,6 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
 
                 {/* Author & CTA */}
                 <footer className="mt-16 pt-8 border-t border-zinc-800">
-                    {post.author && (
-                        <p className="text-zinc-400 mb-8">
-                            Autor: <span className="text-white font-semibold">{post.author}</span>
-                        </p>
-                    )}
-
                     <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-2xl p-8 text-center">
                         <h3 className="text-2xl font-bold text-white mb-4">
                             Podobał Ci się ten wpis?
