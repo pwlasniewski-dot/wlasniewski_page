@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { getApiUrl } from '@/lib/api-config';
 import { Save, Plus, Trash2, GripVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { DEFAULT_FLOATING_FACEBOOK, validFacebookUrl } from '@/lib/floating-facebook';
 
 interface FooterLink {
     id: string;
@@ -18,6 +19,9 @@ interface FooterSection {
 }
 
 interface FooterSettings {
+    floating_facebook_enabled?: boolean;
+    floating_facebook_label?: string;
+    floating_facebook_url?: string;
     brand_name: string;
     tagline: string;
     phone: string;
@@ -32,6 +36,7 @@ interface FooterSettings {
 }
 
 const defaultSettings: FooterSettings = {
+    ...DEFAULT_FLOATING_FACEBOOK,
     brand_name: 'Przemysław Właśniewski — Fotograf',
     tagline: 'Naturalne zdjęcia rodzinne, ślubne, portretowe i komunijne. Toruń, Lisewo, Wąbrzeźno, Płużnica i okolice.',
     phone: '+48 530 788 694',
@@ -156,6 +161,10 @@ export default function FooterSettingsPage() {
     };
 
     const handleSave = async () => {
+        if (activeTab === 'b2c' && settings.floating_facebook_enabled !== false && !validFacebookUrl(settings.floating_facebook_url)) {
+            toast.error('Widget Facebook wymaga adresu https://www.facebook.com/…');
+            return;
+        }
         setSaving(true);
         try {
             const token = localStorage.getItem('admin_token');
@@ -338,6 +347,16 @@ export default function FooterSettingsPage() {
                         </div>
                     </div>
                 </div>
+
+                {activeTab === 'b2c' && (
+                    <section className="rounded-xl border border-zinc-700 bg-zinc-900 p-6 space-y-4">
+                        <h2 className="text-lg font-semibold">Pływający odnośnik Facebook</h2>
+                        <p className="text-sm text-zinc-400">Obok menu kontaktu, bez śledzenia i skryptów Meta. Ukryty podczas rezerwacji, płatności, w galerii klienta i przy otwartym banerze cookies.</p>
+                        <label className="flex items-center gap-2"><input type="checkbox" checked={settings.floating_facebook_enabled !== false} onChange={e => setSettings(s => ({ ...s, floating_facebook_enabled: e.target.checked }))} />Pokaż odnośnik</label>
+                        <label className="block">Etykieta<input maxLength={32} value={settings.floating_facebook_label ?? DEFAULT_FLOATING_FACEBOOK.floating_facebook_label} onChange={e => setSettings(s => ({ ...s, floating_facebook_label: e.target.value }))} className="block w-full rounded bg-zinc-800 px-3 py-2" /></label>
+                        <label className="block">Adres strony Facebook<input type="url" value={settings.floating_facebook_url ?? DEFAULT_FLOATING_FACEBOOK.floating_facebook_url} onChange={e => setSettings(s => ({ ...s, floating_facebook_url: e.target.value }))} className="block w-full rounded bg-zinc-800 px-3 py-2" /></label>
+                    </section>
+                )}
 
                 {/* Link Sections */}
                 {(['oferta', 'lokalnie', 'inne'] as const).map(sectionKey => (

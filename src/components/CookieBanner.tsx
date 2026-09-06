@@ -10,6 +10,10 @@ export default function CookieBanner({ variant = 'default' }: { variant?: 'defau
     const [hasDecision, setHasDecision] = useState(false);
 
     useEffect(() => {
+        window.dispatchEvent(new CustomEvent('cookie-banner-visibility', { detail: showBanner || !hasDecision }));
+    }, [showBanner, hasDecision]);
+
+    useEffect(() => {
         const consent = localStorage.getItem('cookie_consent');
         setHasDecision(Boolean(consent));
         if (!consent) {
