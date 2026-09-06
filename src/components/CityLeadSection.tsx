@@ -73,7 +73,7 @@ export default async function CityLeadSection({
     if (proof.averageRating !== null && proof.reviewsTotal >= 3) {
         trustBadges.push({
             icon: '⭐',
-            text: `${proof.averageRating}/5 z ${proof.reviewsTotal} opinii`,
+            text: `${proof.ratingSource ? `${proof.ratingSource} · ` : ""}${proof.averageRating.toLocaleString("pl-PL", { minimumFractionDigits: 1 })}/5 · ${proof.reviewsTotal} opinii`,
             highlight: true,
         });
     }

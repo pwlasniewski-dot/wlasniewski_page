@@ -1,3 +1,4 @@
+import { revalidatePublicOffer } from '@/lib/revalidate-public-offer';
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import prisma from '@/lib/db/prisma';
@@ -37,7 +38,7 @@ function promotionStatus(promotion: {
 }
 
 function refreshPromotionSurfaces() {
-    revalidatePath('/');
+    revalidatePublicOffer();
     revalidatePath('/rezerwacja');
     revalidatePath('/admin/promocje');
 }

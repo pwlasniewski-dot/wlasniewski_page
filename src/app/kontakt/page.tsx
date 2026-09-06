@@ -5,7 +5,6 @@ import Footer from '@/components/Footer';
 import PageRenderer from '@/components/PageRenderer';
 import dynamic from 'next/dynamic';
 import { Metadata } from 'next';
-import Script from 'next/script';
 
 const ContactForm = dynamic(() => import('@/components/ContactForm'), { 
     loading: () => (
@@ -68,15 +67,6 @@ export default async function ContactPage() {
             <Navbar />
 
             <main className="flex-grow pt-32 pb-20">
-                {/* Event snippet for Kontakt conversion page */}
-                <Script id="google-ads-conversion-contact" strategy="afterInteractive">
-                    {`
-                        if (typeof window !== 'undefined' && window.gtag) {
-                            window.gtag('event', 'conversion', {'send_to': 'AW-17548893646/pSzICKK3h-YbEM67-69B'});
-                        }
-                    `}
-                </Script>
-
                 {hasSections ? (
                     <>
                         <h1 className="sr-only">Kontakt — Fotograf Toruń Przemysław Właśniewski</h1>

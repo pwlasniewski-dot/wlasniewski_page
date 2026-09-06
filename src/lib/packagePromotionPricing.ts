@@ -103,3 +103,17 @@ export function formatPricePln(priceInCents: number): string {
         maximumFractionDigits: 2,
     }).format(priceInCents / 100)} zł`;
 }
+
+/** Shared by booking, offer pages and SEO. Never mutate the regular-price row. */
+export function applyPublicPackagePrices<T extends { id: number; price: number }>(
+    packages: T[],
+    promotions: Map<number, PublicPackagePromotion>,
+    now = new Date(),
+) {
+    return packages.map(pkg => {
+        const candidate = promotions.get(pkg.id);
+        const promotion = candidate && isPromotionWindowActive(candidate, now) ? candidate : null;
+        const price = effectivePackagePrice(pkg.price, promotion);
+        return { ...pkg, regular_price: pkg.price, effective_price: price, price, promotion };
+    });
+}

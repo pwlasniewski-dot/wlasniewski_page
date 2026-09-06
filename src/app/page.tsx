@@ -1,5 +1,6 @@
 
 import HomeContent from "./HomeContent";
+import { loadPublicReviews } from "@/lib/public-reviews.server";
 import { loadPublicPricingSnapshot, publicPriceLabel } from '@/lib/publicPackagePricing';
 import { Metadata } from "next";
 
@@ -10,7 +11,6 @@ import { unstable_cache } from 'next/cache';
 import { parsePublicGuideCmsData } from '@/lib/publicGuideCms';
 import {
     HOMEPAGE_PRODUCTION_FALLBACK_SECTIONS,
-    HOMEPAGE_PRODUCTION_FALLBACK_TESTIMONIALS,
 } from '@/data/homepageProductionFallback';
 
 // Cached function for homepage metadata
@@ -97,38 +97,7 @@ async function getHomePageData() {
 
     let finalTestimonials: any[] = [];
     try {
-        const testimonials = await prisma.testimonial.findMany({
-            where: { is_featured: true },
-            select: {
-                id: true,
-                client_name: true,
-                testimonial_text: true,
-                rating: true,
-                is_featured: true,
-                display_order: true,
-                created_at: true,
-                client_photo: { select: { id: true, file_path: true } },
-            },
-            orderBy: { display_order: 'asc' },
-            take: 10,
-        });
-
-        finalTestimonials = testimonials.length > 0
-            ? testimonials
-            : await prisma.testimonial.findMany({
-                select: {
-                    id: true,
-                    client_name: true,
-                    testimonial_text: true,
-                    rating: true,
-                    is_featured: true,
-                    display_order: true,
-                    created_at: true,
-                    client_photo: { select: { id: true, file_path: true } },
-                },
-                orderBy: { created_at: 'desc' },
-                take: 5,
-            });
+        finalTestimonials = await loadPublicReviews();
     } catch {
         testimonialsUnavailable = true;
         console.warn('[home] Testimonials unavailable; using preview fallback only.');
@@ -319,7 +288,7 @@ export default async function HomePage() {
             homeData={homeData}
             orderedSections={orderedSections}
             testimonials={testimonialsUnavailable
-                ? JSON.parse(JSON.stringify(HOMEPAGE_PRODUCTION_FALLBACK_TESTIMONIALS))
+                ? []
                 : testimonials}
             heroSliderInterval={heroSliderInterval}
             publicPriceLabels={{

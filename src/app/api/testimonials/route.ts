@@ -1,23 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/auth/middleware';
+import { loadPublicReviews } from '@/lib/public-reviews.server';
+import { revalidatePublicOffer } from '@/lib/revalidate-public-offer';
 
 export async function GET() {
     try {
-        const testimonials = await prisma.testimonial.findMany({
-            orderBy: {
-                display_order: "asc",
-            },
-            include: {
-                client_photo: {
-                    select: {
-                        file_path: true,
-                        alt_text: true,
-                    }
-                },
-            },
-        });
-        return NextResponse.json(testimonials);
+        const testimonials = await loadPublicReviews();
+        return NextResponse.json(testimonials, { headers: { 'Cache-Control': 'no-store' } });
     } catch (error) {
         console.error("Error fetching testimonials:", error);
         return NextResponse.json({ error: "Failed to fetch testimonials" }, { status: 500 });
@@ -46,6 +36,7 @@ export async function POST(request: NextRequest) {
             },
         });
 
+        revalidatePublicOffer();
         return NextResponse.json(testimonial);
     } catch (error) {
         console.error("Error creating testimonial:", error);
@@ -80,6 +71,7 @@ export async function PUT(request: NextRequest) {
             },
         });
 
+        revalidatePublicOffer();
         return NextResponse.json(testimonial);
     } catch (error) {
         console.error("Error updating testimonial:", error);
@@ -103,6 +95,7 @@ export async function DELETE(request: NextRequest) {
             where: { id: Number(id) },
         });
 
+        revalidatePublicOffer();
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Error deleting testimonial:", error);

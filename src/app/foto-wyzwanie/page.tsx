@@ -9,6 +9,8 @@ import {
     Check, Shield, Award, Star, ChevronDown, Users
 } from 'lucide-react';
 import prisma from '@/lib/db/prisma';
+import { loadPublicReviews } from '@/lib/public-reviews.server';
+import { summarizeGoogleReviews } from '@/lib/public-reviews';
 import QuickStartForm from './_components/QuickStartForm';
 import FAQAccordion from './_components/FAQAccordion';
 import { getText, interpolate } from '@/lib/photo-challenge/texts';
@@ -111,6 +113,7 @@ const FAQ_ITEMS = [
 ];
 
 export default async function FotoWyzwaniePage() {
+    const googleReviews = summarizeGoogleReviews(await loadPublicReviews().catch(() => []));
     const { moduleEnabled, packages, stats, settings } = await getData();
     const t = (key: string) => getText(settings, key);
     const slotsVar = { N: stats.remainingMonthlySlots };
@@ -189,7 +192,7 @@ export default async function FotoWyzwaniePage() {
                 <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
                     <Stat icon={<Heart className="w-6 h-6" />} value={String(stats.completedSessions || 47)} label="zrealizowanych sesji" />
                     <Stat icon={<Sparkles className="w-6 h-6" />} value={String(stats.acceptedThisMonth)} label="wyzwań w tym miesiącu" />
-                    <Stat icon={<Star className="w-6 h-6" />} value="5/5" label="średnia ocena par" />
+                    {googleReviews && <Stat icon={<Star className="w-6 h-6" />} value={`${googleReviews.rating.toLocaleString("pl-PL", { minimumFractionDigits: 1 })}/5`} label={`Google · ${googleReviews.count} opinii`} />}
                     <Stat icon={<Users className="w-6 h-6" />} value={String(stats.remainingMonthlySlots)} label="wolnych miejsc" highlight />
                 </div>
             </section>
@@ -457,13 +460,6 @@ export default async function FotoWyzwaniePage() {
                         image: 'https://wlasniewski.pl/assets/slider/fotografia-rodzinna-grudziadz-01.webp',
                         description: 'Pakiety sesji fotograficznych w formie prezentu dla bliskiej osoby. Toruń, Bydgoszcz, całe województwo kujawsko-pomorskie.',
                         brand: { '@type': 'Brand', name: 'Przemysław Właśniewski Fotograf' },
-                        aggregateRating: {
-                            '@type': 'AggregateRating',
-                            ratingValue: '5.0',
-                            reviewCount: Math.max(stats.completedSessions, 12),
-                            bestRating: '5',
-                            worstRating: '1',
-                        },
                         offers: {
                             '@type': 'AggregateOffer',
                             priceCurrency: 'PLN',

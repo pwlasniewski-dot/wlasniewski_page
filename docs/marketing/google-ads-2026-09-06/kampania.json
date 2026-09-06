@@ -1,0 +1,302 @@
+{
+  "document_type": "Google Ads implementation draft — not an account export",
+  "prepared_on": "2026-09-06",
+  "account_status": "NOT_CONNECTED",
+  "created_in_google_ads": false,
+  "name": "PL | Toruń | Sesje rodzinne | Search",
+  "status": "PAUSED",
+  "channel": "SEARCH",
+  "objective": "Wartościowe zapytania o sesje rodzinne i potwierdzone zlecenia",
+  "budget": {
+    "approved": false,
+    "currency": "PLN",
+    "average_daily_amount": null,
+    "monthly_spend_limit_proposal": null
+  },
+  "bidding": {
+    "initial_strategy": "MAXIMIZE_CLICKS",
+    "max_cpc_pln": null,
+    "activation_blocker": "Ustalić limit CPC po danych Planera i zatwierdzić budżet. Bez tych wartości nie uruchamiać."
+  },
+  "dates": {
+    "start": null,
+    "end": null,
+    "launch_only_after_budget_approval": true
+  },
+  "geo": {
+    "center": "Toruń, Polska",
+    "radius_km": 15,
+    "positive_geo_target_type": "PRESENCE",
+    "geo_id": null,
+    "note": "Identyfikator Torunia potwierdzić w połączonym koncie. Nie wybierać osób tylko zainteresowanych lokalizacją."
+  },
+  "languages": [
+    "pl"
+  ],
+  "networks": {
+    "google_search": true,
+    "search_partners": false,
+    "display": false
+  },
+  "schedule": {
+    "ads": "Cały tydzień; formularz przyjmuje zapytania przez całą dobę.",
+    "call_asset": "Proponowane: pn–pt 16:00–20:00, sob–nd 10:00–18:00, Europe/Warsaw. Potwierdzić dostępność przed włączeniem."
+  },
+  "url_expansion": false,
+  "automatically_created_assets": false,
+  "final_url_suffix": "utm_source=google&utm_medium=cpc&utm_campaign=torun_sesje_rodzinne&utm_id={campaignid}&utm_term={keyword}&utm_content={creative}",
+  "ad_groups": [
+    {
+      "name": "Sesje rodzinne Toruń",
+      "status": "PAUSED",
+      "keywords": [
+        {
+          "text": "sesja rodzinna toruń",
+          "match_type": "EXACT",
+          "status": "PAUSED"
+        },
+        {
+          "text": "sesja rodzinna toruń",
+          "match_type": "PHRASE",
+          "status": "PAUSED"
+        },
+        {
+          "text": "fotograf rodzinny toruń",
+          "match_type": "EXACT",
+          "status": "PAUSED"
+        },
+        {
+          "text": "fotograf rodzinny toruń",
+          "match_type": "PHRASE",
+          "status": "PAUSED"
+        },
+        {
+          "text": "sesja zdjęciowa rodzinna toruń",
+          "match_type": "EXACT",
+          "status": "PAUSED"
+        },
+        {
+          "text": "sesja zdjęciowa rodzinna toruń",
+          "match_type": "PHRASE",
+          "status": "PAUSED"
+        },
+        {
+          "text": "zdjęcia rodzinne toruń",
+          "match_type": "EXACT",
+          "status": "PAUSED"
+        },
+        {
+          "text": "zdjęcia rodzinne toruń",
+          "match_type": "PHRASE",
+          "status": "PAUSED"
+        },
+        {
+          "text": "sesja rodzinna w plenerze toruń",
+          "match_type": "EXACT",
+          "status": "PAUSED"
+        },
+        {
+          "text": "sesja rodzinna w plenerze toruń",
+          "match_type": "PHRASE",
+          "status": "PAUSED"
+        }
+      ],
+      "responsive_search_ads": [
+        {
+          "name": "Sesja rodzinna — oferta",
+          "status": "PAUSED",
+          "final_url": "https://wlasniewski.pl/fotograf-torun?service=Sesja&source=google-search-family",
+          "path1": "sesja-rodzinna",
+          "path2": "torun",
+          "headlines": [
+            "Sesja rodzinna w Toruniu",
+            "Fotograf rodzinny Toruń",
+            "Zdjęcia rodzinne w plenerze",
+            "Zobacz moje zdjęcia",
+            "Sprawdź pakiety i ceny",
+            "Zapytaj mnie o termin",
+            "Przemysław Właśniewski",
+            "Sesja zdjęciowa z dziećmi",
+            "Toruń i okolice",
+            "Zarezerwuj sesję online"
+          ],
+          "descriptions": [
+            "Planujecie rodzinne zdjęcia? Zobaczcie moje sesje i napiszcie, jaki termin Wam pasuje.",
+            "Fotografuję rodziny w Toruniu i okolicach. Na stronie znajdziecie zdjęcia i aktualne ceny.",
+            "Wybierzcie pakiet i sprawdźcie termin online. Jeśli macie pytania, napiszcie do mnie.",
+            "Sesja w plenerze z całą rodziną. Zobaczcie, jak wyglądają moje zdjęcia."
+          ]
+        },
+        {
+          "name": "Sesja rodzinna — portfolio",
+          "status": "PAUSED",
+          "final_url": "https://wlasniewski.pl/fotograf-torun?service=Sesja&source=google-search-family",
+          "path1": "fotograf",
+          "path2": "rodzinny-torun",
+          "headlines": [
+            "Fotograf rodzinny w Toruniu",
+            "Rodzinne zdjęcia w plenerze",
+            "Zobacz sesje innych rodzin",
+            "Wybierz swój pakiet",
+            "Napisz, jaki termin Ci pasuje",
+            "Sesje w Toruniu i okolicach",
+            "Fotografia rodzinna",
+            "Przemysław Właśniewski",
+            "Sprawdź ofertę sesji",
+            "Umówmy się na zdjęcia"
+          ],
+          "descriptions": [
+            "Zobaczcie zdjęcia z moich sesji rodzinnych. Jeśli Wam się podobają, zapraszam na swoją.",
+            "Toruń i okolice. Aktualne pakiety, ceny i rezerwacja są na stronie.",
+            "Chcecie zdjęcia z dziećmi albo z całą rodziną? Napiszcie, co planujecie.",
+            "Wybierzcie pakiet lub wyślijcie zapytanie. Ustalimy szczegóły Waszej sesji."
+          ]
+        }
+      ]
+    }
+  ],
+  "negative_keywords": [
+    {
+      "text": "za darmo",
+      "match_type": "PHRASE"
+    },
+    {
+      "text": "darmowe",
+      "match_type": "PHRASE"
+    },
+    {
+      "text": "praca",
+      "match_type": "PHRASE"
+    },
+    {
+      "text": "staż",
+      "match_type": "PHRASE"
+    },
+    {
+      "text": "kurs fotografii",
+      "match_type": "PHRASE"
+    },
+    {
+      "text": "szkoła fotografii",
+      "match_type": "PHRASE"
+    },
+    {
+      "text": "nauka fotografii",
+      "match_type": "PHRASE"
+    },
+    {
+      "text": "jak zrobić",
+      "match_type": "PHRASE"
+    },
+    {
+      "text": "do dowodu",
+      "match_type": "PHRASE"
+    },
+    {
+      "text": "do paszportu",
+      "match_type": "PHRASE"
+    },
+    {
+      "text": "zdjęcia dokumentowe",
+      "match_type": "PHRASE"
+    },
+    {
+      "text": "wynajem studia",
+      "match_type": "PHRASE"
+    },
+    {
+      "text": "bank zdjęć",
+      "match_type": "PHRASE"
+    },
+    {
+      "text": "stock",
+      "match_type": "PHRASE"
+    },
+    {
+      "text": "aparat fotograficzny",
+      "match_type": "PHRASE"
+    }
+  ],
+  "sitelinks": [
+    {
+      "text": "Sesje rodzinne",
+      "description1": "Zobacz zdjęcia i pakiety",
+      "description2": "Sprawdź aktualną ofertę",
+      "url": "https://wlasniewski.pl/sesja-rodzinna"
+    },
+    {
+      "text": "Portfolio",
+      "description1": "Zobacz moje fotografie",
+      "description2": "Sprawdź, czy to Twój styl",
+      "url": "https://wlasniewski.pl/portfolio"
+    },
+    {
+      "text": "Rezerwacja sesji",
+      "description1": "Wybierz rodzaj sesji",
+      "description2": "Sprawdź pakiet i termin",
+      "url": "https://wlasniewski.pl/rezerwacja"
+    },
+    {
+      "text": "Kontakt",
+      "description1": "Napisz, co planujesz",
+      "description2": "Zapytaj o szczegóły sesji",
+      "url": "https://wlasniewski.pl/kontakt"
+    }
+  ],
+  "callouts": [
+    "Rezerwacja online",
+    "Aktualne ceny na stronie",
+    "Toruń i okolice",
+    "Zdjęcia w portfolio"
+  ],
+  "call_asset": {
+    "phone": "+48530788694",
+    "country": "PL",
+    "status": "PAUSED",
+    "phone_verified_on_public_site": true
+  },
+  "conversion_plan": {
+    "primary": {
+      "name": "Wysłane zapytanie — fotografia",
+      "website_tag": "AW-17548893646/mNauCJy3h-YbEM67-69B",
+      "trigger": "HTTP OK i zapisane inquiryId z /api/contact",
+      "count": "ONE",
+      "transaction_id": "inquiry-{inquiryId}",
+      "value": null
+    },
+    "secondary": [
+      "Rozpoczęcie zapytania",
+      "Kliknięcie telefonu — nie traktować jako odbytej rozmowy",
+      "Potwierdzona rezerwacja / zakup — po osobnej weryfikacji wartości i statusu płatności"
+    ],
+    "consent": "Wymagana aktualna zgoda cookie_consent=accepted. Nie przesyłać imienia, emaila, telefonu ani treści wiadomości do zdarzeń.",
+    "deduplication": "Nie importować tego samego wysłania formularza z GA4 jako drugiej głównej konwersji.",
+    "known_bug": "Usunięto w przygotowanym kodzie konwersję uruchamianą samym otwarciem /kontakt. Zmiana jeszcze nie jest wdrożona.",
+    "validation_status": "Testy logiki przechodzą. Test rzeczywistego tagu i ustawień konta wymaga połączenia Google Ads oraz wdrożenia."
+  },
+  "price_policy": "Reklamy celowo nie zawierają ceny z promocji ograniczonej w czasie. Strona docelowa ma odczytywać aktualną cenę z rezerwacji.",
+  "verified_offer_snapshot": {
+    "start_regular_pln": 750,
+    "start_promotional_pln": 600,
+    "start_promotion_end_warsaw": "2026-10-01T21:19:00+02:00",
+    "komfort_regular_pln": 980,
+    "komfort_promotional_pln": 780,
+    "komfort_promotion_end_warsaw": "2026-10-01T21:27:00+02:00"
+  },
+  "launch_gates": [
+    "Dostęp właściciela do Google Ads lub Google Ads Editor; import do wstrzymanej kampanii",
+    "Wdrożenie i kontrola strony z aktualnymi promocjami",
+    "Potwierdzenie działania głównej konwersji i zgód",
+    "Dane słów kluczowych i limit CPC",
+    "Zatwierdzony budżet",
+    "Kontrola wszystkich finalnych adresów i statusów reklam"
+  ],
+  "review_plan": [
+    "Po 3 dniach: sprawdzić odrzucenia, wydatki, frazy niepasujące do oferty.",
+    "Po 7 dniach: sprawdzić zapytania, koszt zapytania i jakość kontaktów.",
+    "Po 14 dniach: poprawić frazy i reklamy na podstawie rzeczywistych kontaktów.",
+    "Po 30 dniach: policzyć potwierdzone zlecenia, koszt pozyskania i przychód."
+  ],
+  "forecast": "Brak wiarygodnej prognozy liczby zleceń bez budżetu, danych CPC i konwersji. Wzór do oceny: budżet / CPC × współczynnik zapytań × odsetek zamkniętych zleceń.",
+  "account_workflow": "Google Ads Editor — import przygotowanych plików CSV bez Adspirer"
+}

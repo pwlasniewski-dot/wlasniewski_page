@@ -1,0 +1,71 @@
+{
+  "observed_at": "2026-09-06",
+  "profile_name": "Przemysław Właśniewski fotografia",
+  "google_rating": 5.0,
+  "google_review_count": 7,
+  "reviews": [
+    {
+      "client_name": "Karol Płomin",
+      "testimonial_text": "Rodzinna sesja w plenerze w pełni spełniła nasze oczekiwania. Fotografie fenomenalne, zdecydowanie polecam Pana Przemysława! Uśmiech na twarzy został na długo po samej sesji, a po ujrzeniu efektów powrócił ponownie ;-)",
+      "source": "Google",
+      "rating": 5,
+      "display_order": -100,
+      "source_url": "https://www.google.com/maps/contrib/112820839399658237773/reviews?hl=pl-PL",
+      "observed_age": "tydzień temu"
+    },
+    {
+      "client_name": "Magdalena Kierys",
+      "testimonial_text": "Gorąco poleca usługi Pana Przemka. Zdjęcia są przepiękne, bardzo dobry kontakt, szybka realizacja.",
+      "source": "Google",
+      "rating": 5,
+      "display_order": -99,
+      "source_url": "https://www.google.com/maps/contrib/106093191108207825570/reviews?hl=pl-PL",
+      "observed_age": "3 tygodnie temu"
+    },
+    {
+      "client_name": "Maciej Afanasjew",
+      "testimonial_text": "Zdjęcia bardzo dobrej jakości, dobre kadry, ostrość oraz uchwycenie momentów ważnych dla uroczystości. Polecam!",
+      "source": "Google",
+      "rating": 5,
+      "display_order": -98,
+      "source_url": "https://www.google.com/maps/contrib/100518452569503312675/reviews?hl=pl-PL",
+      "observed_age": "4 tygodnie temu"
+    },
+    {
+      "client_name": "Karolina",
+      "testimonial_text": "Polecam z całego serca. Fotografie uwieczniają cudowne momenty do których będziemy wracać :)\nSuper kontakt z Panem fotografem",
+      "source": "Google",
+      "rating": 5,
+      "display_order": -97,
+      "source_url": "https://www.google.com/maps/contrib/115930629286084348300/reviews?hl=pl-PL",
+      "observed_age": "2 miesiące temu"
+    },
+    {
+      "client_name": "Malgorzata Sosnowska",
+      "testimonial_text": "Profesjonalne podejście do swojej pracy. Prześliczne zdjęcia. Wielokrotnie uwieczniał moje rodzinne uroczystości i nie tylko. Polecam",
+      "source": "Google",
+      "rating": 5,
+      "display_order": -96,
+      "source_url": "https://www.google.com/maps/contrib/111321847328509893107/reviews?hl=pl-PL",
+      "observed_age": "rok temu"
+    },
+    {
+      "client_name": "Agnieszka Piotrowska",
+      "testimonial_text": "Fotograf, który wykonał dla nas reportaż z uroczystości. Zdjęcia oddają każdą naszą emocję, a do tego są przepiękne. Natomiast album dopracowany w każdym szczególe.",
+      "source": "Google",
+      "rating": 5,
+      "display_order": -95,
+      "source_url": "https://www.google.com/maps/contrib/112617934344897640391/reviews?hl=pl-PL",
+      "observed_age": "rok temu"
+    },
+    {
+      "client_name": "Rafał Frączek",
+      "testimonial_text": "Bardzo pozytywne.",
+      "source": "Google",
+      "rating": 5,
+      "display_order": -94,
+      "source_url": "https://www.google.com/maps/contrib/110415895160570144007/reviews?hl=pl-PL",
+      "observed_age": "3 lata temu"
+    }
+  ]
+}

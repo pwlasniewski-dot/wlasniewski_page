@@ -1,3 +1,18 @@
+## 2026-09-06 — opinie, promocje, Google Ads
+
+- [x] Odczytać 7 aktualnych publicznych opinii Google.
+- [x] Przetestować import w osobnej gałęzi Neon, sprawdzić idempotencję.
+- [x] Dodać 6 opinii i uaktualnić jedną na produkcji, zachować 3 Facebook.
+- [x] Sprawdzić API, stronę główną, rezerwację i 8 stron miast.
+- [x] Przygotować kod wspólnych promocji/opinii oraz prawidłowych konwersji.
+- [x] Testy cen, dat, renderu informacji cenowych, opinii i konwersji: 18 przechodzi. Typecheck: 126 błędów istniejących też na main; brak nowych błędów.
+- [x] Przygotować 2 reklamy, 20 nagłówków, 8 opisów, 10 słów, 15 wykluczeń, linki i ustawienia pomiaru.
+- [ ] Uzyskać zgodę wymaganą przez auto-review na push do publicznego repozytorium pwlasniewski-dot/wlasniewski_page.
+- [ ] Utworzyć draft PR i podgląd wdrożenia; sprawdzić CMS save/read/render, dane oferty, mobilny wygląd i konwersję. Bez tego nie scalać.
+- [ ] Wdrożyć kod i potwierdzić na produkcji cenę 600 zł na /fotograf-torun, licznik Google 7 oraz brak konwersji z samej wizyty na /kontakt.
+- [ ] Połączyć Google Ads, zweryfikować konto i zapisać kampanię wstrzymaną.
+- [ ] Budżet i limit CPC zatwierdza użytkownik na końcu. Bez zatwierdzenia nie uruchamiać wydatków.
+
 # Aktualny plan prac
 
 ## 2026-08-29 — produkcyjny błąd 413 przy zdjęciach galerii

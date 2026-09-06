@@ -1,4 +1,6 @@
 import prisma from '@/lib/db/prisma';
+import { loadPublicReviews } from '@/lib/public-reviews.server';
+import { selectPublicReviews, summarizeGoogleReviews } from '@/lib/public-reviews';
 import { normalizeGoogleBusinessProfileUrl } from '@/lib/marketing/gallery-trust';
 
 export interface CityProof {
@@ -9,6 +11,7 @@ export interface CityProof {
     testimonials: Array<{ name: string; text: string; rating: number | null; source: string | null }>;
     googleReviewsUrl: string | null;
     averageRating: number | null;   // średnia z testimoniali w bazie (REALNE)
+    ratingSource: string | null;
     reviewsTotal: number;           // łączna liczba opinii w bazie (REALNE)
 }
 
@@ -67,34 +70,12 @@ export async function getCityProof(cityName: string): Promise<CityProof> {
         ? new Date(upcomingBookings[0].date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' })
         : null;
 
-    // 3. Realne opinie z bazy (preferuj zawierające nazwę miasta, fallback featured)
-    let testimonials = await prisma.testimonial.findMany({
-        where: {
-            OR: cityVariants.map(v => ({ testimonial_text: { contains: v, mode: 'insensitive' as const } })),
-        },
-        orderBy: [{ is_featured: 'desc' }, { display_order: 'asc' }],
-        take: 3,
-        select: { client_name: true, testimonial_text: true, rating: true, source: true },
-    }).catch(() => []);
-
-    if (testimonials.length === 0) {
-        testimonials = await prisma.testimonial.findMany({
-            where: { is_featured: true },
-            orderBy: { display_order: 'asc' },
-            take: 3,
-            select: { client_name: true, testimonial_text: true, rating: true, source: true },
-        }).catch(() => []);
-    }
-
-    // 4. Średnia ocen z wszystkich opinii (REALNE)
-    const allRated = await prisma.testimonial.findMany({
-        where: { rating: { not: null } },
-        select: { rating: true },
-    }).catch(() => []);
-    const reviewsTotal = allRated.length;
-    const averageRating = reviewsTotal > 0
-        ? Math.round((allRated.reduce((a, t) => a + (t.rating || 0), 0) / reviewsTotal) * 10) / 10
-        : null;
+    // Home, services, cities and booking use the same CMS collection and order.
+    const allReviews = await loadPublicReviews().catch(() => []);
+    const testimonials = selectPublicReviews(allReviews).slice(0, 3);
+    const summary = summarizeGoogleReviews(allReviews);
+    const reviewsTotal = summary?.count ?? 0;
+    const averageRating = summary?.rating ?? null;
     const profileLinkSetting = await prisma.setting.findUnique({
         where: { setting_key: 'gbp_profile_url' },
         select: { setting_value: true },
@@ -113,6 +94,7 @@ export async function getCityProof(cityName: string): Promise<CityProof> {
         })),
         googleReviewsUrl: normalizeGoogleBusinessProfileUrl(profileLinkSetting?.setting_value),
         averageRating,
+        ratingSource: summary?.source ?? null,
         reviewsTotal,
     };
 }

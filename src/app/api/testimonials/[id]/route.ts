@@ -1,3 +1,4 @@
+import { revalidatePublicOffer } from '@/lib/revalidate-public-offer';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/auth/middleware';
@@ -38,6 +39,7 @@ export async function PUT(
             }
         });
 
+        revalidatePublicOffer();
         return NextResponse.json({ success: true, testimonial });
     } catch (error) {
         console.error('Error updating testimonial:', error);
@@ -60,6 +62,7 @@ export async function DELETE(
             where: { id: parseInt(id) }
         });
 
+        revalidatePublicOffer();
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Error deleting testimonial:', error);

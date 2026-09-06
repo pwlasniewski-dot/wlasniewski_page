@@ -1244,7 +1244,7 @@ export default function RezerwacjaPage() {
 
                     <div className="mt-20 border-t border-[#ddd6cc] pt-16">
                         <h2 className="text-2xl font-bold text-[#25221f] text-center mb-8">{photoFunnelConfig.bookingCopy.testimonialsHeading}</h2>
-                        <TestimonialsSection />
+                        <TestimonialsSection placement="booking" />
                     </div>
 
                 </div>
