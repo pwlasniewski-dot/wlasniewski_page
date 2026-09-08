@@ -22,7 +22,7 @@ export default function CategoryColumnView({ sessions }: CategoryColumnViewProps
                         transition={{ duration: 0.8, delay: index * 0.1 }}
                         className="group relative block w-full h-[85vh] md:h-auto md:aspect-[21/9] overflow-hidden rounded-none md:rounded-lg"
                     >
-                        <Link href={`/portfolio/${session.category}/${session.slug}`} className="block w-full h-full">
+                        <Link href={`/portfolio/${encodeURIComponent(session.category)}/${encodeURIComponent(session.slug)}`} className="block w-full h-full">
                             {/* Image Layer */}
                             <div className="absolute inset-0 w-full h-full transition-transform duration-[1.5s] group-hover:scale-105">
                                 {/* Mobile Image (if available) - Only on small screens */}

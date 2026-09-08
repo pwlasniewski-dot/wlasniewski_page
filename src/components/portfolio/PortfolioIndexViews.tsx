@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { ArrowRight, Camera, Images, Pause, Play } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import React, { useEffect, useState, type ReactNode } from 'react';
 import { useReducedMotion } from 'framer-motion';
 
 export type PortfolioIndexLayout = 'chapters' | 'cinematic_contact';
@@ -70,7 +70,7 @@ function PortfolioImage({ item, priority = false }: { item: PortfolioIndexItem; 
     return (
         <img
             src={item.coverImage}
-            alt={`${presentation(item).title} — portfolio fotograficzne`}
+            alt={item.title}
             loading={priority ? 'eager' : 'lazy'}
             decoding="async"
             fetchPriority={priority ? 'high' : 'auto'}
@@ -154,7 +154,7 @@ function ChaptersView({ items, isSessionMode, heroImage, heroTitle, heroSlides, 
     return (
         <main className="min-h-screen bg-[#f3efe8] text-[#28221c]">
             <PortfolioIntro heroImage={heroImage || items[0]?.coverImage} heroTitle={heroTitle} heroSlides={heroSlides} />
-            <section id="wybrane-historie" className="px-4 py-20 sm:px-7 md:py-28 lg:px-10">
+            <section id="wybrane-historie" className="scroll-mt-28 px-4 py-20 sm:px-7 md:py-28 lg:px-10">
                 <div className="mx-auto max-w-[1500px]">
                     <div className="mb-12 grid gap-7 border-b border-[#cfc2b1] pb-10 lg:grid-cols-[1fr_.75fr] lg:items-end">
                         <div>
@@ -180,7 +180,7 @@ function ChaptersView({ items, isSessionMode, heroImage, heroTitle, heroSlides, 
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/15 to-black/5" />
                                     <div className="absolute inset-x-0 bottom-0 p-7 sm:p-9 lg:p-11">
                                         <div className="mb-4 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[.25em] text-[#ead5ab]"><span>{String(index + 1).padStart(2, '0')}</span><span className="h-px w-9 bg-[#ead5ab]/60" /><span>{meta.label}</span></div>
-                                        <h2 className="font-display text-4xl font-normal leading-none sm:text-5xl lg:text-6xl">{meta.title}</h2>
+                                        <h2 className="font-display text-4xl font-normal leading-none sm:text-5xl lg:text-6xl">{isSessionMode ? item.title : meta.title}</h2>
                                         <div className="mt-5 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
                                             <p className="max-w-xl text-sm leading-6 text-white/68">{meta.description}</p>
                                             <span className="shrink-0 text-[10px] font-bold uppercase tracking-[.16em] text-[#ead5ab]">Zobacz historię <ArrowRight className="ml-2 inline" size={15} /></span>
@@ -202,11 +202,11 @@ function CinematicContactView({ items, isSessionMode, heroImage, heroTitle, hero
     return (
         <main className="min-h-screen bg-[#11100e] text-white">
             <PortfolioIntro heroImage={heroImage || items[0]?.coverImage} heroTitle={heroTitle || 'Nie pozujemy. Opowiadamy.'} heroSlides={heroSlides} />
-            <section id="wybrane-historie" className="px-3 py-16 sm:px-5 md:py-24 lg:px-7">
+            <section id="wybrane-historie" className="scroll-mt-28 px-3 py-16 sm:px-5 md:py-24 lg:px-7">
                 <div className="mx-auto max-w-[1700px]">
                     <div className="mb-10 flex flex-col justify-between gap-6 border-y border-white/15 py-7 md:flex-row md:items-end">
                         <div><p className="mb-3 text-[10px] font-bold uppercase tracking-[.32em] text-[#d8b878]">Stykówka autora</p><h2 className="font-display text-5xl font-normal leading-none md:text-7xl">Kadry, które zostały</h2></div>
-                        <p className="max-w-xl text-sm leading-7 text-white/55">Przejdź od szerokiego kadru do pełnej historii. Kategorie i sesje korzystają z tych samych zdjęć, które wybierasz w panelu Portfolio.</p>
+                        <p className="max-w-xl text-sm leading-7 text-white/55">Przejdź od szerokiego kadru do pełnej historii.</p>
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12">
                         {items.map((item, index) => {
@@ -221,7 +221,7 @@ function CinematicContactView({ items, isSessionMode, heroImage, heroTitle, hero
                                     <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
                                         <p className="mb-3 text-[9px] font-bold uppercase tracking-[.26em] text-[#dfbf7c]">{String(index + 1).padStart(2, '0')} · {meta.label}</p>
                                         <div className="flex items-end justify-between gap-5">
-                                            <div><h2 className="font-display text-4xl font-normal leading-none sm:text-5xl">{meta.title}</h2><p className="mt-3 max-w-xl text-xs leading-6 text-white/62 sm:text-sm">{meta.description}</p></div>
+                                            <div><h2 className="font-display text-4xl font-normal leading-none sm:text-5xl">{isSessionMode ? item.title : meta.title}</h2><p className="mt-3 max-w-xl text-xs leading-6 text-white/62 sm:text-sm">{meta.description}</p></div>
                                             <ArrowRight className="mb-1 shrink-0 text-[#dfbf7c] transition group-hover:translate-x-1" />
                                         </div>
                                     </div>

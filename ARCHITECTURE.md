@@ -1,3 +1,7 @@
+## Aktualizacja 2026-09-08 — wspólna nawigacja portfolio
+
+PortfolioNavigation zawiera jawne linki zamiast history.back() oraz listę istniejących PortfolioSession. Kategorie renderują ją przed wyróżnionymi zdjęciami lub wybranym układem. Segmenty tras są kodowane tylko w href; teksty odczytują nazwę kategorii i tytuł sesji z CMS. Miniatury mają rozmiar 96 px i korzystają z Next Image. Brak zmian schematu, API i źródła danych.
+
 ## 2026-09-06 — wspólne źródła oferty i opinii (przygotowane)
 
 `applyPublicPackagePrices` centralizuje przeliczanie cen, a `findPricedPublicPackages` łączy aktywne pakiety z aktywnymi promocjami i wyłącza cache danych cenowych. Publiczne minimum, oferty usług, miasta, API i dane oferty w schema używają tego źródła. `revalidatePublicOffer` odświeża layout po zapisach istniejących modułów CMS.

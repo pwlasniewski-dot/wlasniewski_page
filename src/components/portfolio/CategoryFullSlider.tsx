@@ -121,7 +121,7 @@ export default function CategoryFullSlider({ sessions, title, description }: Cat
 
             {/* Global Title (Portfolio Category Name) - Top Left */}
             <div className="absolute top-8 left-8 z-20 pointer-events-none mix-blend-difference">
-                <Link href="/portfolio" className="pointer-events-auto text-white/80 hover:text-gold-400 transition-colors uppercase tracking-widest text-xs font-bold mb-2 block">
+                <Link href="/portfolio#wybrane-historie" className="pointer-events-auto text-white/80 hover:text-gold-400 transition-colors uppercase tracking-widest text-xs font-bold mb-2 block">
                     ← Wróć do Portfolio
                 </Link>
                 <h1 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tighter opacity-90">

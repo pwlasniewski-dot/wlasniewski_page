@@ -1,3 +1,12 @@
+## 2026-09-08 — nawigacja portfolio
+
+- [x] Potwierdzić niejednoznaczny powrót i brak sesji niewyróżnionych w kategorii.
+- [x] Dodać jawny powrót do listy portfolio oraz osobny link do kategorii.
+- [x] Pokazać wszystkie opublikowane sesje i ich tytuły z CMS.
+- [x] Testy renderu obu układów, nazw i adresów: 7/7.
+- [x] Build: 255/255; typecheck: zero błędów w zmienionym zakresie, 126 w pozostałych plikach.
+- [ ] Opublikować zmianę i sprawdzić podgląd.
+
 ## 2026-09-06 — opinie, promocje, Google Ads
 
 - [x] Odczytać 7 aktualnych publicznych opinii Google.
