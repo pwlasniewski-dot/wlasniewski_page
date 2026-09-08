@@ -1,3 +1,7 @@
+## 2026-09-08 — przewidywalne przejścia w portfolio
+
+Z sesji klient może wrócić do listy portfolio albo przejść do listy sesji w swojej kategorii. Oba cele działają także przy wejściu bezpośrednim. Lista kategorii obejmuje wszystkie opublikowane sesje, także bez wyróżnionych zdjęć. Karty sesji pokazują ich tytuły z istniejącego panelu Portfolio.
+
 ## 2026-09-06 — ceny i opinie publiczne (kod oczekujący na wdrożenie)
 
 Publiczne pakiety i minimalne ceny podstron stosują tę samą aktywną promocję co API rezerwacji, z początkiem włącznie i końcem wyłącznie. Karty wyświetlają cenę obniżoną, regularną, wymagany punkt odniesienia oraz koniec w strefie Europe/Warsaw. Wybór promowanego pakietu przekazuje jego ID do rezerwacji. Ukrycie promocji na stronie głównej nie zmienia ceny obowiązującej w rezerwacji ani minimalnej ceny usługi.

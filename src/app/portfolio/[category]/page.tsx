@@ -1,5 +1,4 @@
 import React from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCategory, getPortfolioCategories } from "@/lib/portfolio";
 
@@ -45,6 +44,7 @@ export async function generateStaticParams() {
 
 import CategoryColumnView from "@/components/portfolio/CategoryColumnView";
 import CategoryFullSlider from "@/components/portfolio/CategoryFullSlider";
+import { PortfolioCategoryNavigation } from "@/components/portfolio/PortfolioNavigation";
 
 import LightboxGallery from "@/components/LightboxGallery";
 import prisma from "@/lib/db/prisma";
@@ -77,7 +77,7 @@ export default async function CategoryPage({ params }: Props) {
                 starredItems.push({
                     src: photoUrl,
                     alt: session.title,
-                    link: `/portfolio/${session.category}/${session.slug}`,
+                    link: `/portfolio/${encodeURIComponent(session.category)}/${encodeURIComponent(session.slug)}`,
                     linkLabel: session.title
                 });
             });
@@ -92,6 +92,7 @@ export default async function CategoryPage({ params }: Props) {
         return (
             <main className="min-h-screen bg-black">
                 <h1 className="sr-only">{category.title} — portfolio fotograficzne</h1>
+                <PortfolioCategoryNavigation sessions={category.sessions} />
                 <div className="w-full">
                     <LightboxGallery
                         photos={starredItems}
@@ -106,6 +107,7 @@ export default async function CategoryPage({ params }: Props) {
     // Fallback: If no stars, show standard layout (Slider or Column)
     return (
         <main className="min-h-screen bg-black">
+            <PortfolioCategoryNavigation sessions={category.sessions} />
             {layout === 'column' ? (
                 <>
                     <h1 className="sr-only">{category.title} — portfolio fotograficzne</h1>

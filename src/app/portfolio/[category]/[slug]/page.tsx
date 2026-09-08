@@ -1,8 +1,7 @@
 import { notFound, permanentRedirect } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 import LightboxGallery from '@/components/LightboxGallery';
 import HeroSlider from '@/components/HeroSlider';
+import { PortfolioBackLinks } from '@/components/portfolio/PortfolioNavigation';
 
 type Props = {
     params: Promise<{ category: string; slug: string }>;
@@ -210,7 +209,7 @@ export default async function SessionPage({ params }: Props) {
                             id: 'cover',
                             image: session.cover_image_url,
                             title: session.title,
-                            subtitle: category,
+                            subtitle: session.category,
                             description: session.description || undefined,
                             enabled: true,
                             order: 0,
@@ -242,7 +241,7 @@ export default async function SessionPage({ params }: Props) {
                                 id: img.id,
                                 image: img.url,
                                 title: session.title,
-                                subtitle: category,
+                                subtitle: session.category,
                                 description: session.description || undefined,
                                 enabled: true,
                                 order: index + 1,
@@ -254,16 +253,10 @@ export default async function SessionPage({ params }: Props) {
                     ]}
                 />
 
-                {/* Back Link Overlay (Bottom Center) */}
-                <div className="absolute bottom-32 sm:bottom-24 left-1/2 -translate-x-1/2 z-30 w-full flex justify-center pointer-events-none">
-                    <Link
-                        href={`/portfolio/${category}`}
-                        className="pointer-events-auto inline-flex items-center text-white/90 hover:text-gold-400 transition-all bg-black/40 backdrop-blur-md px-6 py-3 rounded-full border border-white/10 hover:border-gold-500/50 hover:bg-black/60 shadow-lg group"
-                    >
-                        <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                        <span className="uppercase tracking-widest text-xs font-medium">Powrót</span>
-                    </Link>
-                </div>
+            </div>
+
+            <div className="px-5 py-6">
+                <PortfolioBackLinks category={session.category} />
             </div>
 
             {/* Gallery Grid Anchor */}
@@ -299,6 +292,9 @@ export default async function SessionPage({ params }: Props) {
                     </p>
                 </section>
             )}
+            <div className="px-5 pb-12">
+                <PortfolioBackLinks category={session.category} />
+            </div>
         </main>
     );
 }

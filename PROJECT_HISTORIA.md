@@ -1,3 +1,7 @@
+## 2026-09-08 — naprawa nawigacji portfolio (weryfikacja lokalna)
+
+Powrót z sesji prowadzi jednoznacznie do listy na /portfolio#wybrane-historie; osobny link prowadzi do wszystkich sesji w kategorii. Kategorie z wyróżnionymi zdjęciami przestały ukrywać pozostałe opublikowane sesje. Karty korzystają z tytułów sesji w CMS, a nagłówek sesji z nazwy kategorii bez kodowania URL. Usunięto techniczny komunikat o panelu z widoku klienta. Zachowano adresy, media, wybór układu i dane. Testy nawigacji: 7/7; build: 255/255 stron (Node 24, bez połączenia z produkcyjną bazą). Typecheck: 126 błędów w pozostałych plikach, zero w zmienionym zakresie. Status publikacji zostanie potwierdzony osobno.
+
 ## 2026-09-06 — aktualizacja opinii i spójności promocji (przygotowane wdrożenie)
 
 Na produkcji zaimportowano 6 nowych publicznych opinii Google i uaktualniono istniejącą opinię Malgorzaty Sosnowskiej na podstawie aktualnego profilu firmy. Łącznie 7 Google, średnia 5,0/5; 3 Facebook pozostają bez zmian. Import przetestowano na izolowanej gałęzi Neon oraz powtórzono, potwierdzając brak duplikatów. Odczyt publicznego API i render strony głównej, rezerwacji oraz 8 miast potwierdzają aktualizację.
