@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
-import { Check, Lock, User, Info, Heart, LogOut, X, ZoomIn, ChevronLeft, ChevronRight, Download, Package, CheckSquare, Square, Share2, Copy, CheckCheck } from 'lucide-react';
+import { Check, Lock, User, Info, Heart, LogOut, X, ZoomIn, Download, Package, CheckSquare, Square, Share2, Copy, CheckCheck } from 'lucide-react';
 import PremiumGalleryHero, { PremiumGalleryStory } from '@/components/galleries/PremiumGalleryHero';
 import PostGalleryUpsell, { TopReviewNudge } from '@/components/galleries/PostGalleryUpsell';
+import PhotoLightbox from '@/components/PhotoLightbox';
 
 interface Photo {
   id: number;
@@ -118,6 +119,12 @@ export default function GroupGalleryPage() {
   const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   const [loading, setLoading] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState<Photo | null>(null);
+  const lightboxSlides = useMemo(() => photos.map((photo) => ({
+    src: photo.file_url,
+    alt: `Zdjęcie ${photo.id}`,
+    width: photo.width,
+    height: photo.height,
+  })), [photos]);
 
   // PRO Hero + view mode
   const [heroIndex, setHeroIndex] = useState(0);
@@ -1106,27 +1113,6 @@ export default function GroupGalleryPage() {
       setPrevViewMode(null);
     }
   };
-
-  // PRO: nawigacja po zdjęciach w lightboxie
-  const navigateLightbox = useCallback((dir: 1 | -1) => {
-    if (!lightboxPhoto || photos.length === 0) return;
-    const idx = photos.findIndex(p => p.id === lightboxPhoto.id);
-    if (idx === -1) return;
-    const nextIdx = (idx + dir + photos.length) % photos.length;
-    setLightboxPhoto(photos[nextIdx]);
-  }, [lightboxPhoto, photos]);
-
-  // PRO: obsługa klawiatury w lightboxie (←, →, Esc)
-  useEffect(() => {
-    if (!lightboxPhoto) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') navigateLightbox(-1);
-      else if (e.key === 'ArrowRight') navigateLightbox(1);
-      else if (e.key === 'Escape') setLightboxPhoto(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [lightboxPhoto, navigateLightbox]);
 
   // PRO: toggle wyboru z grida (bez otwierania lightboxa)
   const handleSelectToggle = async (photoId: number, e?: React.MouseEvent) => {
@@ -2554,139 +2540,41 @@ Hasło: ${password}` : ''}`}
         </div>
       )}
 
-      {/* LIGHTBOX PRO — nawigacja, licznik, akcje */}
-      {lightboxPhoto && (
-        <div
-          className="fixed inset-0 bg-black/95 flex items-center justify-center z-[220]"
-          onClick={() => setLightboxPhoto(null)}
-        >
-          {/* Top bar: licznik + zamknij */}
-          <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-10 bg-gradient-to-b from-black/80 to-transparent">
-            <div className="flex items-center gap-3">
-              {(() => {
-                const idx = photos.findIndex(p => p.id === lightboxPhoto.id);
-                const isSelected = selectedPhotos.includes(lightboxPhoto.id);
-                return (
-                  <>
-                    <span className="text-white text-sm font-mono bg-black/50 px-3 py-1.5 rounded-full">
-                      {idx + 1} / {photos.length}
-                    </span>
-                    {isSelected && (
-                      <span className="flex items-center gap-1.5 text-black font-bold text-xs bg-gold-500 px-3 py-1.5 rounded-full">
-                        <CheckSquare className="w-3.5 h-3.5" />
-                        Wybrane do druku ({selectedPhotos.indexOf(lightboxPhoto.id) + 1}/{participantInfo?.max_selections})
-                      </span>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
-            <button
-              onClick={(e) => { e.stopPropagation(); setLightboxPhoto(null); }}
-              className="w-12 h-12 bg-zinc-900/80 hover:bg-zinc-800 text-white rounded-full flex items-center justify-center"
-              aria-label="Zamknij podgląd"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-
-          {/* Strzałka w lewo */}
-          {photos.length > 1 && (
-            <button
-              onClick={(e) => { e.stopPropagation(); navigateLightbox(-1); }}
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-14 h-14 bg-zinc-900/80 hover:bg-gold-500 hover:text-black text-white rounded-full flex items-center justify-center z-10 transition-colors shadow-lg"
-              aria-label="Poprzednie zdjęcie"
-            >
-              <ChevronLeft className="w-8 h-8" />
-            </button>
-          )}
-
-          {/* Strzałka w prawo */}
-          {photos.length > 1 && (
-            <button
-              onClick={(e) => { e.stopPropagation(); navigateLightbox(1); }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-14 h-14 bg-zinc-900/80 hover:bg-gold-500 hover:text-black text-white rounded-full flex items-center justify-center z-10 transition-colors shadow-lg"
-              aria-label="Następne zdjęcie"
-            >
-              <ChevronRight className="w-8 h-8" />
-            </button>
-          )}
-
-          <div
-            className="relative max-w-6xl w-full px-20 py-20 flex flex-col items-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src={lightboxPhoto.file_url}
-              alt="Podgląd zdjęcia"
-              className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
-            />
-
-            {/* Bottom action bar — hidden for guests */}
-            {!isGuestMode && (
-            <div className="mt-6 flex items-center justify-center gap-3 flex-wrap">
-              {(() => {
-                const isSelected = selectedPhotos.includes(lightboxPhoto.id);
-                const limitReached = !isSelected && participantInfo
-                  && selectedPhotos.length >= participantInfo.max_selections;
-                return (
-                  <>
-                    <button
-                      onClick={async () => {
-                        if (limitReached) {
-                          toast.error(`Możesz wybrać maksymalnie ${participantInfo?.max_selections} zdjęć`);
-                          return;
-                        }
-                        await handlePhotoClick(lightboxPhoto.id);
-                      }}
-                      disabled={!!limitReached}
-                      className={`px-6 py-3 rounded-full font-bold flex items-center gap-2 transition-all shadow-lg ${
-                        isSelected
-                          ? 'bg-zinc-800 text-white hover:bg-zinc-700'
-                          : limitReached
-                            ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                            : 'bg-gold-500 text-black hover:bg-gold-400'
-                      }`}
-                    >
-                      {isSelected ? (
-                        <>
-                          <X className="w-5 h-5" />
-                          Odznacz (zdjęcie do druku)
-                        </>
-                      ) : (
-                        <>
-                          <CheckSquare className="w-5 h-5" />
-                          {limitReached ? 'Limit osiągnięty' : 'Zaznacz do druku'}
-                        </>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleDownloadSingle(lightboxPhoto.id)}
-                      className="px-6 py-3 rounded-full font-bold flex items-center gap-2 bg-zinc-800 text-white hover:bg-zinc-700 transition-all shadow-lg"
-                      title="Pobierz to zdjęcie w pełnej rozdzielczości"
-                    >
-                      <Download className="w-5 h-5" />
-                      Pobierz zdjęcie
-                    </button>
-                  </>
-                );
-              })()}
-            </div>
-            )}
-
-            <p className="mt-4 text-xs text-zinc-500 text-center">
-              Użyj strzałek ← → na klawiaturze, aby przeglądać. ESC zamyka.
-            </p>
-
-            <button
-              onClick={() => setLightboxPhoto(null)}
-              className="mt-3 px-5 py-2 rounded-full text-xs font-semibold bg-white text-black hover:bg-zinc-200"
-            >
-              Zamknij podgląd
-            </button>
-          </div>
-        </div>
-      )}
+      <PhotoLightbox
+        open={!!lightboxPhoto}
+        index={lightboxPhoto ? photos.findIndex((photo) => photo.id === lightboxPhoto.id) : 0}
+        slides={lightboxSlides}
+        onClose={() => setLightboxPhoto(null)}
+        onView={(index) => setLightboxPhoto((previous) => previous?.id === photos[index]?.id ? previous : photos[index] || null)}
+        actions={lightboxPhoto && !isGuestMode && (() => {
+          const isSelected = selectedPhotos.includes(lightboxPhoto.id);
+          const limitReached = !isSelected && !!participantInfo
+            && selectedPhotos.length >= participantInfo.max_selections;
+          const locked = selectionStatus !== 'DRAFT';
+          return (
+            <>
+              <span className="photo-viewer__status">
+                {locked
+                  ? selectionStatus === 'LEGACY_REVIEW_REQUIRED' ? 'Wybór oczekuje na sprawdzenie' : 'Wybór zatwierdzony'
+                  : `Do druku: ${selectedPhotos.length}/${participantInfo?.max_selections || 0}`}
+                {isSelected ? ' • To zdjęcie jest wybrane' : ''}
+              </span>
+              <button
+                type="button"
+                aria-pressed={isSelected}
+                disabled={locked || limitReached || !participantInfo}
+                onClick={() => handleSelectToggle(lightboxPhoto.id)}
+              >
+                <CheckSquare aria-hidden="true" />
+                {locked ? 'Wybór zamknięty' : isSelected ? 'Odznacz do druku' : limitReached ? 'Limit osiągnięty' : 'Zaznacz do druku'}
+              </button>
+              <button type="button" onClick={() => handleDownloadSingle(lightboxPhoto.id)}>
+                <Download aria-hidden="true" /> Pobierz JPG
+              </button>
+            </>
+          );
+        })()}
+      />
 
       {/* SUCCESS MODAL - po wyrażeniu zgody */}
       {showSuccessModal && (

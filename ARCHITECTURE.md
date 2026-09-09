@@ -1,3 +1,7 @@
+## 2026-09-09 — Mobilne oglądanie zdjęć
+
+PhotoLightbox (istniejący YARL + Zoom/Counter) wspólny dla galerii; preload=1 i kontrolowane źródła. PortfolioContactGate + event visibility sterują nakładkami. Home streamuje sekcje pod Suspense po CMS hero, ceny pozostają request-time; struktura CMS/ustawienia cache z istniejącym revalidatePath.
+
 ## Aktualizacja 2026-09-08 — wspólna nawigacja portfolio
 
 PortfolioNavigation zawiera jawne linki zamiast history.back() oraz listę istniejących PortfolioSession. Kategorie renderują ją przed wyróżnionymi zdjęciami lub wybranym układem. Segmenty tras są kodowane tylko w href; teksty odczytują nazwę kategorii i tytuł sesji z CMS. Miniatury mają rozmiar 96 px i korzystają z Next Image. Brak zmian schematu, API i źródła danych.

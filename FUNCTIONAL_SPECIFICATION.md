@@ -1,3 +1,7 @@
+## 2026-09-09 — Mobilne oglądanie zdjęć
+
+Mobilny podgląd zdjęć bez taśmy miniatur, ze wspólnymi gestami i akcjami klienta; tekst poza zdjęciem w hero mobile. Kontakt/FB pojawiają się po zdjęciach, znikają w podglądzie. Treści i CTA nadal z CMS.
+
 ## 2026-09-08 — przewidywalne przejścia w portfolio
 
 Z sesji klient może wrócić do listy portfolio albo przejść do listy sesji w swojej kategorii. Oba cele działają także przy wejściu bezpośrednim. Lista kategorii obejmuje wszystkie opublikowane sesje, także bez wyróżnionych zdjęć. Karty sesji pokazują ich tytuły z istniejącego panelu Portfolio.

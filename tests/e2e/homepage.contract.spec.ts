@@ -12,7 +12,7 @@ const homepageAdminSource = readFileSync(join(root, 'src/app/admin/pages/strona-
 test('renders meaningful hero HTML before client hydration', () => {
     const html = execFileSync(
         process.execPath,
-        [join(root, 'node_modules/tsx/dist/cli.mjs'), join(root, 'tests/helpers/renderHomepageHero.ts')],
+        ['--import', 'tsx', join(root, 'tests/helpers/renderHomepageHero.ts')],
         { cwd: root, encoding: 'utf8' }
     );
 
@@ -38,10 +38,13 @@ test('keeps one semantic homepage heading and honors reduced motion', () => {
 test('falls back safely when homepage CMS is unavailable and exposes social metadata', () => {
     expect(pageSource).toContain('Metadata CMS unavailable, using defaults');
     expect(pageSource).toContain('CMS unavailable, rendering resilient homepage fallback');
-    expect(pageSource).toContain('cmsUnavailable = true');
-    expect(pageSource).toContain('testimonialsUnavailable = true');
+    expect(pageSource).toContain('return { page: null, cmsUnavailable: true }');
+    expect(pageSource).toContain('loadPublicReviews().catch(() => [])');
     expect(pageSource).toContain('orderedSections.length === 0 && (cmsUnavailable || sectionParseFailed)');
-    expect(pageSource).toContain('testimonials={testimonialsUnavailable');
+    expect(pageSource).toContain('testimonials={testimonials}');
+    expect(pageSource.indexOf('<HeroSlider')).toBeLessThan(pageSource.indexOf('<Suspense'));
+    expect(pageSource).toContain('await contentData');
+    expect(contentSource).toContain('!skipHero && <HeroSlider');
     expect(pageSource).toContain('openGraph:');
     expect(pageSource).toContain('twitter:');
     expect(pageSource).toContain("alternates: { canonical: 'https://wlasniewski.pl/' }");

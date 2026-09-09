@@ -1,3 +1,7 @@
+## 2026-09-09 — Mobilne oglądanie zdjęć
+
+Naprawa zgłoszonych mobilnych sliderów, swipe i pływających nakładek; usunięcie blokującego loadera. Właściciel rozszerzył zakres o home oraz opóźnienie serwera. Szczegóły i odbiór: docs/MOBILE_PHOTO_EXPERIENCE_2026-09-09.md.
+
 ## 2026-09-08 — naprawa nawigacji portfolio (weryfikacja lokalna)
 
 Powrót z sesji prowadzi jednoznacznie do listy na /portfolio#wybrane-historie; osobny link prowadzi do wszystkich sesji w kategorii. Kategorie z wyróżnionymi zdjęciami przestały ukrywać pozostałe opublikowane sesje. Karty korzystają z tytułów sesji w CMS, a nagłówek sesji z nazwy kategorii bez kodowania URL. Usunięto techniczny komunikat o panelu z widoku klienta. Zachowano adresy, media, wybór układu i dane. Testy nawigacji: 7/7; build: 255/255 stron (Node 24, bez połączenia z produkcyjną bazą). Typecheck: 126 błędów w pozostałych plikach, zero w zmienionym zakresie. Status publikacji zostanie potwierdzony osobno.

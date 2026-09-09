@@ -1,5 +1,7 @@
 'use client';
 
+import PortfolioContactGate from './PortfolioContactGate';
+
 import Link from 'next/link';
 import { ArrowRight, Camera, Images, Pause, Play } from 'lucide-react';
 import React, { useEffect, useState, type ReactNode } from 'react';
@@ -193,6 +195,7 @@ function ChaptersView({ items, isSessionMode, heroImage, heroTitle, heroSlides, 
                 </div>
             </section>
             {supplementalContent}
+            <PortfolioContactGate />
             <PortfolioClosing />
         </main>
     );
@@ -232,6 +235,7 @@ function CinematicContactView({ items, isSessionMode, heroImage, heroTitle, hero
                 </div>
             </section>
             {supplementalContent}
+            <PortfolioContactGate />
             <PortfolioClosing dark />
         </main>
     );

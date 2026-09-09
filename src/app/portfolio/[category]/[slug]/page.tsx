@@ -1,6 +1,7 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import LightboxGallery from '@/components/LightboxGallery';
-import HeroSlider from '@/components/HeroSlider';
+import PortfolioPhotoSlider from '@/components/portfolio/PortfolioPhotoSlider';
+import PortfolioContactGate from '@/components/portfolio/PortfolioContactGate';
 import { PortfolioBackLinks } from '@/components/portfolio/PortfolioNavigation';
 
 type Props = {
@@ -201,8 +202,9 @@ export default async function SessionPage({ params }: Props) {
         <main className="min-h-screen bg-black text-white">
             {/* Hero Section Wrapper for Overlay */}
             <div className="relative">
-                <HeroSlider
-                    documentTitle={`${session.title} — portfolio fotograficzne`}
+                <PortfolioPhotoSlider
+                    title={session.title}
+                    description={session.description}
                     slides={[
                         // Cover Image as first slide
                         ...(session.cover_image_url ? [{
@@ -210,12 +212,6 @@ export default async function SessionPage({ params }: Props) {
                             image: session.cover_image_url,
                             title: session.title,
                             subtitle: session.category,
-                            description: session.description || undefined,
-                            enabled: true,
-                            order: 0,
-                            textAnimation: 'fade' as const,
-                            buttonText: 'Zobacz Zdjęcia',
-                            buttonLink: '#gallery' // smooth scroll anchor
                         }] : []),
                         // Gallery images logic:
                         // 1. If there are starred (highlighted) images, show ALL of them (in order of appearance in gallery).
@@ -237,17 +233,11 @@ export default async function SessionPage({ params }: Props) {
                             // Decide which set to use
                             const slidesImages = starredImages.length > 0 ? starredImages : galleryImages.slice(0, 5);
 
-                            return slidesImages.map((img, index) => ({
+                            return slidesImages.map((img) => ({
                                 id: img.id,
                                 image: img.url,
                                 title: session.title,
                                 subtitle: session.category,
-                                description: session.description || undefined,
-                                enabled: true,
-                                order: index + 1,
-                                textAnimation: 'fade' as const,
-                                buttonText: 'Zobacz Zdjęcia',
-                                buttonLink: '#gallery'
                             }));
                         })()
                     ]}
@@ -263,7 +253,7 @@ export default async function SessionPage({ params }: Props) {
             <div id="gallery" />
 
             {/* Gallery Grid */}
-            <section className="py-16 mx-auto">
+            <section className="pb-8 pt-2 mx-auto md:py-16">
                 {galleryImages.length === 0 ? (
                     <div className="text-center py-32">
                         <p className="text-zinc-500 text-xl">Brak zdjęć w galerii</p>
@@ -279,6 +269,8 @@ export default async function SessionPage({ params }: Props) {
                     </div>
                 )}
             </section>
+
+            <PortfolioContactGate />
 
             {/* Session Info */}
             {session.session_date && (

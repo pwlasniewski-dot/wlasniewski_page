@@ -5,12 +5,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Phone, Mail, Facebook } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { hideFloatingContact, readFloatingFacebook } from '@/lib/floating-facebook';
+import { usePhotoViewerVisibility } from '@/hooks/usePhotoViewerVisibility';
 
 export default function FloatingContact() {
     const [isOpen, setIsOpen] = useState(false);
     const [facebook, setFacebook] = useState(() => readFloatingFacebook(null));
     const [cookiesVisible, setCookiesVisible] = useState(true);
     const pathname = usePathname();
+    const photoViewerOpen = usePhotoViewerVisibility();
+    const isPortfolio = pathname === '/portfolio' || pathname?.startsWith('/portfolio/');
+    const [contactZone, setContactZone] = useState<{ pathname: string | null; visible: boolean }>({ pathname: null, visible: false });
+    const [homeHeroPassed, setHomeHeroPassed] = useState(false);
     const whatsappUrl = 'https://wa.me/48530788694?text=' + encodeURIComponent('Cześć Przemek! Piszę ze strony wlasniewski.pl — chciał(a)bym zapytać o sesję.');
     const phoneUrl = 'tel:+48530788694';
     const emailUrl = 'mailto:pwlasniewski@gmail.com?subject=Zapytanie%20o%20sesj%C4%99';
@@ -41,13 +46,45 @@ export default function FloatingContact() {
 
     useEffect(() => { setIsOpen(false); }, [pathname]);
 
+    useEffect(() => {
+        const visibility = (event: Event) => {
+            const detail = (event as CustomEvent<{ pathname: string; visible: boolean }>).detail;
+            if (detail?.pathname === pathname) setContactZone(detail);
+        };
+        window.addEventListener('portfolio-contact-visibility', visibility);
+        window.dispatchEvent(new Event('portfolio-contact-check'));
+        return () => window.removeEventListener('portfolio-contact-visibility', visibility);
+    }, [pathname]);
+
+    useEffect(() => {
+        setHomeHeroPassed(false);
+        if (pathname !== '/') return;
+        let observer: IntersectionObserver | undefined;
+        const mutation = new MutationObserver(findHero);
+        function findHero() {
+            const hero = document.querySelector('[data-home-hero], .home-hero');
+            if (!hero) return;
+            mutation.disconnect();
+            observer = new IntersectionObserver(([entry]) => {
+                setHomeHeroPassed(!entry.isIntersecting && entry.boundingClientRect.bottom <= 0);
+            });
+            observer.observe(hero);
+        }
+        mutation.observe(document.body, { childList: true, subtree: true });
+        findHero();
+        return () => { observer?.disconnect(); mutation.disconnect(); };
+    }, [pathname]);
+
+    const photoAreaVisible = (isPortfolio && !(contactZone.pathname === pathname && contactZone.visible)) || (pathname === '/' && !homeHeroPassed);
+    useEffect(() => { if (photoViewerOpen || photoAreaVisible) setIsOpen(false); }, [photoViewerOpen, photoAreaVisible]);
+
     const trackClick = (channel: string) => {
         if (typeof window !== 'undefined' && (window as any).gtag) {
             (window as any).gtag('event', 'contact_click', { channel, page: pathname });
         }
     };
 
-    if (hideFloatingContact(pathname) || cookiesVisible) return null;
+    if (hideFloatingContact(pathname) || cookiesVisible || photoViewerOpen || photoAreaVisible) return null;
 
     return (
         <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] md:bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 z-40 flex flex-col items-end gap-3 pointer-events-none print:hidden">

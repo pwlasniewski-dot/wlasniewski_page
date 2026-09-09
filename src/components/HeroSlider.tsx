@@ -4,11 +4,11 @@ import React from 'react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import BeforeAfterSlide from './BeforeAfterSlide';
+import MobileHeroSlider from './MobileHeroSlider';
 
-interface HeroSlide {
+export interface HeroSlide {
     id: string | number;
     title: string;
     subtitle: string;
@@ -35,6 +35,16 @@ interface HeroSliderProps {
     // Null allows embedding a slider under the page's existing heading.
     documentTitle?: string | null;
 }
+
+// Existing resilient content remains available when the CMS returns no slides.
+const fallbackSlide: HeroSlide = {
+    id: 'hero-fallback',
+    title: 'Fotograf Toruń — zdjęcia, do których chce się wracać',
+    subtitle: 'Sesje rodzinne, śluby i uroczystości. Sprawdź pakiety oraz wolne terminy.',
+    buttonText: 'Zobacz pakiety i terminy',
+    buttonLink: '/rezerwacja?source=hero-fallback&service=Sesja',
+    image: '/assets/slider/fotografia-rodzinna-grudziadz-01.webp',
+};
 
 // Text animation variants
 const animationVariants = {
@@ -91,55 +101,24 @@ export default function HeroSlider({ slides = [], interval = 6000, documentTitle
     }, []);
 
     // Filter enabled slides
-    const enabledSlides = slides.filter(s => s.enabled !== false).sort((a, b) => (a.order || 0) - (b.order || 0));
+    const publishedSlides = slides.filter(s => s.enabled !== false).sort((a, b) => (a.order || 0) - (b.order || 0));
+    const enabledSlides = publishedSlides.length ? publishedSlides : [fallbackSlide];
+    const activeIndex = Math.min(currentSlide, enabledSlides.length - 1);
+
+    useEffect(() => {
+        setCurrentSlide((previous) => Math.min(previous, enabledSlides.length - 1));
+    }, [enabledSlides.length]);
 
     // Autoplay
     useEffect(() => {
-        if (!autoplay || enabledSlides.length <= 1 || prefersReducedMotion) return;
+        if (isMobile || !autoplay || enabledSlides.length <= 1 || prefersReducedMotion) return;
         const timer = setInterval(() => {
             setCurrentSlide((prev) => (prev + 1) % enabledSlides.length);
         }, interval);
         return () => clearInterval(timer);
-    }, [autoplay, enabledSlides.length, interval, prefersReducedMotion]);
+    }, [autoplay, enabledSlides.length, interval, prefersReducedMotion, isMobile]);
 
-    if (!enabledSlides || enabledSlides.length === 0) {
-        return (
-            <section className="home-hero relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-[#151310]" aria-label="Fotografia rodzinna i ślubna">
-                {documentTitle && <h1 className="sr-only">{documentTitle}</h1>}
-                <Image
-                    src="/assets/slider/fotografia-rodzinna-grudziadz-01.webp"
-                    alt=""
-                    fill
-                    priority
-                    sizes="100vw"
-                    className="object-cover object-center md:object-[center_30%]"
-                />
-                <div className="absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(12,10,8,.72)_0%,rgba(12,10,8,.38)_42%,rgba(12,10,8,.08)_70%,rgba(12,10,8,.18)_100%)] max-md:bg-[linear-gradient(180deg,rgba(12,10,8,.12)_10%,rgba(12,10,8,.28)_48%,rgba(12,10,8,.9)_100%)]" />
-                <div className="absolute inset-x-0 bottom-0 z-10 h-[60%] bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
-                <div className="absolute inset-x-0 top-0 z-10 h-40 bg-gradient-to-b from-black/55 to-transparent" />
-                <div className="relative z-20 mx-auto flex h-full w-full max-w-[1480px] items-end px-6 pb-24 sm:px-10 sm:pb-28 lg:px-16 lg:pb-24 xl:px-24">
-                  <div className="max-w-[760px] text-left max-md:text-center">
-                    <div className="mb-5 flex items-center gap-4 text-[10px] font-semibold uppercase tracking-[.32em] text-[#e6d4b0] max-md:justify-center sm:text-xs"><span className="h-px w-10 bg-[#d7b978]"/>Przemysław Właśniewski · fotografia</div>
-                    <h2 className="font-display text-[clamp(2.8rem,6.2vw,6.7rem)] font-normal leading-[.86] tracking-[-.045em] text-[#fffdf8] drop-shadow-2xl">
-                        Fotograf Toruń — zdjęcia, do których chce się wracać
-                    </h2>
-                    <p className="mt-6 max-w-2xl text-sm font-medium leading-7 text-white/85 drop-shadow-lg max-md:mx-auto sm:text-base md:text-lg">
-                        Sesje rodzinne, śluby i uroczystości. Sprawdź pakiety oraz wolne terminy.
-                    </p>
-                    <Link
-                        href="/rezerwacja?source=hero-fallback&amp;service=Sesja"
-                        className="mt-8 inline-flex min-h-12 items-center rounded-full border border-[#ead5ab] bg-[#ead5ab] px-7 py-3 text-xs font-bold uppercase tracking-[.16em] text-[#211c16] shadow-xl transition-all hover:border-white hover:bg-white sm:px-8"
-                    >
-                        Zobacz pakiety i terminy
-                    </Link>
-                  </div>
-                </div>
-                <div className="absolute bottom-7 right-7 z-30 hidden items-center gap-3 text-[10px] font-semibold uppercase tracking-[.28em] text-white/65 lg:flex">przewiń <ArrowDown size={15} strokeWidth={1.4}/></div>
-            </section>
-        );
-    }
-
-    const slide = enabledSlides[currentSlide];
+    const slide = enabledSlides[activeIndex];
     const mainImage = typeof slide.image === 'string' ? slide.image : slide.image?.file_path;
     const desktopImage = slide.image_desktop || mainImage;
     const mobileImage = slide.image_mobile || desktopImage;
@@ -171,19 +150,36 @@ export default function HeroSlider({ slides = [], interval = 6000, documentTitle
         setAutoplay(false);
     };
 
-    const currentSlideData = enabledSlides[currentSlide];
+    const selectSlide = (index: number) => {
+        setCurrentSlide(index);
+        setAutoplay(false);
+    };
+
+    const mobileHero = (
+        <MobileHeroSlider
+            slides={enabledSlides}
+            activeIndex={activeIndex}
+            onSelect={selectSlide}
+            isMobile={isMobile}
+            reducedMotion={Boolean(prefersReducedMotion)}
+            reserveHeaderSpace={documentTitle !== null}
+        />
+    );
+    const currentSlideData = slide;
 
     if (currentSlideData?.is_before_after && currentSlideData.image && currentSlideData.before_image) {
         return (
-            <div className="relative h-[100svh] min-h-[600px] w-full bg-black">
+            <section className="home-hero relative w-full bg-black" data-home-hero aria-label="Najważniejsze oferty fotograficzne">
                 {documentTitle && <h1 className="sr-only">{documentTitle}</h1>}
+                {mobileHero}
+                <div className="relative hidden h-[100svh] min-h-[600px] w-full md:block">
                 <BeforeAfterSlide
                     beforeImage={typeof currentSlideData.before_image === 'string' ? currentSlideData.before_image : currentSlideData.before_image.file_path}
                     afterImage={typeof currentSlideData.image === 'string' ? currentSlideData.image : currentSlideData.image.file_path}
                     title={currentSlideData.title}
                     subtitle={currentSlideData.subtitle}
-                    buttonText={currentSlideData.button_text}
-                    buttonLink={currentSlideData.button_link}
+                    buttonText={currentSlideData.buttonText || currentSlideData.button_text}
+                    buttonLink={currentSlideData.buttonLink || currentSlideData.button_link}
                     isActive={true}
                     onPrev={enabledSlides.length > 1 ? prevSlide : undefined}
                     onNext={enabledSlides.length > 1 ? nextSlide : undefined}
@@ -199,28 +195,31 @@ export default function HeroSlider({ slides = [], interval = 6000, documentTitle
                                     setCurrentSlide(index);
                                     setAutoplay(false);
                                 }}
-                                className={`rounded-full transition-all ${index === currentSlide ? 'bg-gold-500 w-8' : 'bg-white/40 hover:bg-white/60 w-2.5'
+                                className={`rounded-full transition-all ${index === activeIndex ? 'bg-gold-500 w-8' : 'bg-white/40 hover:bg-white/60 w-2.5'
                                     } h-2.5`}
                                 aria-label={`Przejdź do slajdu ${index + 1}`}
                             />
                         ))}
                     </div>
                 )}
-            </div>
+                </div>
+            </section>
         );
     }
 
     return (
-        <section className="home-hero relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-[#151310]" aria-label="Najważniejsze oferty fotograficzne">
+        <section className="home-hero relative w-full bg-[#151310]" data-home-hero aria-label="Najważniejsze oferty fotograficzne">
             {documentTitle && <h1 className="sr-only">{documentTitle}</h1>}
+            {mobileHero}
+            <div className="relative hidden h-[100svh] min-h-[640px] w-full overflow-hidden md:block">
             {/* Background Images */}
             <AnimatePresence mode="popLayout">
                 <motion.div
                     key={`bg-${currentSlide}`}
-                    initial={{ opacity: 0 }}
+                    initial={prefersReducedMotion || !publishedSlides.length ? false : { opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 1.5, ease: "easeInOut" }}
+                    transition={{ duration: prefersReducedMotion ? 0 : 1.5, ease: "easeInOut" }}
                     className="absolute inset-0 w-full h-full overflow-hidden"
                 >
                     <motion.div
@@ -241,8 +240,8 @@ export default function HeroSlider({ slides = [], interval = 6000, documentTitle
                                 src={desktopImage || mobileImage}
                                 alt=""
                                 aria-hidden="true"
-                                {...({ fetchpriority: currentSlide === 0 ? 'high' : 'auto' } as React.ImgHTMLAttributes<HTMLImageElement>)}
-                                loading={currentSlide === 0 ? 'eager' : 'lazy'}
+                                {...({ fetchpriority: activeIndex === 0 ? 'high' : 'auto' } as React.ImgHTMLAttributes<HTMLImageElement>)}
+                                loading={activeIndex === 0 ? 'eager' : 'lazy'}
                                 className="h-full w-full object-cover object-center md:object-[center_30%]"
                             />
                         </picture>
@@ -261,10 +260,10 @@ export default function HeroSlider({ slides = [], interval = 6000, documentTitle
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={`content-${currentSlide}`}
-                        initial={variant.initial}
+                        initial={prefersReducedMotion || !publishedSlides.length ? false : variant.initial}
                         animate={variant.animate}
                         exit={variant.exit}
-                        transition={variant.transition}
+                        transition={prefersReducedMotion ? { duration: 0 } : variant.transition}
                         className="max-w-[760px] text-left max-md:text-center"
                     >
                         <div className="mb-5 flex items-center gap-4 text-[10px] font-semibold uppercase tracking-[.32em] text-[#e6d4b0] max-md:justify-center sm:text-xs">
@@ -285,14 +284,14 @@ export default function HeroSlider({ slides = [], interval = 6000, documentTitle
                                 dangerouslySetInnerHTML={{ __html: slide.description }}
                             />
                         )}
-                        {slide.buttonText && (
+                        {(slide.buttonText || slide.button_text) && (
                             <motion.div className="mt-8"
-                                initial={{ opacity: 0, y: 20 }}
+                                initial={prefersReducedMotion || !publishedSlides.length ? false : { opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
+                                transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.3 }}
                             >
                                 <Link
-                                    href={slide.buttonLink || '/portfolio'}
+                                    href={slide.buttonLink || slide.button_link || '/portfolio'}
                                     className={`inline-flex min-h-12 items-center rounded-full px-7 py-3 text-xs font-bold uppercase tracking-[.16em] transition-all duration-300 shadow-xl sm:px-8 ${(slide.buttonStyle === 'white')
                                         ? 'border border-white/70 bg-white/5 text-white backdrop-blur-md hover:bg-white/15'
                                         : (slide.buttonStyle === 'transparent')
@@ -300,7 +299,7 @@ export default function HeroSlider({ slides = [], interval = 6000, documentTitle
                                             : 'border border-[#ead5ab] bg-[#ead5ab] text-[#211c16] hover:border-white hover:bg-white'
                                         }`}
                                 >
-                                    {slide.buttonText}
+                                    {slide.buttonText || slide.button_text}
                                 </Link>
                             </motion.div>
                         )}
@@ -344,10 +343,10 @@ export default function HeroSlider({ slides = [], interval = 6000, documentTitle
                                 setCurrentSlide(index);
                                 setAutoplay(false);
                             }}
-                            className={`rounded-full transition-all ${index === currentSlide ? 'bg-[#ead5ab]' : 'bg-white/35 hover:bg-white/60'
+                            className={`rounded-full transition-all ${index === activeIndex ? 'bg-[#ead5ab]' : 'bg-white/35 hover:bg-white/60'
                                 }`}
                             animate={{
-                                width: index === currentSlide ? 32 : 10,
+                                width: index === activeIndex ? 32 : 10,
                                 height: 10
                             }}
                             aria-label={`Przejdź do slajdu ${index + 1}`}
@@ -355,6 +354,7 @@ export default function HeroSlider({ slides = [], interval = 6000, documentTitle
                     ))}
                 </div>
             )}
+            </div>
         </section>
     );
 }

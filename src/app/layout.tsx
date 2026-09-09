@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache';
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import prisma from '@/lib/db/prisma'; // Added fonts
@@ -170,6 +171,15 @@ export const viewport = {
     ],
 };
 
+const getCachedSiteVerification = unstable_cache(
+    () => prisma.setting.findFirst({
+        orderBy: { id: 'asc' },
+        select: { meta_verification_google: true, meta_verification_facebook: true },
+    }),
+    ['site-verification'],
+    { revalidate: 3600, tags: ['settings'] },
+);
+
 export async function generateMetadata(): Promise<Metadata> {
     const headersList = await headers();
     const host = headersList.get('host') || '';
@@ -185,10 +195,7 @@ export async function generateMetadata(): Promise<Metadata> {
     }
 
     try {
-        const settings = await prisma.setting.findFirst({
-            orderBy: { id: 'asc' },
-            select: { meta_verification_google: true, meta_verification_facebook: true }
-        });
+        const settings = await getCachedSiteVerification();
 
         // Clean Google Code - user might paste "google-site-verification=CODE" or just "CODE"
         let googleCode = settings?.meta_verification_google || undefined;
