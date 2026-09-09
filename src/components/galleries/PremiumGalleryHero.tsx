@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Play, Pause, LayoutGrid, BookOpen, Check } from 'lucide-react';
+import { useStableMobileHeight } from '@/hooks/useStableMobileHeight';
 
 export interface HeroPhoto {
   id: number;
@@ -58,6 +59,8 @@ export default function PremiumGalleryHero({
   extraSelectedPhotoIds,
   paidExtraPhotoIds,
 }: PremiumGalleryHeroProps) {
+  const heroRef = useRef<HTMLElement>(null);
+  useStableMobileHeight(heroRef, photos.length > 0);
   // Detect desktop vs mobile
   const [isDesktop, setIsDesktop] = useState(false);
   
@@ -107,8 +110,9 @@ export default function PremiumGalleryHero({
 
   return (
     <section
+      ref={heroRef}
       className="relative w-full overflow-hidden bg-black"
-      style={{ height: '90vh', minHeight: '600px' }}
+      style={{ height: 'var(--gallery-hero-height, 90vh)', minHeight: '600px' }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >

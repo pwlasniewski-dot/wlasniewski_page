@@ -11,6 +11,7 @@ import PostGalleryUpsell, { TopReviewNudge } from '@/components/galleries/PostGa
 import { youtubeNoCookieEmbedUrl } from '@/lib/video/youtube';
 import PhotoLightbox from '@/components/PhotoLightbox';
 import { galleryLightboxSlides } from '@/lib/galleries/photo-lightbox-slides';
+import GalleryGridImage from '@/components/galleries/GalleryGridImage';
 
 interface GalleryPhoto {
     id: number;
@@ -527,11 +528,11 @@ export default function ClientGalleryPage() {
                                         className="group relative w-full text-left"
                                     >
                                         <figure className={`relative w-full overflow-hidden rounded-none sm:rounded-xl bg-zinc-900 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02] ${selectedStandard.has(photo.id) ? 'ring-4 ring-gold-500/80' : ''}`}>
-                                            <img
+                                            <GalleryGridImage
                                                 src={photo.file_url}
                                                 alt={`Photo ${photo.id}`}
-                                                loading="lazy"
-                                                className="block w-full h-auto object-contain"
+                                                width={photo.width}
+                                                height={photo.height}
                                             />
                                             <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-300 pointer-events-none" />
                                             {canSelectStandard && (
