@@ -95,6 +95,7 @@ function promotionBookingHref(baseHref: string, promotion: PublicPackagePromotio
 }
 
 interface HomeContentProps {
+    skipHero?: boolean;
     heroSlides: any[]; // Explicitly passed hero slides array
     sections: Section[]; // Explicitly passed sections array
     homeData: HomeData | null;
@@ -106,7 +107,7 @@ interface HomeContentProps {
     publicGuidePromo: { title: string; image: string; imageAlt: string } | null;
 }
 
-export default function HomeContent({ heroSlides, sections, homeData, orderedSections, testimonials: allTestimonials, heroSliderInterval = 6000, publicPriceLabels, featuredPromotions, publicGuidePromo }: HomeContentProps) {
+export default function HomeContent({ skipHero = false, heroSlides, sections, homeData, orderedSections, testimonials: allTestimonials, heroSliderInterval = 6000, publicPriceLabels, featuredPromotions, publicGuidePromo }: HomeContentProps) {
     const testimonials = useMemo(() => selectPublicReviews(allTestimonials), [allTestimonials]);
     const googleSummary = summarizeGoogleReviews(allTestimonials);
     const fallbackPublicPriceLabel = 'Aktualne pakiety i ceny';
@@ -1012,12 +1013,13 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
         }
     };
 
+    const ContentTag = skipHero ? 'div' : 'main';
     const serviceCards = mergeHomepageServiceCards(homeData?.service_cards);
 
     return (
-        <main className="home-editorial min-h-screen bg-[#f3efe8] text-[#27221c]">
+        <ContentTag className="home-editorial min-h-screen bg-[#f3efe8] text-[#27221c]">
             {/* Hero Slider - Always First */}
-            <HeroSlider slides={heroSlides} interval={heroSliderInterval} />
+            {!skipHero && <HeroSlider slides={heroSlides} interval={heroSliderInterval} />}
 
             <section className="relative overflow-hidden bg-[#f3efe8] px-5 py-20 sm:px-8 md:py-28">
                 <div className="mx-auto max-w-[1380px]">
@@ -1229,6 +1231,6 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
             </div>
 
 
-        </main>
+        </ContentTag>
     );
 }

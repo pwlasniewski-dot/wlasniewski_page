@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { Cookie, X } from 'lucide-react';
 import Link from 'next/link';
 import { stripAttributionFromStoredCart } from '@/lib/analytics/clientAttribution';
+import { usePhotoViewerVisibility } from '@/hooks/usePhotoViewerVisibility';
 
 export default function CookieBanner({ variant = 'default' }: { variant?: 'default' | 'aero' }) {
     const [showBanner, setShowBanner] = useState(false);
     const [hasDecision, setHasDecision] = useState(false);
+    const photoViewerOpen = usePhotoViewerVisibility();
 
     useEffect(() => {
         window.dispatchEvent(new CustomEvent('cookie-banner-visibility', { detail: showBanner || !hasDecision }));
@@ -55,14 +57,19 @@ export default function CookieBanner({ variant = 'default' }: { variant?: 'defau
 
     const isAero = variant === 'aero';
 
+    if (photoViewerOpen) return null;
+
     if (!showBanner) {
         return hasDecision ? (
             <button
                 type="button"
                 onClick={() => setShowBanner(true)}
-                className={`fixed bottom-3 left-3 z-40 rounded-full px-3 py-2 text-xs shadow-lg ${isAero ? 'border border-[#cbd9e3] bg-white/95 font-semibold text-[#38556e] hover:text-[#1f6feb]' : 'border border-zinc-700 bg-zinc-900/90 text-zinc-300 hover:text-white'}`}
+                aria-label="Ustawienia cookies"
+                title="Ustawienia cookies"
+                className={`fixed bottom-[max(.75rem,env(safe-area-inset-bottom))] left-3 z-40 flex min-h-11 min-w-11 items-center justify-center rounded-full px-3 py-2 text-xs shadow-lg ${isAero ? 'border border-[#cbd9e3] bg-white/95 font-semibold text-[#38556e] hover:text-[#1f6feb]' : 'border border-zinc-700 bg-zinc-900/90 text-zinc-300 hover:text-white'}`}
             >
-                Ustawienia cookies
+                <Cookie size={18} className="md:hidden" aria-hidden="true" />
+                <span className="hidden md:inline">Ustawienia cookies</span>
             </button>
         ) : null;
     }

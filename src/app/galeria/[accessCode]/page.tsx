@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Download, ShoppingCart, Check, X, ArrowLeft, ArrowUpRight, Calendar, ImageIcon, Plus, Minus, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
+import { Download, ShoppingCart, Check, X, ArrowLeft, ArrowUpRight, Calendar, ImageIcon, Layers } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumGalleryHero, { PremiumGalleryStory } from '@/components/galleries/PremiumGalleryHero';
 import PostGalleryUpsell, { TopReviewNudge } from '@/components/galleries/PostGalleryUpsell';
 import { youtubeNoCookieEmbedUrl } from '@/lib/video/youtube';
+import PhotoLightbox from '@/components/PhotoLightbox';
+import { galleryLightboxSlides } from '@/lib/galleries/photo-lightbox-slides';
 
 interface GalleryPhoto {
     id: number;
@@ -81,23 +83,16 @@ export default function ClientGalleryPage() {
         activeType: 'standard' as 'standard' | 'premium'
     });
 
-    const [zoom, setZoom] = useState(1);
-    const [position, setPosition] = useState({ x: 0, y: 0 });
-    const [dragging, setDragging] = useState(false);
-    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-    const [touchStartX, setTouchStartX] = useState<number | null>(null);
-    const [touchCurrentX, setTouchCurrentX] = useState<number | null>(null);
-    const [swipeOffsetX, setSwipeOffsetX] = useState(0);
-    const [isTouchSwiping, setIsTouchSwiping] = useState(false);
-
     const setLightbox = (index: number, type: 'standard' | 'premium', open = true) => {
         _setLightbox({ isOpen: open, activeIndex: index, activeType: type });
-        setZoom(1);
-        setPosition({ x: 0, y: 0 });
-        setSwipeOffsetX(0);
-        setIsTouchSwiping(false);
     };
 
+    // Stable slides avoid resetting an in-progress gesture when a selection changes.
+    // Display optimized previews; explicit JPG HQ downloads keep their protected endpoint.
+    const lightboxSlides = useMemo(() => {
+        const list = lightbox.activeType === 'standard' ? gallery?.standard_photos : gallery?.premium_photos;
+        return galleryLightboxSlides(list || [], lightbox.activeType, gallery?.paid_photo_ids || []);
+    }, [gallery?.standard_photos, gallery?.premium_photos, gallery?.paid_photo_ids, lightbox.activeType]);
     const currentPhoto = lightbox.isOpen
         ? (lightbox.activeType === 'standard' ? gallery?.standard_photos[lightbox.activeIndex] : gallery?.premium_photos[lightbox.activeIndex])
         : null;
@@ -191,114 +186,6 @@ export default function ClientGalleryPage() {
             next.add(photoId);
         }
         setSelectedStandard(next);
-    };
-
-    const navigateLightbox = useCallback((dir: 'next' | 'prev') => {
-        if (!gallery) return;
-        const list = lightbox.activeType === 'standard' ? gallery.standard_photos : gallery.premium_photos;
-        let nextIndex = dir === 'next' ? lightbox.activeIndex + 1 : lightbox.activeIndex - 1;
-
-        if (nextIndex >= list.length) nextIndex = 0;
-        if (nextIndex < 0) nextIndex = list.length - 1;
-
-        setLightbox(nextIndex, lightbox.activeType);
-    }, [gallery, lightbox]);
-
-    // Keyboard navigation
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (!lightbox.isOpen) return;
-            if (e.key === 'ArrowRight') navigateLightbox('next');
-            if (e.key === 'ArrowLeft') navigateLightbox('prev');
-            if (e.key === 'Escape') setLightbox(0, 'standard', false);
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [lightbox.isOpen, navigateLightbox]);
-
-    useEffect(() => {
-        if (!lightbox.isOpen || !gallery) return;
-        const list = lightbox.activeType === 'standard' ? gallery.standard_photos : gallery.premium_photos;
-        if (list.length === 0) return;
-        const current = lightbox.activeIndex;
-        const next = (current + 1) % list.length;
-        const prev = (current - 1 + list.length) % list.length;
-
-        [current, next, prev].forEach((idx) => {
-            const candidate = list[idx];
-            if (!candidate?.file_url) return;
-            const preload = new window.Image();
-            preload.src = candidate.file_url;
-        });
-    }, [lightbox.isOpen, lightbox.activeType, lightbox.activeIndex, gallery]);
-
-    // Zoom & Pan Handlers
-    const handleWheel = (e: React.WheelEvent) => {
-        if (!lightbox.isOpen) return;
-        const delta = e.deltaY > 0 ? -0.2 : 0.2;
-        setZoom(prev => Math.min(Math.max(prev + delta, 1), 4));
-    };
-
-    const handleDragStart = (e: React.MouseEvent) => {
-        if (zoom <= 1) return;
-        setDragging(true);
-        setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
-    };
-
-    const handleDragMove = (e: React.MouseEvent) => {
-        if (!dragging) return;
-        setPosition({
-            x: e.clientX - dragStart.x,
-            y: e.clientY - dragStart.y
-        });
-    };
-
-    const handleDragEnd = () => {
-        setDragging(false);
-    };
-
-    const handleTouchStart = (e: React.TouchEvent) => {
-        if (zoom > 1) return;
-        const x = e.touches[0]?.clientX;
-        if (typeof x === 'number') {
-            setIsTouchSwiping(true);
-            setTouchStartX(x);
-            setTouchCurrentX(x);
-            setSwipeOffsetX(0);
-        }
-    };
-
-    const handleTouchMove = (e: React.TouchEvent) => {
-        if (zoom > 1 || touchStartX === null) return;
-        const x = e.touches[0]?.clientX;
-        if (typeof x === 'number') {
-            setTouchCurrentX(x);
-            setSwipeOffsetX(x - touchStartX);
-        }
-    };
-
-    const handleTouchEnd = () => {
-        if (zoom > 1 || touchStartX === null || touchCurrentX === null) {
-            setTouchStartX(null);
-            setTouchCurrentX(null);
-            setSwipeOffsetX(0);
-            setIsTouchSwiping(false);
-            return;
-        }
-
-        const deltaX = touchCurrentX - touchStartX;
-        const threshold = 55;
-
-        if (deltaX > threshold) {
-            navigateLightbox('prev');
-        } else if (deltaX < -threshold) {
-            navigateLightbox('next');
-        }
-
-        setTouchStartX(null);
-        setTouchCurrentX(null);
-        setSwipeOffsetX(0);
-        setIsTouchSwiping(false);
     };
 
     const startBrowserDownload = (downloadUrl: string, fileName?: string) => {
@@ -976,164 +863,50 @@ export default function ClientGalleryPage() {
                 )}
             </AnimatePresence>
 
-            {/* Professional Zoomable Lightbox */}
-            <AnimatePresence>
-                {lightbox.isOpen && currentPhoto && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/98 z-[300] flex items-center justify-center backdrop-blur-3xl px-4 select-none"
-                        onClick={() => setLightbox(0, 'standard', false)}
-                    >
-                        {/* Lightbox Header */}
-                        <div className="absolute top-0 left-0 right-0 h-16 md:h-28 px-3 md:px-8 flex items-center justify-between z-[110] bg-gradient-to-b from-black/80 via-black/40 to-transparent">
-                            <div className="flex items-center gap-8">
-                                <div className="text-white">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-1">Przeglądanie</p>
-                                    <p className="text-xl font-black">{lightbox.activeIndex + 1} <span className="text-zinc-600 text-sm font-bold">/ {lightbox.activeType === 'standard' ? gallery.standard_photos.length : gallery.premium_photos.length}</span></p>
-                                </div>
-                                <div className="h-10 w-px bg-white/10 hidden md:block" />
-                                <div className="hidden md:flex items-center gap-3">
+            <PhotoLightbox
+                open={lightbox.isOpen}
+                index={lightbox.activeIndex}
+                slides={lightboxSlides}
+                onClose={() => _setLightbox((previous) => ({ ...previous, isOpen: false }))}
+                onView={(index) => _setLightbox((previous) => previous.activeIndex === index ? previous : { ...previous, activeIndex: index })}
+                actions={currentPhoto && (
+                    <>
+                        {lightboxSlides[lightbox.activeIndex]?.previewOnly && (
+                            <span className="photo-viewer__status">
+                                {lightboxSlides[lightbox.activeIndex]?.previewUnavailable
+                                    ? 'Podgląd tego zdjęcia nie jest jeszcze dostępny'
+                                    : 'Podgląd przed zakupem'}
+                            </span>
+                        )}
+                        {lightbox.activeType === 'premium' && !isPaid(currentPhoto.id) ? (
+                            <button
+                                type="button"
+                                aria-pressed={selectedPremium.has(currentPhoto.id)}
+                                onClick={() => togglePremium(currentPhoto.id)}
+                            >
+                                <ShoppingCart aria-hidden="true" />
+                                {selectedPremium.has(currentPhoto.id) ? 'Usuń z zamówienia' : `Dodaj • ${(gallery.price_per_premium / 100).toFixed(2)} zł`}
+                            </button>
+                        ) : (
+                            <>
+                                {lightbox.activeType === 'standard' && canSelectStandard && (
                                     <button
-                                        onClick={() => setZoom(prev => Math.min(prev + 0.5, 4))}
-                                        className="p-4 bg-white/5 hover:bg-white/10 rounded-2xl text-white transition-all border border-white/5 hover:scale-110"
+                                        type="button"
+                                        aria-pressed={selectedStandard.has(currentPhoto.id)}
+                                        onClick={() => toggleStandard(currentPhoto.id)}
                                     >
-                                        <Plus className="w-5 h-5" />
+                                        <Check aria-hidden="true" />
+                                        {selectedStandard.has(currentPhoto.id) ? 'Odznacz do druku' : 'Zaznacz do druku'}
                                     </button>
-                                    <button
-                                        onClick={() => { setZoom(1); setPosition({ x: 0, y: 0 }); }}
-                                        className="px-6 py-4 bg-white/5 hover:bg-white/10 rounded-2xl text-[10px] font-black text-white transition-all border border-white/5 uppercase tracking-widest"
-                                    >
-                                        Dopasuj
-                                    </button>
-                                    <button
-                                        onClick={() => setZoom(prev => Math.max(prev - 0.5, 1))}
-                                        className="p-4 bg-white/5 hover:bg-white/10 rounded-2xl text-white transition-all border border-white/5 hover:scale-110"
-                                    >
-                                        <Minus className="w-5 h-5" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-6">
-                                {lightbox.activeType === 'premium' ? (
-                                    <>
-                                        {isPaid(currentPhoto.id) ? (
-                                            <button
-                                                onClick={() => downloadPhoto(currentPhoto.id)}
-                                                className="hidden md:flex h-16 px-10 bg-white text-black text-[10px] font-black uppercase rounded-2xl tracking-widest items-center gap-3 shadow-2xl hover:bg-gold-500 transition-colors"
-                                            >
-                                                <Download className="w-5 h-5" /> Pobierz oryginał
-                                            </button>
-                                        ) : (
-                                            <button
-                                                onClick={() => togglePremium(currentPhoto.id)}
-                                                className={`hidden md:flex h-16 px-10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-2xl ${selectedPremium.has(currentPhoto.id) ? 'bg-gold-500 text-black' : 'bg-white/5 text-white border border-white/10 hover:bg-gold-500 hover:text-black'}`}
-                                            >
-                                                {selectedPremium.has(currentPhoto.id) ? 'Zrezygnuj z wyboru' : 'Dodaj do zamówienia'}
-                                            </button>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div className="hidden md:flex items-center gap-3">
-                                        {canSelectStandard && (
-                                            <button
-                                                onClick={() => toggleStandard(currentPhoto.id)}
-                                                className={`h-16 px-8 text-[10px] font-black uppercase rounded-2xl tracking-widest items-center gap-3 shadow-2xl transition-colors ${selectedStandard.has(currentPhoto.id) ? 'bg-gold-500 text-black hover:bg-gold-400' : 'bg-white/10 text-white border border-white/15 hover:bg-white hover:text-black'}`}
-                                            >
-                                                {selectedStandard.has(currentPhoto.id) ? 'Odznacz do druku' : 'Zaznacz do druku'}
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => downloadPhoto(currentPhoto.id)}
-                                            className="h-16 px-12 bg-white text-black text-[10px] font-black uppercase rounded-2xl tracking-widest items-center gap-3 shadow-2xl hover:bg-gold-500 transition-colors"
-                                        >
-                                            <Download className="w-5 h-5" /> Pobierz teraz
-                                        </button>
-                                    </div>
                                 )}
-
-                                <button
-                                    onClick={() => setLightbox(0, 'standard', false)}
-                                    className="p-5 bg-zinc-900/50 hover:bg-red-500 hover:text-white rounded-2xl text-zinc-400 transition-all border border-zinc-800"
-                                >
-                                    <X className="w-8 h-8" />
+                                <button type="button" onClick={() => downloadPhoto(currentPhoto.id)}>
+                                    <Download aria-hidden="true" /> Pobierz JPG
                                 </button>
-                            </div>
-                        </div>
-
-                        {/* Main Viewport */}
-                        <div
-                            className="relative w-full h-full flex items-center justify-center overflow-hidden"
-                            onClick={(e) => e.stopPropagation()}
-                            onWheel={handleWheel}
-                            onMouseDownCapture={handleDragStart}
-                            onMouseMoveCapture={handleDragMove}
-                            onMouseUpCapture={handleDragEnd}
-                            onMouseLeave={handleDragEnd}
-                            onTouchStart={handleTouchStart}
-                            onTouchMove={handleTouchMove}
-                            onTouchEnd={handleTouchEnd}
-                            style={{ touchAction: zoom > 1 ? 'none' : 'pan-y' }}
-                        >
-                            <motion.div
-                                animate={{
-                                    scale: zoom,
-                                    x: zoom > 1 ? position.x : swipeOffsetX,
-                                    y: zoom > 1 ? position.y : 0,
-                                }}
-                                transition={(dragging || isTouchSwiping) ? { duration: 0 } : { type: 'spring', damping: 30, stiffness: 250 }}
-                                className="relative w-full h-[85vh] flex items-center justify-center cursor-grab active:cursor-grabbing"
-                            >
-                                <img
-                                    src={`/api/galleries/${accessCode}/download/${currentPhoto.id}`}
-                                    alt="Full View"
-                                    loading="eager"
-                                    className="max-w-full max-h-full object-contain shadow-[0_0_150px_rgba(0,0,0,1)] rounded-sm pointer-events-none"
-                                />
-                            </motion.div>
-                        </div>
-
-                        {/* Arrows */}
-                        <div className="absolute inset-x-3 md:inset-x-12 top-1/2 -translate-y-1/2 hidden md:flex justify-between pointer-events-none">
-                            <button
-                                onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
-                                className="p-3 md:p-8 bg-black/40 hover:bg-white hover:text-black rounded-full text-white transition-all pointer-events-auto backdrop-blur-2xl border border-white/10 group active:scale-95"
-                            >
-                                <ChevronLeft className="w-6 h-6 md:w-12 md:h-12 transition-transform group-hover:-translate-x-1" />
-                            </button>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }}
-                                className="p-3 md:p-8 bg-black/40 hover:bg-white hover:text-black rounded-full text-white transition-all pointer-events-auto backdrop-blur-2xl border border-white/10 group active:scale-95"
-                            >
-                                <ChevronRight className="w-6 h-6 md:w-12 md:h-12 transition-transform group-hover:translate-x-1" />
-                            </button>
-                        </div>
-
-                        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 md:hidden px-3 py-1.5 rounded-full bg-black/60 text-zinc-300 text-[11px] border border-white/10">
-                            Przesuń palcem, aby zmienić zdjęcie
-                        </div>
-
-                        {/* Thumbnails */}
-                        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 h-24 px-8 py-3 bg-zinc-950/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] z-[110] flex gap-3 items-center overflow-x-auto max-w-[95vw] shadow-2xl">
-                            {(lightbox.activeType === 'standard' ? gallery.standard_photos : gallery.premium_photos).map((p, i) => (
-                                <button
-                                    key={p.id}
-                                    onClick={() => setLightbox(i, lightbox.activeType)}
-                                    className={`relative h-14 aspect-[3/2] rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 ${lightbox.activeIndex === i ? 'border-gold-500 scale-110 shadow-2xl -translate-y-1' : 'border-transparent opacity-30 hover:opacity-100 hover:scale-105'}`}
-                                >
-                                    <img
-                                        src={p.thumbnail_url || p.file_url}
-                                        alt={`Miniatura zdjęcia ${i + 1}`}
-                                        className="w-full h-full object-cover"
-                                    />
-                                </button>
-                            ))}
-                        </div>
-                    </motion.div>
+                            </>
+                        )}
+                    </>
                 )}
-            </AnimatePresence>
+            />
         </div>
     );
 }

@@ -1,3 +1,4 @@
+import PortfolioContactGate from '@/components/portfolio/PortfolioContactGate';
 import React from "react";
 import { notFound } from "next/navigation";
 import { getCategory, getPortfolioCategories } from "@/lib/portfolio";
@@ -100,6 +101,7 @@ export default async function CategoryPage({ params }: Props) {
                         fitMode="blur"
                     />
                 </div>
+                <PortfolioContactGate />
             </main>
         );
     }
@@ -120,6 +122,7 @@ export default async function CategoryPage({ params }: Props) {
                     description={category.description}
                 />
             )}
+            <PortfolioContactGate />
         </main>
     );
 }

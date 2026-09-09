@@ -1,19 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
-import PhotoAlbum from "react-photo-album"; // Optional, but if not installed we use CSS columns
-import Lightbox from "yet-another-react-lightbox";
-import "yet-another-react-lightbox/styles.css";
+import React, { useMemo, useState } from "react";
+import PhotoLightbox from "@/components/PhotoLightbox";
 import { motion } from "framer-motion";
 import type { PortfolioImage } from "@/lib/portfolio";
 
-// Plugins for Lightbox
-import Zoom from "yet-another-react-lightbox/plugins/zoom";
-import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
-import "yet-another-react-lightbox/plugins/thumbnails.css";
-
 export default function PortfolioGallery({ images }: { images: PortfolioImage[] }) {
     const [index, setIndex] = useState(-1);
+
+    // Convert to format expected by Lightbox
+    const slides = useMemo(() => images.map((img) => ({
+        src: img.src,
+        width: img.width,
+        height: img.height,
+        alt: img.alt,
+    })), [images]);
+
 
     if (!images || images.length === 0) {
         return (
@@ -22,14 +24,6 @@ export default function PortfolioGallery({ images }: { images: PortfolioImage[] 
             </div>
         );
     }
-
-    // Convert to format expected by Lightbox
-    const slides = images.map((img) => ({
-        src: img.src,
-        width: img.width,
-        height: img.height,
-        alt: img.alt,
-    }));
 
     return (
         <>
@@ -44,8 +38,10 @@ export default function PortfolioGallery({ images }: { images: PortfolioImage[] 
                         transition={{ duration: 0.5, delay: i * 0.05 }}
                         className="break-inside-avoid"
                     >
-                        <div
-                            className="group relative overflow-hidden rounded-xl bg-zinc-900 cursor-pointer"
+                        <button
+                            type="button"
+                            aria-label={`Otwórz zdjęcie ${i + 1}`}
+                            className="w-full block group relative overflow-hidden rounded-xl bg-zinc-900 cursor-pointer"
                             onClick={() => setIndex(i)}
                         >
                             <img
@@ -65,21 +61,18 @@ export default function PortfolioGallery({ images }: { images: PortfolioImage[] 
                                     </svg>
                                 </div>
                             </div>
-                        </div>
+                        </button>
                     </motion.div>
                 ))}
             </div>
 
             {/* Lightbox */}
-            <Lightbox
+            <PhotoLightbox
                 index={index}
                 slides={slides}
                 open={index >= 0}
-                close={() => setIndex(-1)}
-                plugins={[Zoom, Thumbnails]}
-                animation={{ fade: 300 }}
-                carousel={{ padding: 0 }}
-                styles={{ container: { backgroundColor: "rgba(0, 0, 0, .95)" } }}
+                onClose={() => setIndex(-1)}
+                onView={setIndex}
             />
         </>
     );

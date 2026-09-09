@@ -1,3 +1,7 @@
+## 2026-09-09 — Mobilne oglądanie zdjęć
+
+W toku: mobilne hero/portfolio, wspólny lightbox, FB po zdjęciach i streaming home. Następne bramki: niezależny QA, build, podgląd wdrożenia i kontrola. Bez migracji DB i nowych płatnych usług.
+
 ## 2026-09-08 — nawigacja portfolio
 
 - [x] Potwierdzić niejednoznaczny powrót i brak sesji niewyróżnionych w kategorii.

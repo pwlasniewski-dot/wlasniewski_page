@@ -1,3 +1,5 @@
+import { Suspense } from 'react';
+import HeroSlider from '@/components/HeroSlider';
 
 import HomeContent from "./HomeContent";
 import { loadPublicReviews } from "@/lib/public-reviews.server";
@@ -79,31 +81,30 @@ export async function generateMetadata(): Promise<Metadata> {
     };
 }
 
+// CMS writes already invalidate / and the root layout. Prices remain uncached.
+const getCachedHomeSections = unstable_cache(
+    () => prisma.page.findUnique({
+        where: { slug: 'strona-glowna' },
+        select: { home_sections: true, sections: true },
+    }),
+    ['home-visible-sections'],
+    { revalidate: 3600, tags: ['pages', 'home'] },
+);
+
+const getCachedHeroInterval = unstable_cache(
+    () => prisma.setting.findFirst({ where: { setting_key: 'hero_slider_interval' }, select: { setting_value: true } }),
+    ['home-hero-interval'],
+    { revalidate: 3600, tags: ['settings', 'home'] },
+);
+
 async function getHomePageData() {
-    let page: { home_sections: string | null; sections: string | null } | null = null;
-    let cmsUnavailable = false;
-    let testimonialsUnavailable = false;
-
     try {
-        page = await prisma.page.findUnique({
-            where: { slug: 'strona-glowna' },
-            select: { home_sections: true, sections: true },
-        });
-        cmsUnavailable = page === null;
+        const page = await getCachedHomeSections();
+        return { page, cmsUnavailable: page === null };
     } catch {
-        cmsUnavailable = true;
         console.warn('[home] CMS unavailable, rendering resilient homepage fallback.');
+        return { page: null, cmsUnavailable: true };
     }
-
-    let finalTestimonials: any[] = [];
-    try {
-        finalTestimonials = await loadPublicReviews();
-    } catch {
-        testimonialsUnavailable = true;
-        console.warn('[home] Testimonials unavailable; using preview fallback only.');
-    }
-
-    return { page, testimonials: finalTestimonials, cmsUnavailable, testimonialsUnavailable };
 }
 
 async function getPublicGuidePromo() {
@@ -127,10 +128,15 @@ async function getPublicGuidePromo() {
 }
 
 export default async function HomePage() {
-    const [{ page, testimonials, cmsUnavailable, testimonialsUnavailable }, publicPricing, publicGuidePromo] = await Promise.all([
-        getHomePageData(),
+    // Start independent reads now, but do not hold the first photograph for prices or reviews.
+    const contentData = Promise.all([
         loadPublicPricingSnapshot(),
         getPublicGuidePromo(),
+        loadPublicReviews().catch(() => []),
+    ]);
+    const [{ page, cmsUnavailable }, intervalSetting] = await Promise.all([
+        getHomePageData(),
+        getCachedHeroInterval().catch(() => null),
     ]);
 
     let homeData: any = null;
@@ -264,33 +270,33 @@ export default async function HomePage() {
     // Extract sections explicitly to ensure proper serialization
     const sections = JSON.parse(JSON.stringify(orderedSections));
 
-    // Fetch Hero Slider Interval (fallback to 6000ms)
-    // We check both specific KV setting and generic settings if needed
-    let intervalSetting = null;
-    try {
-        intervalSetting = await prisma.setting.findFirst({
-            where: { setting_key: 'hero_slider_interval' }
-        });
-    } catch (e: any) {
-        // If column missing (P2022), ignore and use fallback
-        if (e.code === 'P2022') {
-            console.warn('Settings column missing (theme_mode?), using default interval.');
-        } else {
-            console.warn('[home] Hero interval unavailable; using the default value.');
-        }
-    }
     const heroSliderInterval = intervalSetting?.setting_value ? parseInt(intervalSetting.setting_value) : 6000;
 
     return (
+        <main className="home-editorial min-h-screen bg-[#f3efe8] text-[#27221c]">
+            <HeroSlider slides={heroSlides} interval={heroSliderInterval} />
+            <Suspense fallback={<div role="status" aria-label="Ładowanie oferty" className="mx-auto h-56 max-w-6xl px-5 py-12"><div className="h-8 w-2/3 rounded bg-stone-200 motion-safe:animate-pulse" /></div>}>
+                <HomeBelowHero contentData={contentData} sections={sections} homeData={homeData} orderedSections={orderedSections} />
+            </Suspense>
+        </main>
+    );
+}
+
+async function HomeBelowHero({ contentData, sections, homeData, orderedSections }: {
+    contentData: Promise<[Awaited<ReturnType<typeof loadPublicPricingSnapshot>>, Awaited<ReturnType<typeof getPublicGuidePromo>>, Awaited<ReturnType<typeof loadPublicReviews>>]>;
+    sections: any[];
+    homeData: any;
+    orderedSections: any[];
+}) {
+    const [publicPricing, publicGuidePromo, testimonials] = await contentData;
+    return (
         <HomeContent
-            heroSlides={heroSlides}
+            skipHero
+            heroSlides={[]}
             sections={sections}
             homeData={homeData}
             orderedSections={orderedSections}
-            testimonials={testimonialsUnavailable
-                ? []
-                : testimonials}
-            heroSliderInterval={heroSliderInterval}
+            testimonials={testimonials}
             publicPriceLabels={{
                 Sesja: publicPriceLabel(publicPricing.minimumPrices, 'Sesja'),
                 'Ślub': publicPriceLabel(publicPricing.minimumPrices, 'Ślub'),

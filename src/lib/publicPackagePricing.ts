@@ -82,14 +82,13 @@ export async function loadPublicMinimumPrices(
  */
 export async function loadPublicPricingSnapshot(): Promise<PublicPricingSnapshot> {
     try {
-        const packages = await findPricedPublicPackages();
-        let featuredPromotions: Record<string, PublicPackagePromotion> = {};
-
-        try {
-            featuredPromotions = await loadFeaturedPromotionsByService();
-        } catch (promotionError) {
-            console.warn('[public-pricing] Promotions unavailable; using regular prices.', promotionError);
-        }
+        const [packages, featuredPromotions] = await Promise.all([
+            findPricedPublicPackages(),
+            loadFeaturedPromotionsByService().catch(promotionError => {
+                console.warn('[public-pricing] Promotions unavailable; using regular prices.', promotionError);
+                return {} as Record<string, PublicPackagePromotion>;
+            }),
+        ]);
 
         const minimumPrices = summarizeMinimumPrices(packages);
         const minimumPromotions: Record<string, PublicPackagePromotion> = {};
