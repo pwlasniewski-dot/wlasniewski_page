@@ -3,6 +3,7 @@
 import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useSliderAutoplay } from '@/hooks/useSliderAutoplay';
 
 export interface PortfolioPhotoSlide {
     id: string | number;
@@ -18,10 +19,12 @@ export default function PortfolioPhotoSlider({ slides, title, description }: {
     title: string;
     description?: string | null;
 }) {
+    const root = useRef<HTMLElement>(null);
     const track = useRef<HTMLDivElement>(null);
     const [index, setIndex] = useState(0);
     const photos = slides.filter(slide => Boolean(slide.image));
     const active = photos[Math.min(index, photos.length - 1)];
+    useSliderAutoplay(root, track, photos.length);
 
     const move = (direction: -1 | 1) => {
         if (!track.current || photos.length < 2) return;
@@ -33,7 +36,7 @@ export default function PortfolioPhotoSlider({ slides, title, description }: {
     };
 
     return (
-        <section className="bg-black text-white" aria-label={title}>
+        <section ref={root} className="bg-black text-white" aria-label={title}>
             {photos.length > 0 && (
                 <div
                     ref={track}
@@ -78,7 +81,7 @@ export default function PortfolioPhotoSlider({ slides, title, description }: {
                 {photos.length > 1 && (
                     <div className="flex shrink-0 items-center gap-1 pt-1">
                         <button type="button" aria-label="Poprzedni slajd" disabled={index === 0} onClick={() => move(-1)} className="hidden h-11 w-11 items-center justify-center rounded-full text-white/70 hover:bg-white/10 disabled:opacity-25 md:flex"><ChevronLeft size={20} /></button>
-                        <span className="whitespace-nowrap text-xs tabular-nums tracking-wider text-zinc-500" aria-live="polite" aria-atomic="true">{Math.min(index + 1, photos.length)} / {photos.length}</span>
+                        <span className="whitespace-nowrap text-xs tabular-nums tracking-wider text-zinc-500" aria-live="off">{Math.min(index + 1, photos.length)} / {photos.length}</span>
                         <button type="button" aria-label="Następny slajd" disabled={index >= photos.length - 1} onClick={() => move(1)} className="hidden h-11 w-11 items-center justify-center rounded-full text-white/70 hover:bg-white/10 disabled:opacity-25 md:flex"><ChevronRight size={20} /></button>
                     </div>
                 )}

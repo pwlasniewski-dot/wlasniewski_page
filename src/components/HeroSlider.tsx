@@ -159,10 +159,11 @@ export default function HeroSlider({ slides = [], interval = 6000, documentTitle
         <MobileHeroSlider
             slides={enabledSlides}
             activeIndex={activeIndex}
-            onSelect={selectSlide}
+            onSelect={setCurrentSlide}
             isMobile={isMobile}
             reducedMotion={Boolean(prefersReducedMotion)}
             reserveHeaderSpace={documentTitle !== null}
+            interval={interval}
         />
     );
     const currentSlideData = slide;

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { HeroSlide } from './HeroSlider';
+import { useSliderAutoplay } from '@/hooks/useSliderAutoplay';
 
 const desktopPlaceholder = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
 
@@ -13,6 +14,7 @@ interface MobileHeroSliderProps {
     isMobile: boolean;
     reducedMotion: boolean;
     reserveHeaderSpace: boolean;
+    interval?: number;
 }
 
 /** Native scrolling keeps a horizontal photo gesture independent of page scrolling. */
@@ -23,6 +25,7 @@ export default function MobileHeroSlider({
     isMobile,
     reducedMotion,
     reserveHeaderSpace,
+    interval = 6000,
 }: MobileHeroSliderProps) {
     const rootRef = useRef<HTMLDivElement>(null);
     const trackRef = useRef<HTMLDivElement>(null);
@@ -32,6 +35,7 @@ export default function MobileHeroSlider({
     const [comparisonPosition, setComparisonPosition] = useState(50);
     indexRef.current = activeIndex;
     onSelectRef.current = onSelect;
+    useSliderAutoplay(rootRef, trackRef, slides.length, isMobile && !reducedMotion, interval);
 
     // A CMS logo can change the header height. Reserve its actual space without
     // following the sticky header's smaller scrolled state and moving the page.
@@ -196,7 +200,7 @@ export default function MobileHeroSlider({
                     </label>
                 )}
 
-                <div aria-live="polite" aria-atomic="true" className="mx-auto max-w-xl">
+                <div aria-live="off" className="mx-auto max-w-xl">
                     <h2
                         className="font-display !text-[clamp(1.85rem,7.8vw,2.4rem)] font-normal !leading-[1.1] tracking-[-.025em] [overflow-wrap:anywhere] [&_*]:![font-size:inherit] [&_*]:![line-height:inherit]"
                         dangerouslySetInnerHTML={{ __html: slide.title || '' }}
