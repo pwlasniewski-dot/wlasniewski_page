@@ -142,7 +142,7 @@ const baseMetadata: Metadata = {
         },
     },
     category: 'photography',
-    manifest: '/site.webmanifest',
+    manifest: '/site.webmanifest?v=w-white-20260909',
     appleWebApp: {
         capable: true,
         title: 'Właśniewski Foto',
@@ -150,12 +150,13 @@ const baseMetadata: Metadata = {
     },
     icons: {
         icon: [
-            { url: '/favicon.ico' },
-            { url: '/favicon-192.png', sizes: '192x192', type: 'image/png' },
-            { url: '/favicon-512.png', sizes: '512x512', type: 'image/png' },
+            { url: '/favicon.ico?v=w-white-20260909', sizes: '32x32' },
+            { url: '/favicon.svg?v=w-white-20260909', sizes: 'any', type: 'image/svg+xml' },
+            { url: '/favicon-192.png?v=w-white-20260909', sizes: '192x192', type: 'image/png' },
+            { url: '/favicon-512.png?v=w-white-20260909', sizes: '512x512', type: 'image/png' },
         ],
         apple: [
-            { url: '/favicon-192.png', sizes: '192x192', type: 'image/png' },
+            { url: '/apple-touch-icon.png?v=w-white-20260909', sizes: '180x180', type: 'image/png' },
         ],
     },
 };

@@ -8,6 +8,7 @@ import { Check, Lock, User, Info, Heart, LogOut, X, ZoomIn, Download, Package, C
 import PremiumGalleryHero, { PremiumGalleryStory } from '@/components/galleries/PremiumGalleryHero';
 import PostGalleryUpsell, { TopReviewNudge } from '@/components/galleries/PostGalleryUpsell';
 import PhotoLightbox from '@/components/PhotoLightbox';
+import GalleryGridImage from '@/components/galleries/GalleryGridImage';
 
 interface Photo {
   id: number;
@@ -2197,12 +2198,12 @@ Hasło: ${password}` : ''}`}
                         : 'ring-1 ring-zinc-800 hover:ring-zinc-600'
                   }`}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <GalleryGridImage
                     src={photo.thumbnail_url || photo.file_url}
                     alt="Zdjęcie z galerii"
-                    loading="lazy"
-                    className={`w-full h-auto block transition-transform ${downloadMode ? '' : 'group-hover:scale-[1.02]'}`}
+                    width={photo.width}
+                    height={photo.height}
+                    className={`transition-transform ${downloadMode ? '' : 'group-hover:scale-[1.02]'}`}
                   />
 
                   {/* Download-mode overlay: big checkbox */}
