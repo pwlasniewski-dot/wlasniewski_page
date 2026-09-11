@@ -22,7 +22,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:preparation-guide": "playwright test --config=playwright.preparation.config.ts",
     "test:public-guide": "playwright test --config=playwright.public-guide.config.ts",
-    "test:homepage": "playwright test --config=playwright.homepage.config.ts"
+    "test:homepage": "playwright test --config=playwright.homepage.config.ts",
+    "test:gallery-shop": "node --import tsx --test tests/unit/gallery-shop-domain.test.ts && node tests/qa/gallery-shop-rounds.cjs && node tests/qa/gallery-shop-server.cjs"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
@@ -106,6 +107,7 @@
     "autoprefixer": "^10.4.21",
     "eslint": "^9",
     "eslint-config-next": "^15.1.4",
+    "jsdom": "^26.1.0",
     "postcss": "^8.5.23",
     "prisma": "^5.22.0",
     "tailwindcss": "^3.4.18",

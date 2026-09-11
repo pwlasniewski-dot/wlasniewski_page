@@ -12,6 +12,7 @@ import { youtubeNoCookieEmbedUrl } from '@/lib/video/youtube';
 import PhotoLightbox from '@/components/PhotoLightbox';
 import { galleryLightboxSlides } from '@/lib/galleries/photo-lightbox-slides';
 import GalleryGridImage from '@/components/galleries/GalleryGridImage';
+import GalleryShoppingPanel from '@/components/galleries/GalleryShoppingPanel';
 
 interface GalleryPhoto {
     id: number;
@@ -75,7 +76,8 @@ export default function ClientGalleryPage() {
     const [selectedStandard, setSelectedStandard] = useState<Set<number>>(new Set());
     const [downloadingAll, setDownloadingAll] = useState(false);
     const [downloadProgress, setDownloadProgress] = useState<DownloadProgressState | null>(null);
-    const [viewMode, setViewMode] = useState<'grid' | 'story'>('grid');
+    const [viewMode, setViewMode] = useState<'grid' | 'story'>('story');
+    const [shopEnabled, setShopEnabled] = useState(false);
 
     // Advanced Lightbox State
     const [lightbox, _setLightbox] = useState({
@@ -456,6 +458,12 @@ export default function ClientGalleryPage() {
                         </div>
                     )}
                 </section>
+                <GalleryShoppingPanel
+                    endpoint={`/api/galleries/${accessCode}/shop`}
+                    headers={{ ...(typeof window !== 'undefined' && localStorage.getItem('user_token') ? { Authorization: `Bearer ${localStorage.getItem('user_token')}` } : {}), ...(sharePassword ? { 'x-gallery-password': sharePassword } : {}) }}
+                    photos={[...gallery.standard_photos, ...gallery.premium_photos.filter(photo => gallery.paid_photo_ids.includes(photo.id))]}
+                    onAvailabilityChange={setShopEnabled}
+                />
                 {/* Standard Photos Section */}
                 {gallery.standard_photos.length > 0 && (
                     <div className="mb-24">
@@ -688,7 +696,7 @@ export default function ClientGalleryPage() {
                 )}
 
                 {/* ALBUM SHOP - Display regardless of tab if products exist */}
-                {(gallery.products && gallery.products.length > 0) && (
+                {(!shopEnabled && gallery.products && gallery.products.length > 0) && (
                     <div className="mt-40 border-t border-zinc-900 pt-20">
                         <h2 className="text-4xl font-black text-center mb-6 uppercase tracking-tight">Sklep z Albumami</h2>
                         <p className="text-center text-zinc-500 mb-16 max-w-2xl mx-auto">Zamów piękne, ręcznie wykonane albumy i wydruki, aby zachować swoje wspomnienia na zawsze.</p>

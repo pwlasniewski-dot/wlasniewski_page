@@ -103,7 +103,7 @@ export default function AdminLayout({
 
                 <main className="flex-1">
                     <div className="py-6">
-                        <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
+                        <div className={/^\/admin\/galleries\/\d+$/.test(pathname || '') ? "w-full min-w-0 px-3 sm:px-5 md:px-6" : "mx-auto max-w-7xl px-4 sm:px-6 md:px-8"}>
                             {children}
                         </div>
                     </div>
