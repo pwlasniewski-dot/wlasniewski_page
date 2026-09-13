@@ -37,13 +37,23 @@ Publiczne CTA używają istniejącej analityki kliknięć po zgodzie użytkownik
 
 ## Testy lokalne
 
-`npm run test:gallery-shop`: **112 grup/testów PASS**, także w niezależnym odbiorze QA: dotychczasowe 74, import kolekcji 16, publiczne API/CMS 9, storefront 13. Testy używają rzeczywistych komponentów React i tras, z podstawioną bazą oraz zewnętrznym transportem. Nie tworzą płatnych przesyłek, zamówień nPhoto ani rzeczywistych płatności.
+`npm run test:gallery-shop`: **115 grup/testów PASS**: dotychczasowe 74, import kolekcji 16, publiczne API/CMS 9, storefront 16. Niezależny odbiór QA potwierdził wcześniejsze 112 oraz ponownie 41 grup dotyczących nowej oferty po poprawce routingu. Trzy nowe regresje rozwiązują prawdziwe przekierowania Next.js i renderują docelową stronę sklepu wraz z kartami oraz pięcioma ofertami; sprawdzają także opóźnienie i błąd serwisu kart. Testy używają rzeczywistych komponentów React i tras, z podstawioną bazą oraz zewnętrznym transportem. Nie tworzą płatnych przesyłek, zamówień nPhoto ani rzeczywistych płatności.
 
 Rundy: (1) admin zapis–odczyt–render i wspólna cena; (2) edycje koszyka, powtórny import, odzyskanie po odświeżeniu; (3) ukrycie/ponowna dostępność, zmiana ceny, rozdzielenie galerii i powrót płatności. Dodatkowo wybór dokładnie jednego zdjęcia canvas, zastąpienie zdjęcia, zgodność dostawy i blokada nieobsługiwanego koszyka.
 
 Build Next.js w Node 22 zakończony powodzeniem. Lokalnie brak `DATABASE_URL`: prerender korzysta z dotychczasowych fallbacków, więc build nie potwierdza integracji z rzeczywistą bazą. Pełne `tsc` ma istniejące błędy projektu; diagnostyki zmienionych plików są sprawdzane osobno. Przegląd niezależnego agenta QA uzupełnia testy wykonawców.
 
 ## Przed testem z klientką i produkcją
+
+### Sprawdzenie rzeczywistego Deploy Preview
+
+W zalogowanym panelu administratora wykonano zbiorczy import: zapisano cztery nieaktywne produkty oraz nieaktywny format 15×21, bez cen sprzedaży i bez kopiowania zdjęć producenta. Następnie wybrano wyłącznie te pięć pozycji do przyszłej prezentacji publicznej; zapis i ponowny odczyt ustawień zakończyły się komunikatem sukcesu. Wspólny sklep i prezentacja publiczna pozostają wyłączone. Wcześniejsze produkty i lokalne ustawienia galerii nie zostały zmienione.
+
+Test w przeglądarce ujawnił przekierowanie `/sklep` i `/sklep-karty-podarunkowe` do `/karta-podarunkowa`. Moduł oferty podpięto do tej rzeczywistej strony docelowej, między zachowanymi kartami podarunkowymi a instrukcją ich zakupu. Link podglądu administratora i adresy Offer wskazują docelową trasę. Regresje obejmują teraz faktyczne przekierowania i render strony, nie tylko pojedynczy komponent.
+
+Sprawdzono otwarcie zakupów w istniejącej galerii testowej i zachowanie jej wcześniejszych formatów/cen. Dwie odbitki 15×21 po dotychczasowe 2,50 zł dały 5,00 zł; z kurierem 20,00 zł suma wyniosła 25,00 zł, a po przełączeniu na Paczkomat 15,00 zł — 20,00 zł. Testową pozycję usunięto z koszyka (z dostępnym cofnięciem); końcowy koszyk jest pusty. Nie wysłano formularza płatności. Nie jest to jeszcze test konta właściwej klientki ani opłaconego zamówienia nowych produktów.
+
+### Pozostałe bramki pilota
 
 1. Zatwierdzić konkretne warianty i ceny sprzedaży pięciu propozycji, koszt kuriera oraz Paczkomatu; 0 nie jest ceną sprzedaży.
 2. Dodać właściwe zdjęcia produktów (własne albo z uprawnieniem), sprawdzić opisy, aktywować wybrane pozycje.

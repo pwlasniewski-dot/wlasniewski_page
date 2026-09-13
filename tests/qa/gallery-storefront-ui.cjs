@@ -6,6 +6,21 @@ const { parseShopIntent, shopAccountHref, shopGalleryHref, replaceShopIntent } =
 const { safeReturnTo } = require('../../src/lib/auth/return-to.ts');
 const { publicShopCatalog, defaultPublicOffer } = require('../../src/lib/galleries/public-offer.ts');
 const { validateShopConfig } = require('../../src/lib/galleries/merchandise.ts');
+const Module = require('node:module');
+const path = require('node:path');
+const fs = require('node:fs');
+const { pathToFileURL } = require('node:url');
+// Replace framework-only image/link/animation adapters, never the actual page,
+// GiftCard, shared offer component or their data-fetching business logic.
+const originalLoad = Module._load;
+const plainElement = tag => ({ children, fill, priority, whileHover, animate, initial, exit, transition, ...props }) => h.React.createElement(tag, props, children);
+Module._load = function(request, ...args) {
+  if (request === 'next/image') return { __esModule: true, default: plainElement('img') };
+  if (request === 'next/link') return { __esModule: true, default: plainElement('a') };
+  if (request === 'framer-motion') return { motion: { div: plainElement('div') } };
+  return originalLoad.call(this, request, ...args);
+};
+let DestinationPage;
 const clone = value => JSON.parse(JSON.stringify(value));
 let config = { version: 1, enabled: true, title: 'Zakupy klienta', introduction: 'Wspólna oferta', buttonLabel: 'Zamów zdjęcia', formats: [{ id: 'nphoto-15x21-silk', label: 'Odbitki 15×21', paper: 'Fuji Silk', widthMm: 152, heightMm: 210, unitAmount: 300, active: true }], productRules: {}, productDelivery: {}, delivery: { locker: { enabled: true, amount: 1500 }, courier: { enabled: true, amount: 2000 } }, publicOffer: { ...defaultPublicOffer(), enabled: true, title: 'Wspomnienia w pięknej oprawie', buttonLabel: 'Wybierz zdjęcia', formatIds: ['nphoto-15x21-silk'], productIds: [11, 12, 13, 14] } };
 let products = [
@@ -15,11 +30,12 @@ let products = [
   { id: 14, title: 'Fotoobraz na płótnie', description: '40×60, rama 2 cm', price: 18900, image_url: 'https://nphoto.com/wall.jpg', product_type: 'wall_decor', minPhotos: 1, maxPhotos: 1, deliveryMethods: ['courier'] },
 ];
 const photos = Array.from({ length: 25 }, (_, index) => ({ id: index + 1, file_url: `/photo-${index + 1}.jpg` }));
-let publicCatalog, galleries, clientCatalog, failClient = false, requests = [], actions = [];
+let publicCatalog, galleries, clientCatalog, failClient = false, requests = [], actions = [], giftCardsResponse;
 const reply = (body, status = 200) => ({ ok: status < 400, status, json: async () => clone(body) });
 global.fetch = async (url, init = {}) => {
   requests.push({ url, method: init.method || 'GET', headers: init.headers });
   if (url === '/api/shop/catalog') return reply({ success: true, catalog: publicCatalog });
+  if (url === '/api/gift-cards/shop') return giftCardsResponse;
   if (url === '/api/galleries/client') { assert.equal(init.headers.Authorization, 'Bearer own-account-token'); return reply({ galleries }); }
   if (url === '/api/galleries/26/shop') { if (failClient) throw new Error('Offline'); return reply({ success: true, catalog: clientCatalog }); }
   throw new Error(`Unexpected request: ${url}`);
@@ -30,10 +46,56 @@ async function fresh(url = '/qa') {
   publicCatalog = publicShopCatalog(config, products);
   clientCatalog = { ...clone(config), galleryId: 26, products: clone(products) };
   galleries = [{ id: 26, access_code: 'own-gallery-code', client_name: 'Moja sesja', photo_count: 25, created_at: '2026-09-01T12:00:00Z' }];
+  giftCardsResponse = reply({ cards: [{ id: 81, code: 'PRIVATE-CODE', value: 750, price: 675, theme: 'gold', available: true, card_title: 'Karta rodzinna', description: 'Istniejący opis karty z API' }] });
 }
 async function clickLink(link) { link.addEventListener('click', event => event.preventDefault(), { once: true }); await act(async () => link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))); }
 
 (async () => {
+  await check('Storefront route: actual redirects resolve both shop aliases to the page containing gift cards and 5 shared offers', async () => {
+    const { default: nextConfig } = await import(pathToFileURL(path.resolve('next.config.mjs')).href);
+    const redirects = await nextConfig.redirects();
+    for (const alias of ['/sklep', '/sklep-karty-podarunkowe']) {
+      const redirect = redirects.find(item => item.source === alias);
+      assert.equal(redirect?.destination, '/karta-podarunkowa'); assert.equal(redirect?.permanent, true);
+      DestinationPage = require(path.resolve(`src/app${redirect.destination}/page.tsx`)).default;
+      await fresh(redirect.destination); await mount(DestinationPage, {});
+      const photoSection = document.getElementById('produkty-fotograficzne'); const cardsSection = document.getElementById('wybierz-karte');
+      assert.ok(photoSection); assert.ok(cardsSection);
+      assert.equal(photoSection.querySelectorAll('article').length, 5);
+      assert.equal(cardsSection.querySelector('a[href="/karta-podarunkowa/81/kup"]').textContent.trim(), 'Kup tę kartę');
+      assert.ok(cardsSection.textContent.includes('Karta rodzinna')); assert.ok(cardsSection.textContent.includes('675 zł')); assert.ok(cardsSection.textContent.includes('Istniejący opis karty z API'));
+      assert.ok(!cardsSection.textContent.includes('PRIVATE-CODE'));
+      const howTo = [...document.querySelectorAll('h2')].find(node => node.textContent === 'Jak kupić kartę').closest('section');
+      assert.ok(cardsSection.compareDocumentPosition(photoSection) & Node.DOCUMENT_POSITION_FOLLOWING);
+      assert.ok(photoSection.compareDocumentPosition(howTo) & Node.DOCUMENT_POSITION_FOLLOWING);
+      const schema = JSON.parse(photoSection.querySelector('script').textContent);
+      assert.ok(schema.itemListElement.every(item => item.item.url.startsWith('https://wlasniewski.pl/karta-podarunkowa#') && item.item.offers.url === item.item.url));
+      assert.ok(requests.some(request => request.url === '/api/shop/catalog'));
+      assert.ok(requests.some(request => request.url === '/api/gift-cards/shop'));
+    }
+    Module._load = originalLoad;
+    assert.ok(fs.readFileSync('src/components/admin/PublicShopOfferSettings.tsx', 'utf8').includes('href="/karta-podarunkowa#produkty-fotograficzne"'));
+  });
+  await check('Storefront route: gift card request may remain pending without blocking the five photo offers', async () => {
+    await fresh('/karta-podarunkowa'); let finishCards;
+    giftCardsResponse = new Promise(resolve => { finishCards = resolve; });
+    await mount(DestinationPage, {});
+    assert.ok(document.querySelector('[aria-label="Ładowanie kart"]'));
+    assert.equal(document.querySelectorAll('#produkty-fotograficzne article').length, 5);
+    await act(async () => finishCards(reply({ cards: [{ id: 82, code: 'HIDDEN', value: 500, price: 500, theme: 'gold', available: true, card_title: 'Karta po odczycie' }] })));
+    assert.ok(document.querySelector('a[href="/karta-podarunkowa/82/kup"]'));
+    assert.equal(document.querySelectorAll('#produkty-fotograficzne article').length, 5);
+  });
+  await check('Storefront route: gift card fetch failure preserves photo offers and existing card fallback', async () => {
+    await fresh('/karta-podarunkowa'); let failCards;
+    giftCardsResponse = new Promise((resolve, reject) => { failCards = reject; });
+    await mount(DestinationPage, {});
+    const previousError = console.error; let loggedFailure = false;
+    console.error = (...args) => { if (args[0] === 'Failed to fetch gift cards') loggedFailure = true; else previousError(...args); };
+    try { await act(async () => failCards(new Error('Card service temporarily unavailable'))); } finally { console.error = previousError; }
+    assert.ok(loggedFailure); assert.ok(document.getElementById('wybierz-karte').textContent.includes('Karty są chwilowo niedostępne'));
+    assert.equal(document.querySelectorAll('#produkty-fotograficzne article').length, 5);
+  });
   await check('Storefront: safe intent rejects ambiguous IDs, hostile paths and redirects; login roundtrip', async () => {
     assert.deepEqual(parseShopIntent('?shopProduct=12'), { kind: 'product', productId: 12 });
     assert.deepEqual(parseShopIntent('?shopFormat=nphoto-15x21-silk'), { kind: 'print', formatId: 'nphoto-15x21-silk' });

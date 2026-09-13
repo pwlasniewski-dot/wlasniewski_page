@@ -45,6 +45,6 @@ export default function PublicShopOfferSettings({ value, formats, products, shop
             </div>
         </div>
         <p className="text-xs text-zinc-400">Kolejność list jest kolejnością prezentacji. Zmiany zapisuje przycisk „Zapisz ustawienia sklepu”.</p>
-        <a href="/sklep-karty-podarunkowe#produkty-fotograficzne" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center font-semibold text-amber-200 underline underline-offset-4">Zobacz zapisany sklep ↗</a>
+        <a href="/karta-podarunkowa#produkty-fotograficzne" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center font-semibold text-amber-200 underline underline-offset-4">Zobacz zapisany sklep ↗</a>
     </fieldset>;
 }
