@@ -584,7 +584,7 @@ export default function ClientGalleryPage() {
                     </div>
                 )}
 
-                {!canSelectStandard && gallery.standard_photos.length > 0 && (
+                {!canSelectStandard && !shopEnabled && gallery.standard_photos.length > 0 && (
                     <div className="mb-12 rounded-2xl border border-zinc-800 bg-zinc-900/40 px-4 py-3 text-sm text-zinc-400">
                         Ta galeria działa w trybie indywidualnym. Możesz pobierać zdjęcia i zamawiać dodatki, ale zaznaczanie do druku jest wyłączone.
                     </div>

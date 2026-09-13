@@ -69,3 +69,17 @@ Pełny build Node22 ukończony dla wcześniejszej części aktualizacji; końcow
 Browser: podany deploy-preview odpowiada. Prywatna galeria poprawnie wymaga właściciela. Próba logowania admina przez bezpieczny formularz zakończyła się widocznym Invalid credentials. Nie potwierdzono wizualnie zalogowanego admina/klienta ani fizycznego Safari iPhone. Nie zgłaszać tej bramki jako ukończonej. Lokalne http://localhost:3000 zablokowane przez przeglądarkę, bez obejścia.
 
 Otwarte: rzeczywisty zapis/odczyt w środowisku z bazą i odbiór zalogowanej przeglądarki; PayU sandbox; InPost sandbox; dostęp partnerski nPhoto dla bezpośredniego zlecania produkcji; historia nowych zakupów klienta poza bieżącą sesją; zwroty opłaconych zamówień. Centrum admina ma trwałą historię.
+
+## Uzupełnienie: zalogowana przeglądarka 2026-09-13
+
+Po ręcznym logowaniu użytkownika potwierdzono dostęp do administratora i wskazanej przez niego galerii. Za wyraźną zgodą użytkownika włączono sklep wyłącznie w tej galerii; wspólna oferta pozostała wyłączona. Poprawiono błędne wymiary istniejącego formatu 15×21 z 100×150 na 150×210 mm, bez zmiany cen. Admin potwierdził zapis i ponowny odczyt. Po odświeżeniu widok klienta pokazał nowy panel zakupów zamiast starego sklepu albumów.
+
+Trzy próby w rzeczywistym deploy-preview (desktop, bez płatności):
+
+1. Dwa zdjęcia po 2 szt. w cenie 1,50 PLN: 6,00 PLN. Zmiana pierwszej ilości na 3 oraz drugiego formatu na 2,50 PLN: 9,50 PLN. Usunięcie i cofnięcie usunięcia, zamknięcie zakupów oraz ponowne otwarcie zachowały koszyk. Podsumowanie z dostawą 15,00 PLN: 24,50 PLN. Publiczne wyszukiwanie InPost zwróciło rzeczywiste punkty Torunia; wybrano punkt z listy.
+2. Anulowanie wyboru albumu wyczyściło wybór. Ponowne wybranie dwóch zdjęć pozwoliło dodać produkt za 500,00 PLN. Zmiana ilości na 2, usunięcie/cofnięcie i odświeżenie całej strony zachowały 3 pozycje, ilości i punkt odbioru. Produkty 1009,50 PLN, z Paczkomatem 1024,50 PLN. Edycja kolejności zmieniła okładkę bez duplikacji albumu; kurier zmienił sumę na 1029,50 PLN i pokazał pola adresowe.
+3. Zaznaczenie wszystkich 3 pozycji i zbiorcze usunięcie dało pusty koszyk bez przycisku płatności. Ponowne dodanie jednego zdjęcia po 4 szt. dało 6,00 PLN, z kurierem 26,00 PLN. Testowe pozycje usunięto po próbie.
+
+Obejrzano zrzuty ekranu panelu admina, koszyka i kart produktów. Wykryto i poprawiono w kodzie nieaktualne komunikaty o ręcznym nadawaniu, braku importu i wyłączonym zaznaczaniu odbitek mimo aktywnego sklepu. Istniejące produkty nadal mają dane wymagające redakcji: literówki, brak zdjęcia albo ilustracje niezwiązane z produktem. Nie zastępowano opisów, zdjęć ani cen istniejących ofert bez ustalenia docelowych wariantów.
+
+Granice odbioru: nie klikano „Zamawiam i płacę”, nie utworzono zamówienia, etykiety ani zlecenia odbioru. Zalogowany dostęp klienta testowano w przeglądarce ze wspólną sesją administratora; izolowane logowanie rodzica, rzeczywiste Safari/iPhone, PayU i nadanie InPost w sandboxie pozostają do odbioru. Nie potwierdzono mapy GeoWidget (przycisk mapy nie był dostępny). Powyższy zapis zastępuje wcześniejsze stwierdzenie o braku jakiegokolwiek zalogowanego odbioru przeglądarkowego, ale nie stanowi pełnego odbioru produkcyjnego.
