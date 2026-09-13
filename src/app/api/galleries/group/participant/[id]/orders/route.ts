@@ -17,10 +17,10 @@ type OrderLine = {
 // opcjonalnie pojedyncze zamówienie po ?order_id=N (do ekranu potwierdzenia po PayU).
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const participantId = parseInt(params.id, 10);
+    const participantId = parseInt((await params).id, 10);
     if (Number.isNaN(participantId)) {
       return NextResponse.json({ error: 'Nieprawidłowe ID uczestnika' }, { status: 400 });
     }
@@ -94,7 +94,7 @@ export async function GET(
     const frameMap = new Map<number, number>();
     orderedPhotos.forEach((p, idx) => frameMap.set(p.id, idx + 1));
 
-    const result = parsed.map(({ order, meta, lines }) => ({
+    const result = parsed.filter(({meta}) => meta?.kind !== 'gallery_merchandise').map(({ order, meta, lines }) => ({
       id: order.id,
       payment_status: order.payment_status,
       photo_count: order.photo_count,

@@ -6,6 +6,7 @@ import { Upload, Trash2, Check, X, Eye, ImageIcon, Plus, ArrowLeft, Calendar, Sa
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import GalleryParticipantsManager from './GalleryParticipantsManager';
+import GalleryShopAdmin from './GalleryShopAdmin';
 import { galleryTermsFromAcceptedOffer } from '@/lib/galleries/offerTerms';
 
 interface GalleryPhoto {
@@ -1016,7 +1017,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, clien
                         <p className="text-zinc-500 text-sm font-medium">Kod dostępu: <span className="text-gold-500 font-mono font-bold tracking-wider">{gallery.access_code}</span></p>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                     <button
                         onClick={handleSendAccessEmail}
                         disabled={sendingAccessEmail}
@@ -1282,7 +1283,11 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, clien
                 </div>
             )}
 
+            <GalleryShopAdmin galleryId={gallery.id} photos={gallery.photos} />
+
             {/* Products Section */}
+            <details className="rounded-2xl border border-zinc-800">
+                <summary className="cursor-pointer p-4 text-zinc-300">Dotychczasowy edytor albumów — dodawanie własnych ofert i zdjęć</summary>
             <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-8">
                 <h3 className="text-xs font-black text-gold-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
                     <div className="p-2 bg-gold-500/10 rounded-lg"><ShoppingBag className="w-4 h-4" /></div>
@@ -1410,6 +1415,8 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, clien
                     </div>
                 </div>
             </div>
+
+            </details>
 
             {/* Participants Manager */}
             <GalleryParticipantsManager galleryId={gallery.id} />

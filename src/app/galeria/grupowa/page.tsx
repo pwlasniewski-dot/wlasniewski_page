@@ -9,6 +9,7 @@ import PremiumGalleryHero, { PremiumGalleryStory } from '@/components/galleries/
 import PostGalleryUpsell, { TopReviewNudge } from '@/components/galleries/PostGalleryUpsell';
 import PhotoLightbox from '@/components/PhotoLightbox';
 import GalleryGridImage from '@/components/galleries/GalleryGridImage';
+import GalleryShoppingPanel from '@/components/galleries/GalleryShoppingPanel';
 
 interface Photo {
   id: number;
@@ -132,13 +133,13 @@ export default function GroupGalleryPage() {
   const [heroPaused, setHeroPaused] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'story'>('story');
+  const [shopEnabled, setShopEnabled] = useState(false);
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const syncViewportMode = () => {
       const mobile = window.innerWidth < 768;
       setIsMobileViewport(mobile);
-      setViewMode(mobile ? 'grid' : 'story');
     };
 
     syncViewportMode();
@@ -1129,7 +1130,7 @@ export default function GroupGalleryPage() {
   };
 
   const selectedPhotoItems = photos.filter((p) => selectedPhotos.includes(p.id));
-  const extraPurchaseEnabled = !!participantInfo && !!galleryInfo && !isGuestMode && !!galleryInfo.allow_extra_photo_purchase;
+  const extraPurchaseEnabled = !shopEnabled && !!participantInfo && !!galleryInfo && !isGuestMode && !!galleryInfo.allow_extra_photo_purchase;
   const globalPrice10x15 = galleryInfo?.group_print_price_10x15 || 150;
   const globalPrice15x21 = galleryInfo?.group_print_price_15x21 || 250;
   const DEFAULT_EXTRA_SIZE: GroupExtraPrintSize = '10x15';
@@ -1781,9 +1782,9 @@ Hasło: ${password}` : ''}`}
           title={isGuestMode ? 'Witaj, Gościu' : (participantInfo?.parent_name ? `Witaj, ${participantInfo.parent_name}` : 'Galeria')}
           subtitle={isGuestMode ? undefined : 'Wybierz zdjęcia do druku odbitek'}
           badge={isGuestMode ? undefined : 'Twoja prywatna galeria'}
-          showModeToggle={isMobileViewport}
+          showModeToggle={true}
           mode={viewMode}
-          onModeChange={(mode) => setViewMode(isMobileViewport ? mode : 'story')}
+          onModeChange={setViewMode}
           onPhotoClick={(p) => setLightboxPhoto(p as Photo)}
           selectedPhotoIds={isGuestMode ? undefined : new Set(selectedPhotos)}
           onToggleSelect={isGuestMode ? undefined : (p) => handleSelectToggle(p.id)}
@@ -1800,6 +1801,17 @@ Hasło: ${password}` : ''}`}
         />
       )}
 
+      {!isGuestMode && participantInfo && authToken && (
+        <div className="px-4 py-6">
+          <GalleryShoppingPanel
+            key={participantInfo.participant_id}
+            endpoint={`/api/galleries/group/participant/${participantInfo.participant_id}/shop`}
+            headers={{ Authorization: `Bearer ${authToken}` }}
+            photos={photos}
+            onAvailabilityChange={setShopEnabled}
+          />
+        </div>
+      )}
       {/* Consent info banner — widoczny jeśli zgoda nie jest jeszcze wyrażona, ukryty dla gości */}
       {!isGuestMode && !consentGiven && photos.length > 0 && (
         <div className="bg-amber-500/10 border-y border-amber-500/30">

@@ -10,8 +10,8 @@ export default function GalleryDetailsPage({ params }: { params: Promise<{ id: s
     const galleryId = Number(resolvedParams.id);
 
     return (
-        <div className="min-h-screen bg-zinc-950 text-white p-8 md:p-12">
-            <div className="max-w-7xl mx-auto">
+        <div className="min-h-screen bg-zinc-950 text-white p-0">
+            <div className="w-full min-w-0">
                 {/* Unified Admin Component */}
                 <GalleryAdmin
                     galleryId={galleryId}

@@ -22,7 +22,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:preparation-guide": "playwright test --config=playwright.preparation.config.ts",
     "test:public-guide": "playwright test --config=playwright.public-guide.config.ts",
-    "test:homepage": "playwright test --config=playwright.homepage.config.ts"
+    "test:homepage": "playwright test --config=playwright.homepage.config.ts",
+    "test:gallery-shop": "node --import tsx --test tests/unit/gallery-shop-domain.test.ts && node tests/qa/gallery-shop-rounds.cjs && node tests/qa/gallery-shop-server.cjs && node tests/qa/gallery-shipment-server.cjs && node tests/qa/inpost-picker.cjs && node tests/qa/nphoto-offer-import.cjs && node tests/qa/nphoto-offer-ui.cjs && node tests/qa/nphoto-launch-catalog.cjs && node tests/qa/gallery-public-offer.cjs && node tests/qa/gallery-storefront-ui.cjs"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
@@ -67,6 +68,7 @@
     "lucide-react": "^0.462.0",
     "nanoid": "^5.1.6",
     "next": "^15.5.21",
+    "node-html-parser": "9.0.4",
     "nodemailer": "^9.0.3",
     "pdfkit": "^0.17.2",
     "qrcode": "^1.5.4",

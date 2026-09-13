@@ -1,0 +1,114 @@
+const h = require('./gallery-shop-dom.cjs');
+const { assert, act, mount, reset, button, field, click, set, check } = h;
+const Importer = require('../../src/components/admin/NphotoOfferImporter.tsx').default;
+const Client = require('../../src/components/galleries/GalleryShoppingPanel.tsx').default;
+const Admin = require('../../src/components/admin/GalleryShopAdmin.tsx').default;
+const clone = value => JSON.parse(JSON.stringify(value));
+const draft = { sourceUrl: 'https://nphoto.com/pl/fotoalbumy/fotoalbum-pro', title: 'Fotoalbum PRO', description: 'Opis produktu ze źródła.', images: [{ url: 'https://nphoto.com/a.jpg', alt: 'Okładka' }, { url: 'https://nphoto.com/b.jpg', alt: 'Wnętrze' }, { url: 'https://nphoto.com/c.jpg', alt: 'Oprawa' }], specifications: [{ label: 'Papier', value: 'Fuji Silk' }], warnings: ['Sprawdź wariant przed publikacją.'], fetchedAt: '2026-09-13T10:00:00.000Z' };
+const config = { version: 1, enabled: true, title: 'Oferta', introduction: 'Odbitki i produkty', buttonLabel: 'Otwórz sklep', formats: [], productRules: { 77: { minPhotos: 2, maxPhotos: 6 } }, delivery: { locker: { enabled: true, amount: 1500 }, courier: { enabled: false, amount: 2000 } } };
+let product = { id: 77, title: 'Fotoalbum PRO', description: 'Opis fotografa.\n\nFormat: 20×20 · 10 rozkładówek (20 stron)', image_url: 'https://nphoto.com/a.jpg', preview_images: ['https://nphoto.com/b.jpg', 'https://nphoto.com/c.jpg'], price: 30000, is_active: true, minPhotos: 2, maxPhotos: 6 };
+let savedBody = null, imports = 0, draftDirty = false, requests = [];
+const reply = (body, status = 200) => ({ ok: status < 400, json: async () => clone(body) });
+global.fetch = async (url, init = {}) => {
+  const body = init.body ? JSON.parse(init.body) : null;
+  requests.push({ url, body, method: init.method || 'GET' });
+  if (url.endsWith('/nphoto-preview')) return reply({ success: true, draft });
+  if (url.endsWith('/nphoto-drafts')) { savedBody = body; return reply({ success: true, id: 77 }); }
+  if (url.includes('/admin/') && url.endsWith('/shop')) return reply({ success: true, config, products: [product], sharedProducts: [], nphotoAlbums: [], orders: [] });
+  if (url.includes('/products/77')) { product = { ...product, ...body }; return reply({ success: true, product }); }
+  if (url === '/api/galleries/12/shop') return reply({ success: true, catalog: { ...config, galleryId: 12, products: [product] } });
+  throw new Error(`Unexpected request ${url}`);
+};
+const props = { onImported: async () => { imports++; }, onDirtyChange: value => { draftDirty = value; } };
+
+(async () => {
+  await check('nPhoto UI: odczyt URL nie zapisuje ani nie publikuje produktu', async () => {
+    await mount(Importer, props);
+    await set(field('Adres produktu nPhoto'), draft.sourceUrl);
+    await click(button('Odczytaj produkt'));
+    assert.equal(savedBody, null);
+    assert.equal(draftDirty, true);
+    assert.equal(field('Twoja cena (zł)').value, '');
+    assert.ok(document.body.textContent.includes('Cena do ustalenia'));
+    assert.ok(document.body.textContent.includes('Sprawdź wariant przed publikacją.'));
+    assert.ok(button('Zapisz szkic do wspólnej oferty').disabled);
+  });
+  await check('nPhoto UI: własny wariant, liczba stron i kolejność mediów w podglądzie', async () => {
+    await set(field('Nazwa w Twojej ofercie'), 'Album rodzinny');
+    await set(field('Twoja cena (zł)'), '329.90');
+    await set(field('Format Twojego wariantu'), '20×20');
+    await set(field('Liczba stron / rozkładówek'), 10);
+    await set(field('Minimum zdjęć wybieranych przez klienta'), 12);
+    await set(field('Maksimum zdjęć wybieranych przez klienta'), 30);
+    await click(field('Przenieś zdjęcie produktu 3 wcześniej'));
+    await click(field('Usuń zdjęcie produktu 1 z oferty'));
+    assert.ok(document.body.textContent.includes('Liczba rozkładówek: 10 (20 stron)'));
+    assert.ok(document.body.textContent.includes('329,90'));
+    const mainImage = document.querySelector('article img');
+    assert.equal(mainImage.getAttribute('src'), 'https://nphoto.com/c.jpg');
+    await click(field('Pokaż ujęcie produktu 2'));
+    assert.equal(mainImage.getAttribute('src'), 'https://nphoto.com/b.jpg');
+    await click(document.querySelector('input[type="checkbox"]'));
+    await click(button('Zapisz szkic do wspólnej oferty'));
+    assert.equal(savedBody.price, 32990);
+    assert.equal(savedBody.pageCount, 10);
+    assert.equal(savedBody.pageUnit, 'spreads');
+    assert.equal(savedBody.minPhotos, 12);
+    assert.equal(savedBody.maxPhotos, 30);
+    assert.ok(document.body.textContent.includes(require('../../src/lib/nphoto/offer-import.ts').nphotoOfferDescription(savedBody)));
+    assert.deepEqual(savedBody.draft.images.map(image => image.url), ['https://nphoto.com/c.jpg', 'https://nphoto.com/b.jpg']);
+    assert.equal(imports, 1);
+    assert.equal(draftDirty, false);
+    assert.ok(button('Szkic zapisany').disabled);
+    assert.ok(document.body.textContent.includes('Nie jest widoczny dla klientów'));
+  });
+  await check('nPhoto UI: niezapisane ustawienia blokują import bez utraty szkicu', async () => {
+    await reset(); await mount(Importer, props);
+    await set(field('Adres produktu nPhoto'), draft.sourceUrl); await click(button('Odczytaj produkt'));
+    await set(field('Nazwa w Twojej ofercie'), 'Zachowaj mój szkic');
+    await mount(Importer, { ...props, disabled: true });
+    assert.ok(button('Odczytaj produkt').disabled);
+    assert.equal(field('Nazwa w Twojej ofercie').value, 'Zachowaj mój szkic');
+    await mount(Importer, props);
+    assert.equal(field('Nazwa w Twojej ofercie').value, 'Zachowaj mój szkic');
+  });
+  await check('nPhoto UI: podgląd klienta, drugie zdjęcie, Escape i powrót fokusu', async () => {
+    await reset(); sessionStorage.clear();
+    await mount(Client, { endpoint: '/api/galleries/12/shop', photos: [{ id: 1, file_url: '/one.jpg' }, { id: 2, file_url: '/two.jpg' }] });
+    await click(button('Otwórz sklep')); await click(button('Produkty'));
+    const trigger = field('Zobacz szczegóły produktu: Fotoalbum PRO');
+    trigger.focus(); await click(trigger);
+    assert.ok(button('Zamknij szczegóły') === document.activeElement);
+    const choose = button('Wybierz produkt i zdjęcia');
+    choose.focus();
+    await act(async () => choose.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })));
+    assert.equal(document.activeElement, button('Zamknij szczegóły'));
+    await act(async () => document.activeElement.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true })));
+    assert.equal(document.activeElement, choose);
+    await click(field('Pokaż ujęcie produktu 2'));
+    const dialog = document.querySelector('[aria-labelledby][role="dialog"]');
+    assert.equal(dialog.querySelector('article img').getAttribute('src'), 'https://nphoto.com/b.jpg');
+    await act(async () => document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    assert.equal(document.querySelector('[aria-labelledby][role="dialog"]'), null);
+    assert.ok(document.querySelector('[aria-label="Zakupy w galerii"]'));
+    assert.equal(document.activeElement, trigger);
+    await click(trigger); await click(button('Wybierz produkt i zdjęcia'));
+    assert.ok(document.body.textContent.includes('Fotoalbum PRO — wybór zdjęć'));
+    assert.equal(document.querySelector('[aria-labelledby][role="dialog"]'), null);
+  });
+  await check('nPhoto UI: admin zapisuje i ponownie pokazuje listę zdjęć produktu', async () => {
+    await reset(); await mount(Admin, { galleryId: 12 });
+    await set(field('Dodatkowe zdjęcia produktu #77 (adres w każdym wierszu)'), 'https://nphoto.com/new.jpg\nhttps://nphoto.com/c.jpg');
+    await click(button('Zapisz produkt #77'));
+    assert.deepEqual(product.preview_images, ['https://nphoto.com/new.jpg', 'https://nphoto.com/c.jpg']);
+    await reset(); await mount(Admin, { galleryId: 12 });
+    await click(button('Podgląd klienta produktu #77'));
+    await click(field('Pokaż ujęcie produktu 2'));
+    assert.equal(document.querySelector('[aria-labelledby][role="dialog"] article img').getAttribute('src'), 'https://nphoto.com/new.jpg');
+    await click(button('Zamknij szczegóły'));
+    await click(field('Produkt #77 widoczny')); await set(field('Cena produktu #77 (zł)'), 0); await click(button('Zapisz produkt #77'));
+    assert.equal(product.is_active, false); assert.equal(product.price, 0);
+  });
+  console.log(`${h.log.length} grup testów UI nPhoto: PASS`);
+  await reset();
+})().catch(error => { console.error(error); process.exitCode = 1; });

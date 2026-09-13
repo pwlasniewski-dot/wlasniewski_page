@@ -1,3 +1,4 @@
+import { merchandisePrintEntries } from '@/lib/galleries/merchandise';
 // API Route: GET /api/admin/galleries/[id]/participants/download-all
 // Admin: pobiera jeden ZIP z kompletem zdjęć do druku wszystkich rodziców
 // (zarówno wybory standardowe, jak i opłacone dodatkowe).
@@ -72,6 +73,8 @@ function parsePhotoIds(raw: string | null | undefined): number[] {
 }
 
 function parsePaidPrintEntries(photoIdsRaw: string | null | undefined, productIdsRaw: string | null | undefined): Array<{ photo_id: number; format: string; quantity: number }> {
+  const merchandise = merchandisePrintEntries(productIdsRaw);
+  if (merchandise !== null) return merchandise;
   const fallbackPhotoIds = parsePhotoIds(photoIdsRaw);
 
   if (productIdsRaw) {

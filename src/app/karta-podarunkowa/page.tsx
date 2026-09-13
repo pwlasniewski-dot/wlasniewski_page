@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import GiftCard from '@/components/GiftCard';
+import PhotoProductStorefront from '@/components/shop/PhotoProductStorefront';
 import { Check } from 'lucide-react';
 
 interface GiftCardProduct {
@@ -225,6 +226,8 @@ export default function GiftCardShop() {
                     )}
                 </div>
             </section>
+
+            <div className="mx-auto max-w-7xl px-6"><PhotoProductStorefront /></div>
 
             <section className="border-t border-white/10 bg-[#100d0b] px-6 py-20">
                 <div className="mx-auto max-w-6xl">

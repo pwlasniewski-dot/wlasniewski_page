@@ -1,3 +1,5 @@
+import {handleMerchandisePayment} from '@/lib/galleries/merchandise-payment';
+import {ShopValidationError} from '@/lib/galleries/merchandise';
 import { NextRequest, NextResponse } from "next/server";
 import prisma from '@/lib/db/prisma';
 import { acquireAdvisoryTransactionLock } from '@/lib/db/advisoryLock';
@@ -51,6 +53,13 @@ export async function POST(request: NextRequest) {
         }
 
         const { extOrderId, orderId, status } = order;
+
+        try {
+            if (await handleMerchandisePayment(order)) return NextResponse.json({ success: true });
+        } catch (error) {
+            if (error instanceof ShopValidationError) return NextResponse.json({ error: error.message }, { status: error.status });
+            throw error;
+        }
 
         console.log(`PayU Notification: Status = ${status} ExtOrderId = ${extOrderId} PayUId = ${orderId} `);
 
