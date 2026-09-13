@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -32,6 +32,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ClientOfferRecommendedAlbums from '@/components/client/ClientOfferRecommendedAlbums';
 import ClientStyleGuidePanel from '@/components/StyleGuide/ClientStyleGuidePanel';
 import AccountTabButton from '@/components/client/AccountTabButton';
+import { createPortalEventReporter, portalResponseDiagnostics } from '@/lib/client-portal-events-client';
+import type { PortalClientEvent, PortalModule } from '@/lib/client-portal-events';
 
 type Tab = 'overview' | 'sessions' | 'bookings' | 'documents' | 'gift_cards' | 'workshops' | 'preparation' | 'settings' | 'partner';
 
@@ -50,12 +52,39 @@ type ActionSummary = {
 export default function AccountPage() {
     const router = useRouter();
     const { user, token, logout, isLoading: authLoading } = useAuth();
+    useEffect(() => {
+        if (!authLoading && !token) router.push('/logowanie');
+    }, [authLoading, token, router]);
+
+    if (authLoading || !token) return <AccountLoading />;
+    // A different account/session must never inherit cached data, draft notes, or a diagnostic session.
+    return <AuthenticatedAccountPage key={`${user?.id ?? 'pending'}:${token}`} user={user} token={token} logout={logout} />;
+}
+
+function AccountLoading() {
+    return (
+        <div role="status" aria-label="Ładowanie panelu" className="min-h-screen bg-black text-white flex items-center justify-center">
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full" />
+        </div>
+    );
+}
+
+function AuthenticatedAccountPage({ user, token, logout }: Pick<ReturnType<typeof useAuth>, 'user' | 'logout'> & { token: string }) {
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState<Tab>('overview');
     const [loading, setLoading] = useState(true);
     const [actionSummary, setActionSummary] = useState<ActionSummary | null>(null);
     const [dashboardError, setDashboardError] = useState<{ message: string; caseCode?: string } | null>(null);
     const [moduleError, setModuleError] = useState<{ message: string; caseCode?: string } | null>(null);
     const [loadedModules, setLoadedModules] = useState<Record<string, boolean>>({});
+    const loadedModuleCache = useRef<Record<string, boolean>>({});
+    const [summaryAttempt, setSummaryAttempt] = useState(0);
+    const [moduleAttempt, setModuleAttempt] = useState(0);
+    const [events] = useState(() => createPortalEventReporter({ token }));
+    const lastObservedTab = useRef<Tab | null>(null);
+    const activeModule: PortalModule | null = activeTab === 'sessions' ? 'sessions'
+        : activeTab === 'workshops' ? 'workshops'
+            : ['documents', 'bookings', 'gift_cards', 'preparation'].includes(activeTab) ? 'account' : null;
     const [giftCards, setGiftCards] = useState<any[]>([]);
     const [bookings, setBookings] = useState<any[]>([]);
     const [challenges, setChallenges] = useState<any[]>([]);
@@ -71,6 +100,29 @@ export default function AccountPage() {
     const [noteStates, setNoteStates] = useState<Record<string, string>>({});
     const [deletingAccount, setDeletingAccount] = useState(false);
 
+    useEffect(() => {
+        if (!lastObservedTab.current) events.track({ event: 'portal_opened', section: 'overview' });
+        if (lastObservedTab.current !== activeTab) events.track({ event: 'tab_opened', section: activeTab });
+        lastObservedTab.current = activeTab;
+    }, [activeTab, events]);
+
+    function trackAction(action: NonNullable<PortalClientEvent['action']>) {
+        events.track({ event: 'action_clicked', section: activeTab, action });
+    }
+
+    function retrySummary() {
+        events.track({ event: 'retry_clicked', section: 'overview', module: 'summary' });
+        setLoading(true);
+        setSummaryAttempt(previous => previous + 1);
+    }
+
+    function retryModule() {
+        if (!activeModule) return;
+        events.track({ event: 'retry_clicked', section: activeTab, module: activeModule });
+        setModuleError(null);
+        setModuleAttempt(previous => previous + 1);
+    }
+
     // Initialize note states when data is loaded
     useEffect(() => {
         const initialNotes: Record<string, string> = {};
@@ -84,76 +136,80 @@ export default function AccountPage() {
     }, [offers, contracts]);
 
     useEffect(() => {
-        if (!authLoading && !token) {
-            router.push('/logowanie');
-            return;
-        }
-
-        if (token) {
-            let cancelled = false;
-            const fetchSummary = async (silent = false) => {
-                try {
-                    const response = await fetch('/api/user/action-summary', {
-                        headers: { Authorization: `Bearer ${token}` },
-                        cache: 'no-store',
-                    });
-                    const data = await response.json().catch(() => ({}));
-                    if (!response.ok) throw Object.assign(new Error(data.error || 'Nie udało się załadować panelu.'), {
-                        caseCode: data.caseCode,
-                    });
-                    if (!cancelled) {
-                        setActionSummary(data);
-                        setDashboardError(null);
-                    }
-                } catch (error) {
-                    if (!cancelled) {
-                        setDashboardError({
-                            message: error instanceof Error ? error.message : 'Nie udało się załadować panelu.',
-                            caseCode: typeof error === 'object' && error && 'caseCode' in error ? String(error.caseCode || '') : undefined,
-                        });
-                    }
-                    if (!silent) console.error(error);
-                } finally {
-                    if (!silent && !cancelled) setLoading(false);
+        let cancelled = false;
+        let pending = false;
+        const controller = new AbortController();
+        const fetchSummary = async (silent = false) => {
+            if (pending) return;
+            pending = true;
+            const startedAt = Date.now();
+            let diagnostics: ReturnType<typeof portalResponseDiagnostics> | undefined;
+            // Background refreshes are not user steps and should not flood the activity history.
+            if (!silent) events.track({ event: 'module_load_started', section: 'overview', module: 'summary' });
+            try {
+                const response = await fetch('/api/user/action-summary', {
+                    headers: { Authorization: `Bearer ${token}` },
+                    cache: 'no-store',
+                    signal: controller.signal,
+                });
+                const data = await response.json().catch(() => ({}));
+                diagnostics = portalResponseDiagnostics(response, data);
+                if (!response.ok) throw Object.assign(new Error(data.error || 'Nie udało się załadować panelu.'), {
+                    caseCode: data.caseCode,
+                });
+                if (!cancelled) {
+                    setActionSummary(data);
+                    setDashboardError(null);
+                    if (!silent) events.track({ event: 'module_load_succeeded', section: 'overview', module: 'summary', durationMs: Math.min(600_000, Math.max(0, Date.now() - startedAt)), ...diagnostics });
                 }
-            };
-            fetchSummary();
+            } catch (error) {
+                if (!cancelled) {
+                    events.track({ event: 'module_load_failed', section: 'overview', module: 'summary', durationMs: Math.min(600_000, Math.max(0, Date.now() - startedAt)), ...diagnostics });
+                    setDashboardError({
+                        message: error instanceof Error ? error.message : 'Nie udało się załadować panelu.',
+                        caseCode: typeof error === 'object' && error && 'caseCode' in error ? String(error.caseCode || '') : undefined,
+                    });
+                }
+            } finally {
+                pending = false;
+                if (!silent && !cancelled) setLoading(false);
+            }
+        };
+        fetchSummary();
 
-            const iv = setInterval(() => {
-                if (document.visibilityState === 'visible') fetchSummary(true);
-            }, 120000);
-            return () => {
-                cancelled = true;
-                clearInterval(iv);
-            };
-        }
-    }, [token, authLoading, router]);
+        const iv = setInterval(() => {
+            if (document.visibilityState === 'visible') fetchSummary(true);
+        }, 120000);
+        return () => {
+            cancelled = true;
+            controller.abort();
+            clearInterval(iv);
+        };
+    }, [token, events, summaryAttempt]);
 
     useEffect(() => {
-        if (!token) return;
-        const moduleKey = activeTab === 'sessions'
-            ? 'sessions'
-            : activeTab === 'workshops'
-                ? 'workshops'
-                : ['documents', 'bookings', 'gift_cards', 'preparation'].includes(activeTab)
-                    ? 'account'
-                    : null;
-        if (!moduleKey || loadedModules[moduleKey]) return;
+        setModuleError(null);
+        const moduleKey = activeModule;
+        if (!moduleKey || loadedModuleCache.current[moduleKey]) return;
 
         let cancelled = false;
-        setLoadedModules(previous => ({ ...previous, [moduleKey]: true }));
-        setModuleError(null);
+        const controller = new AbortController();
+        const startedAt = Date.now();
+        let diagnostics: ReturnType<typeof portalResponseDiagnostics> | undefined;
+        events.track({ event: 'module_load_started', section: activeTab, module: moduleKey });
         const requireOk = async (response: Response) => {
             const data = await response.json().catch(() => ({}));
+            diagnostics = portalResponseDiagnostics(response, data);
             if (!response.ok) throw Object.assign(new Error(data.error || 'Nie udało się załadować tej sekcji.'), {
                 caseCode: data.caseCode,
+                diagnostics,
             });
             return data;
         };
 
         const loadModule = async () => {
             if (moduleKey === 'account') {
-                const data = await requireOk(await fetch('/api/user/me', { headers: { Authorization: `Bearer ${token}` } }));
+                const data = await requireOk(await fetch('/api/user/me', { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal }));
                 if (cancelled) return;
                 setGiftCards(data.user.gift_cards || []);
                 setBookings(data.user.bookings || []);
@@ -165,8 +221,8 @@ export default function AccountPage() {
             }
             if (moduleKey === 'sessions') {
                 const [galleryData, challengeData] = await Promise.all([
-                    fetch('/api/galleries/client', { headers: { Authorization: `Bearer ${token}` } }).then(requireOk),
-                    fetch('/api/photo-challenge/client/challenges', { headers: { Authorization: `Bearer ${token}` } }).then(requireOk),
+                    fetch('/api/galleries/client', { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal }).then(requireOk),
+                    fetch('/api/photo-challenge/client/challenges', { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal }).then(requireOk),
                 ]);
                 if (!cancelled) {
                     setGalleries(galleryData.galleries || []);
@@ -174,31 +230,28 @@ export default function AccountPage() {
                 }
                 return;
             }
-            const data = await requireOk(await fetch('/api/user/workshops', { headers: { Authorization: `Bearer ${token}` } }));
+            const data = await requireOk(await fetch('/api/user/workshops', { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal }));
             if (!cancelled) setWorkshops(data.workshops || []);
         };
 
-        loadModule().catch(error => {
+        loadModule().then(() => {
             if (cancelled) return;
+            // Cache only a successful response. The cache ref does not cancel its own request effect.
+            loadedModuleCache.current[moduleKey] = true;
+            setLoadedModules(previous => ({ ...previous, [moduleKey]: true }));
+            events.track({ event: 'module_load_succeeded', section: activeTab, module: moduleKey, durationMs: Math.min(600_000, Math.max(0, Date.now() - startedAt)), ...diagnostics });
+        }).catch(error => {
+            if (cancelled) return;
+            events.track({ event: 'module_load_failed', section: activeTab, module: moduleKey, durationMs: Math.min(600_000, Math.max(0, Date.now() - startedAt)), ...(error?.diagnostics || diagnostics) });
             setModuleError({
                 message: error instanceof Error ? error.message : 'Nie udało się załadować tej sekcji.',
                 caseCode: typeof error === 'object' && error && 'caseCode' in error ? String(error.caseCode || '') : undefined,
             });
         });
-        return () => { cancelled = true; };
-    }, [activeTab, loadedModules, token]);
+        return () => { cancelled = true; controller.abort(); };
+    }, [activeTab, activeModule, moduleAttempt, token, events]);
 
-    if (authLoading || loading) {
-        return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center">
-                <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full"
-                />
-            </div>
-        );
-    }
+    if (loading) return <AccountLoading />;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 text-zinc-100 pb-20 relative">
@@ -235,7 +288,7 @@ export default function AccountPage() {
                         <motion.button
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            onClick={logout}
+                            onClick={() => { trackAction('logout'); void logout(); }}
                             className="flex items-center justify-center gap-2 text-zinc-500 hover:text-white transition-colors py-2 group bg-zinc-900/30 backdrop-blur-xl px-4 rounded-xl w-full md:w-auto"
                         >
                             <LogOut className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -314,6 +367,7 @@ export default function AccountPage() {
                             </Link>
                         )}
                     </nav>
+                    <p className="mt-3 text-xs leading-relaxed text-zinc-400">Aby diagnozować usterki, zapisujemy otwarcia sekcji, wybrane działania i błędy panelu. Nie zapisujemy treści notatek, dokumentów ani zdjęć w tej historii.</p>
                 </div>
             </div>
 
@@ -322,8 +376,12 @@ export default function AccountPage() {
                     <div role="alert" className="mb-6 rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-100">
                         <p>{moduleError.message}</p>
                         {moduleError.caseCode && <p className="mt-2 font-mono text-xs">Kod sprawy: {moduleError.caseCode}</p>}
+                        <button type="button" onClick={retryModule} className="mt-3 min-h-11 rounded-lg border border-red-200/50 px-4 py-2 font-semibold">Spróbuj ponownie</button>
                     </div>
                 )}
+                {activeModule && !loadedModules[activeModule] ? (
+                    !moduleError && <p role="status" className="rounded-2xl border border-zinc-700 p-6 text-zinc-300">Ładowanie sekcji…</p>
+                ) : (
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeTab}
@@ -347,6 +405,7 @@ export default function AccountPage() {
                         {activeTab === 'partner' && renderPartnerTab()}
                     </motion.div>
                 </AnimatePresence>
+                )}
             </main>
         </div>
     );
@@ -399,13 +458,14 @@ export default function AccountPage() {
                         <h2 className="text-lg font-bold text-red-100">Panel jest chwilowo niedostępny</h2>
                         <p className="mt-2 text-sm text-red-100/80">{dashboardError.message}</p>
                         {dashboardError.caseCode && <p className="mt-3 font-mono text-xs text-red-200">Kod sprawy: {dashboardError.caseCode}</p>}
+                        <button type="button" onClick={retrySummary} className="mt-4 min-h-11 rounded-lg border border-red-200/50 px-4 py-2 font-semibold">Spróbuj ponownie</button>
                     </div>
                 ) : actionSummary?.nextAction ? (
                     <section aria-labelledby="next-action-heading" className="rounded-3xl border-2 border-gold-500/60 bg-gradient-to-br from-gold-500/15 via-zinc-900/80 to-zinc-950 p-6 shadow-[0_0_40px_rgba(212,175,55,0.18)] sm:p-8">
                         <p className="text-xs font-black uppercase tracking-[0.18em] text-gold-400">Następny krok</p>
                         <h2 id="next-action-heading" className="mt-2 text-2xl font-bold text-white">{actionSummary.nextAction.statusLabel}</h2>
                         <p className="mt-2 text-zinc-300">{actionSummary.nextAction.label}</p>
-                        <Link href={actionSummary.nextAction.href} className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gold-500 px-6 py-3 font-bold text-black transition-colors hover:bg-gold-400">
+                        <Link href={actionSummary.nextAction.href} onClick={() => trackAction('next_action_open')} className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gold-500 px-6 py-3 font-bold text-black transition-colors hover:bg-gold-400">
                             {actionSummary.nextAction.ctaLabel}
                             <ChevronRight className="h-5 w-5" aria-hidden />
                         </Link>
@@ -435,6 +495,7 @@ export default function AccountPage() {
                             <Link
                                 key={c.id}
                                 href={`/foto-wyzwanie/invite/${c.unique_link}`}
+                                onClick={() => trackAction('challenge_open')}
                                 className="relative block overflow-hidden rounded-3xl p-4 md:p-6 border-2 border-gold-500/60 bg-gradient-to-br from-gold-500/10 via-pink-500/10 to-amber-500/10 shadow-[0_0_40px_rgba(212,175,55,0.25)] hover:shadow-[0_0_60px_rgba(212,175,55,0.45)] transition-all animate-pulse-slow"
                             >
                                 <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gold-400/20 blur-3xl animate-pulse" />
@@ -756,6 +817,7 @@ export default function AccountPage() {
                                 <div className="flex flex-col justify-center gap-3">
                                     <Link
                                         href={`/galeria/${gallery.access_code}`}
+                                        onClick={() => trackAction('gallery_open')}
                                         className="px-10 py-4 bg-gold-600 text-black font-black rounded-2xl hover:bg-gold-500 transition-all text-center flex items-center justify-center gap-3 shadow-xl shadow-gold-600/10"
                                     >
                                         Wybierz i zapłać za zdjęcia
@@ -821,6 +883,7 @@ export default function AccountPage() {
                                 <div className="flex flex-col justify-center gap-3">
                                     <Link
                                         href={challenge.gallery?.is_published ? `/foto-wyzwanie/gallery/${challenge.id}` : `/foto-wyzwanie/invite/${challenge.unique_link}`}
+                                        onClick={() => trackAction('challenge_open')}
                                         className={`px-10 py-4 font-black rounded-2xl transition-all text-center text-md ${needsDecision ? 'bg-gold-500 text-black hover:bg-gold-400 shadow-xl shadow-gold-500/30 animate-pulse' : challenge.gallery?.is_published ? 'bg-gold-600 text-black hover:bg-gold-500 shadow-xl shadow-gold-600/10' : 'bg-zinc-800 text-white hover:bg-zinc-700'}`}
                                     >
                                         {needsDecision ? '🎁 Zdecyduj' : challenge.gallery?.is_published ? 'Przejdź do galerii' : 'Szczegóły wyzwania'}
@@ -845,6 +908,7 @@ export default function AccountPage() {
 
     function renderDocumentsTab() {
         const saveNote = async (type: 'offer' | 'contract', id: number, note: string) => {
+            trackAction('note_save');
             setSavingNote({ type, id });
             try {
                 const res = await fetch(`/api/user/${type === 'offer' ? 'offers' : 'contracts'}/${id}/note`, {
@@ -896,7 +960,7 @@ export default function AccountPage() {
                                         ? 'bg-gradient-to-br from-gold-500/15 via-zinc-900/80 to-zinc-900/50 backdrop-blur-xl border-2 border-gold-500/60 shadow-[0_0_40px_rgba(212,175,55,0.25)] animate-pulse-soft'
                                         : 'bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 hover:border-gold-500/40 hover:shadow-2xl hover:shadow-gold-500/10'}`}>
                                         {needsAction && (
-                                            <Link href={`/strefa-klienta/oferty/${offer.id}`}
+                                            <Link href={`/strefa-klienta/oferty/${offer.id}`} onClick={() => trackAction('offer_open')}
                                                 className="block bg-gradient-to-r from-gold-500 to-amber-500 text-zinc-950 px-6 py-3 font-bold text-sm flex items-center justify-between hover:from-gold-400 hover:to-amber-400 transition">
                                                 <span className="flex items-center gap-2">
                                                     <span className="relative flex h-2.5 w-2.5">
@@ -912,6 +976,7 @@ export default function AccountPage() {
                                         )}
                                         <Link
                                             href={`/strefa-klienta/oferty/${offer.id}`}
+                                            onClick={() => trackAction('offer_open')}
                                             className="p-6 flex flex-col md:flex-row justify-between items-center gap-6 group hover:bg-white/[0.02] transition-all block"
                                         >
                                             <div className="flex items-center gap-5 w-full md:w-auto">
@@ -1011,6 +1076,7 @@ export default function AccountPage() {
                                         <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-6 group">
                                             <Link
                                                 href={`/strefa-klienta/umowy/${contract.id}`}
+                                                onClick={() => trackAction('contract_open')}
                                                 className="flex items-center gap-5 w-full md:w-auto text-left hover:opacity-80 transition-opacity"
                                             >
                                                 <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center text-green-500">
@@ -1030,6 +1096,7 @@ export default function AccountPage() {
                                                 {/* PDF always available for signed contracts (dynamic generation) */}
                                                 <a
                                                     href={`/api/contracts/${contract.id}/pdf`}
+                                                    onClick={() => trackAction('contract_pdf_download')}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-gold-600 text-zinc-400 hover:text-black rounded-xl transition-all text-sm font-bold"
@@ -1040,6 +1107,7 @@ export default function AccountPage() {
                                                 </a>
                                                 <Link
                                                     href={`/strefa-klienta/umowy/${contract.id}`}
+                                                    onClick={() => trackAction('contract_open')}
                                                     className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:bg-gold-600 hover:text-black transition-all"
                                                 >
                                                     <ChevronRight className="w-5 h-5" />
@@ -1112,6 +1180,7 @@ export default function AccountPage() {
                                         {order.gallery?.access_code && (
                                             <Link
                                                 href={`/galeria/${order.gallery.access_code}`}
+                                                onClick={() => trackAction('gallery_open')}
                                                 className="p-2 bg-zinc-800 hover:bg-gold-500 text-zinc-400 hover:text-black rounded-xl transition-all"
                                                 title="Wróć do galerii"
                                             >
@@ -1211,7 +1280,7 @@ export default function AccountPage() {
                                     <span className="px-4 py-1.5 bg-green-500/10 text-green-500 rounded-full text-[10px] uppercase font-black tracking-widest border border-green-500/20">
                                         {booking.status === 'confirmed' ? 'Potwierdzona' : 'Oczekuje'}
                                     </span>
-                                    <Link href={`/rezerwacja/${booking.id}?from=konto`} className="p-3 bg-zinc-800 hover:bg-gold-500 text-zinc-400 hover:text-black rounded-2xl transition-all" aria-label={`Szczegóły rezerwacji ${booking.id}`}>
+                                    <Link href={`/rezerwacja/${booking.id}?from=konto`} onClick={() => trackAction('booking_open')} className="p-3 bg-zinc-800 hover:bg-gold-500 text-zinc-400 hover:text-black rounded-2xl transition-all" aria-label={`Szczegóły rezerwacji ${booking.id}`}>
                                         <ChevronRight className="w-6 h-6" />
                                     </Link>
                                 </div>
@@ -1373,6 +1442,7 @@ export default function AccountPage() {
         const hasAny = workshops.length > 0;
 
         const handlePayment = async (offerId: number, paymentType: 'deposit' | 'full', email: string) => {
+            trackAction('workshop_payment');
             try {
                 const res = await fetch('/api/workshops/pay', {
                     method: 'POST',
@@ -1638,6 +1708,7 @@ export default function AccountPage() {
                                         <div className="font-mono text-zinc-500 text-xs tracking-widest">{card.code}</div>
                                         <Link
                                             href={`/karta-podarunkowa/dostep/${card.access_token}`}
+                                            onClick={() => trackAction('voucher_open')}
                                             className="px-4 py-2 bg-gold-600 text-black text-[10px] font-black rounded-xl hover:bg-gold-500 transition-colors shadow-lg shadow-gold-600/10 uppercase tracking-widest"
                                         >
                                             Aktywuj
