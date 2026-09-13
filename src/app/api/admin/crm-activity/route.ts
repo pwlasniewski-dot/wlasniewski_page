@@ -15,20 +15,29 @@ export async function GET(request: NextRequest) {
         const action = searchParams.get('action');
         const entityType = searchParams.get('entity_type');
         const entityId = searchParams.get('entity_id');
-        const limit = parseInt(searchParams.get('limit') || '100');
-        const offset = parseInt(searchParams.get('offset') || '0');
+        const limit = Number(searchParams.get('limit') || '100');
+        const offset = Number(searchParams.get('offset') || '0');
         const dateFrom = searchParams.get('date_from');
         const dateTo = searchParams.get('date_to');
 
+        if (!Number.isSafeInteger(limit) || limit < 1 || limit > 500 || !Number.isSafeInteger(offset) || offset < 0 || offset > 100_000
+            || (clientId && (!/^\d+$/.test(clientId) || !Number.isSafeInteger(Number(clientId)) || Number(clientId) < 1))
+            || (entityId && (!/^\d+$/.test(entityId) || !Number.isSafeInteger(Number(entityId)) || Number(entityId) < 1))
+            || (dateFrom && !Number.isFinite(Date.parse(dateFrom))) || (dateTo && !Number.isFinite(Date.parse(dateTo)))
+            || (dateFrom && dateTo && Date.parse(dateFrom) > Date.parse(dateTo))) {
+            return NextResponse.json({ error: 'Nieprawidłowe filtry historii.' }, { status: 400 });
+        }
+
         const where: any = {};
 
-        if (clientId && clientEmail) {
+        if (clientId) {
+            const client = await prisma.user.findUnique({ where: { id: Number(clientId) }, select: { email: true } });
+            if (!client) return NextResponse.json({ error: 'Nie znaleziono klienta.' }, { status: 404 });
+            // An explicit account assignment wins over legacy email metadata.
             where.OR = [
-                { client_id: parseInt(clientId) },
-                { client_email: clientEmail },
+                { client_id: Number(clientId) },
+                { client_id: null, client_email: client.email },
             ];
-        } else if (clientId) {
-            where.client_id = parseInt(clientId);
         } else if (clientEmail) {
             where.client_email = clientEmail;
         }
@@ -57,9 +66,9 @@ export async function GET(request: NextRequest) {
             details: a.details ? (() => { try { return JSON.parse(a.details); } catch { return a.details; } })() : null,
         }));
 
-        return NextResponse.json({ activities: parsed, total, limit, offset });
+        return NextResponse.json({ activities: parsed, total, limit, offset }, { headers: { 'Cache-Control': 'no-store' } });
     } catch (error: any) {
         console.error('[CRM_ACTIVITY_API] Error:', error);
-        return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
+        return NextResponse.json({ error: 'Nie udało się pobrać historii aktywności.' }, { status: 500 });
     }
 }

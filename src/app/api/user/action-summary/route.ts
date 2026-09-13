@@ -7,10 +7,12 @@ import { CLIENT_ACTIONABLE_OFFER_STATUS_VALUES, CLIENT_VISIBLE_OFFER_STATUS_VALU
 import { CLIENT_ACTIONABLE_CONTRACT_STATUS_VALUES, CLIENT_VISIBLE_CONTRACT_STATUS_VALUES } from '@/lib/contracts/status';
 import { beginClientOperation, clientJson, clientOperationTotalMs, recordSlowClientOperation } from '@/lib/client-operations';
 import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
+import { recordPortalResponse } from '@/lib/client-portal-events-server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+    const startedAt = Date.now();
     const operation = beginClientOperation();
     let clientId: number | null = null;
     let clientEmail: string | null = null;
@@ -120,6 +122,7 @@ export async function GET(request: NextRequest) {
             operation: 'action_summary', startedAt: operation.startedAt, correlationId: operation.correlationId,
             clientId, clientEmail, entityType: 'client_portal', outcome: 'success',
         });
+        recordPortalResponse({ clientId, module: 'summary', correlationId: operation.correlationId, startedAt, httpStatus: 200 });
         return clientJson({
             success: true,
             nextAction,
@@ -133,6 +136,7 @@ export async function GET(request: NextRequest) {
             total_ms: totalMs,
         }, { correlationId: operation.correlationId });
     } catch (error) {
+        recordPortalResponse({ clientId, module: 'summary', correlationId: operation.correlationId, startedAt, httpStatus: 500, errorCode: (error as { code?: unknown })?.code });
         console.error('[ACTION_SUMMARY] Failed', { correlationId: operation.correlationId, error });
         await recordAdminIncidentSafely({
             severity: 'P1', category: 'PORTAL', reasonCode: 'ACTION_SUMMARY_FAILED',
