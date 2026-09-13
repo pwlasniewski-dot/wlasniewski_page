@@ -2,6 +2,11 @@
   command = "npm run build"
   base = "."
 
+[build.environment]
+  # These are public mode selectors, not credentials. Keep scanning enabled for
+  # the private ShipX token, organization ID, database URL and every other key.
+  SECRETS_SCAN_OMIT_KEYS = "INPOST_ENVIRONMENT,INPOST_COURIER_SERVICE"
+
 # ─── ENVIRONMENT VARIABLES ───
 # Set these in Netlify UI: Site settings → Environment variables
 # Required variables:
