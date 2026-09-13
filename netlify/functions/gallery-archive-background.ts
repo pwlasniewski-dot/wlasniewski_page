@@ -13,15 +13,16 @@ function safeFileName(value: string) {
         .replace(/[^a-zA-Z0-9-_]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'galeria';
 }
 
-export const handler = async (event: { body?: string | null }) => {
+export default async (request: Request) => {
     const handlerStartedAt = Date.now();
+    let body: Record<string, unknown> = {};
     try {
-        const body = JSON.parse(event.body || '{}');
-        if (typeof body.token !== 'string') return { statusCode: 401 };
+        body = await request.json();
+        if (typeof body.token !== 'string') return new Response(null, { status: 401 });
         const dispatch = await verifyGalleryArchiveDispatchToken(body.token);
         const job = await readGalleryArchiveJob(dispatch.jobId);
-        if (!job || job.runId !== dispatch.runId) return { statusCode: 202 };
-        if (job.status === 'ready') return { statusCode: 202 };
+        if (!job || job.runId !== dispatch.runId) return new Response(null, { status: 202 });
+        if (job.status === 'ready') return new Response(null, { status: 202 });
 
         const gallery = await prisma.clientGallery.findUnique({
             where: { id: job.galleryId },
@@ -106,9 +107,9 @@ export const handler = async (event: { body?: string | null }) => {
                 await writeGalleryArchiveJob(current);
             },
         });
-        if (result.duplicate) return { statusCode: 202 };
+        if (result.duplicate) return new Response(null, { status: 202 });
         const current = await readGalleryArchiveJob(job.jobId);
-        if (!current || current.runId !== job.runId) return { statusCode: 202 };
+        if (!current || current.runId !== job.runId) return new Response(null, { status: 202 });
         current.status = 'ready';
         current.progress = 100;
         current.completed = result.completed;
@@ -132,11 +133,10 @@ export const handler = async (event: { body?: string | null }) => {
                 },
             }).catch(error => console.error('[GALLERY_ARCHIVE_AUDIT_READY]', error));
         }
-        return { statusCode: 202 };
+        return new Response(null, { status: 202 });
     } catch (error) {
         console.error('[GALLERY_ARCHIVE_BACKGROUND]', error);
         try {
-            const body = JSON.parse(event.body || '{}');
             const dispatch = typeof body.token === 'string' ? await verifyGalleryArchiveDispatchToken(body.token) : null;
             if (dispatch) {
                 const job = await readGalleryArchiveJob(dispatch.jobId);
@@ -180,6 +180,6 @@ export const handler = async (event: { body?: string | null }) => {
                 }
             }
         } catch { /* do not hide the original worker failure */ }
-        return { statusCode: 202 };
+        return new Response(null, { status: 202 });
     }
 };
