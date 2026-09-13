@@ -1,6 +1,6 @@
 /** Shared private-gallery merchandise contract. Amounts are integer grosze. */
 export type PrintFormat = { id: string; label: string; widthMm: number; heightMm: number; unitAmount: number; active: boolean; paper: string };
-export type ShopProduct = { id: number; title: string; description: string | null; price: number; image_url: string | null; product_type: string | null; minPhotos: number; maxPhotos: number; nphoto_product_id?: string | null; nphoto_url?: string | null };
+export type ShopProduct = { id: number; title: string; description: string | null; price: number; image_url: string | null; preview_images?: string[]; product_type: string | null; minPhotos: number; maxPhotos: number; nphoto_product_id?: string | null; nphoto_url?: string | null };
 export type ShopConfig = { version: 1; enabled: boolean; title: string; introduction: string; buttonLabel: string; formats: PrintFormat[]; productRules: Record<string, {minPhotos: number; maxPhotos: number}>; delivery: {locker: {enabled: boolean; amount: number}; courier: {enabled: boolean; amount: number}} };
 export type ShopCatalog = Omit<ShopConfig, 'version' | 'productRules'> & {galleryId: number; products: ShopProduct[]};
 export type ShopCrop = {mode: 'fit' | 'fill'; x: number; y: number; zoom: number};

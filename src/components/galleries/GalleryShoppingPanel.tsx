@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import InPostPointPicker from './InPostPointPicker';
+import { GalleryProductPreviewDialog } from './GalleryProductPreview';
 import type { ShopCatalog, ShopLine, ShopDelivery } from '@/lib/galleries/merchandise';
 
 type Photo = { id: number; file_url: string; thumbnail_url?: string | null; width?: number | null; height?: number | null };
@@ -30,6 +31,9 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const productDrafts = useRef<Record<number, { photos: number[]; quantity: number }>>({});
   const [preview, setPreview] = useState<Photo | null>(null);
+  const [productPreviewId, setProductPreviewId] = useState<number | null>(null);
+  const productPreviewRef = useRef<number | null>(null);
+  productPreviewRef.current = productPreviewId;
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -96,6 +100,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   useEffect(() => { addInFlight.current = false; }, [selected, productPhotos]);
   useEffect(() => {
     setHydratedEndpoint(null); setCatalog(null); setFormat(''); onAvailabilityChange?.(false);
+    setProductPreviewId(null);
     setLines([]); setRemoved([]); setCheckedLines([]); setSelected([]); setProductId(null); setProductPhotos([]); setProductQuantity(1); setQuantity(1); setEditingProduct(null); productDrafts.current = {}; setPendingOrder(null); setPendingPaymentUrl(null); setOpen(false); setTab('gallery'); setCheckout(false); setNotice(''); setError(''); idempotency.current = null;
     setDelivery({ method: 'locker', recipientName: '', email: '', phone: '', pointCode: '', address: { street: '', postalCode: '', city: '' } });
     try {
@@ -165,6 +170,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
     document.body.style.overflow = 'hidden';
     dialogRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
+      if (productPreviewRef.current || event.defaultPrevented) return;
       if (event.key === 'Escape') { if (previewRef.current) setPreview(null); else setOpen(false); }
       if (event.key === 'Tab') {
         const focusScope = previewRef.current ? dialogRef.current?.querySelector<HTMLElement>('[data-shop-preview]') : dialogRef.current;
@@ -183,6 +189,13 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   const remaining = Math.max(0, 500 - lines.length);
   const currentFormat = catalog.formats.find(item => item.id === format);
   const product = catalog.products.find(item => item.id === productId);
+  const previewProduct = catalog.products.find(item => item.id === productPreviewId);
+  const chooseProduct = (id: number) => {
+    if (productId !== id) {
+      if (productId && !editingProduct) productDrafts.current[productId] = { photos: productPhotos, quantity: productQuantity };
+      setEditingProduct(null); setProductId(id); setProductPhotos(productDrafts.current[id]?.photos || []); setProductQuantity(productDrafts.current[id]?.quantity || 1);
+    }
+  };
   const photoById = (id: number) => photos.find(photo => photo.id === id);
   const linePrice = (line: CartLine) => line.kind === 'print' ? catalog.formats.find(item => item.id === line.formatId)?.unitAmount || 0 : catalog.products.find(item => item.id === line.productId)?.price || 0;
   const invalidLines = lines.length > 500 || lines.some(line => line.kind === 'print' ? !catalog.formats.some(item => item.id === line.formatId && item.active) || !photos.some(photo => photo.id === line.photoId) : !catalog.products.some(item => item.id === line.productId && line.photoIds.length >= item.minPhotos && line.photoIds.length <= item.maxPhotos) || line.photoIds.some(id => !photos.some(photo => photo.id === id)));
@@ -301,7 +314,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
         {tab === 'products' && <section aria-label="Produkty fotograficzne">
           <div className="mb-4 flex flex-wrap justify-between gap-3"><h3 className="font-serif text-3xl font-medium tracking-tight sm:text-4xl">Produkty</h3><div className="flex gap-2 sm:hidden"><button className={button} aria-label="Poprzednie produkty" onClick={() => carouselRef.current?.scrollBy({ left: -340, behavior: 'smooth' })}>←</button><button className={button} aria-label="Następne produkty" onClick={() => carouselRef.current?.scrollBy({ left: 340, behavior: 'smooth' })}>→</button></div></div>
           <div ref={carouselRef} className="mb-8 flex snap-x snap-proximity gap-4 overflow-x-auto pb-4 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-3">{catalog.products.map(item => <article key={item.id} className={`flex w-[85%] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border bg-white sm:w-auto ${productId === item.id ? "border-stone-700 ring-1 ring-stone-700" : "border-stone-200"}`}>
-            {item.image_url ? <div className="aspect-[4/3] bg-stone-100 p-5"><img src={item.image_url} alt={item.title} className="h-full w-full object-contain" loading="lazy" /></div> : <div className="flex aspect-[4/3] items-center justify-center bg-stone-100" aria-hidden="true"><svg width="76" height="76" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1" className="text-stone-400"><rect x="12" y="8" width="40" height="48" rx="3"/><path d="M19 8v48M26 22h18M26 28h13M26 42h18"/></svg></div>}<div className="flex flex-1 flex-col p-5"><h4 className="text-xl font-semibold">{item.title}</h4><p className="mb-5 mt-2 whitespace-pre-line text-sm leading-relaxed text-stone-600">{item.description}</p><p className="mb-4 mt-auto text-xl font-medium">{money(item.price)}</p><button className={button} onClick={() => { if (productId !== item.id) { if (productId && !editingProduct) productDrafts.current[productId] = { photos: productPhotos, quantity: productQuantity }; setEditingProduct(null); setProductId(item.id); setProductPhotos(productDrafts.current[item.id]?.photos || []); setProductQuantity(productDrafts.current[item.id]?.quantity || 1); } }}>Wybierz produkt: {item.title}</button></div>
+            {item.image_url ? <button type="button" aria-label={`Zobacz zdjęcia produktu: ${item.title}`} className="aspect-[4/3] bg-stone-100 p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-700" onClick={() => setProductPreviewId(item.id)}><img src={item.image_url} alt={item.title} className="h-full w-full object-contain" loading="lazy" /></button> : <div className="flex aspect-[4/3] items-center justify-center bg-stone-100" aria-hidden="true"><svg width="76" height="76" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1" className="text-stone-400"><rect x="12" y="8" width="40" height="48" rx="3"/><path d="M19 8v48M26 22h18M26 28h13M26 42h18"/></svg></div>}<div className="flex flex-1 flex-col p-5"><h4 className="text-xl font-semibold">{item.title}</h4><p className="mb-5 mt-2 line-clamp-3 whitespace-pre-line text-sm leading-relaxed text-stone-600">{item.description}</p><p className="mb-4 mt-auto text-xl font-medium">{money(item.price)}</p><button type="button" className="mb-3 min-h-11 text-left text-sm font-medium text-stone-600 underline decoration-stone-300 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-700" aria-label={`Zobacz szczegóły produktu: ${item.title}`} onClick={() => setProductPreviewId(item.id)}>Zobacz szczegóły</button><button className={button} onClick={() => chooseProduct(item.id)}>Wybierz produkt: {item.title}</button></div>
           </article>)}</div>
           {!catalog.products.length && <p className="rounded-3xl border border-dashed border-stone-300 bg-white px-6 py-16 text-center text-stone-500">Fotograf nie udostępnił jeszcze produktów w tej galerii.</p>}
           {product && <div ref={productConfigRef} className="scroll-mt-6 rounded-3xl border border-stone-200 bg-white p-4 sm:p-7">
@@ -338,5 +351,6 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
       </footer>}
       {preview && <div data-shop-preview className="absolute inset-0 z-10 flex flex-col bg-black p-4 text-white" role="dialog" aria-label="Podgląd zdjęcia"><div className="flex justify-end gap-3"><button className={button} onClick={() => { setPreview(null); navigate('cart'); }}>Koszyk ({lines.length})</button><button autoFocus className={button} onClick={() => setPreview(null)}>Zamknij podgląd</button></div><img src={preview.file_url} alt={`Zdjęcie ${preview.id}`} className="min-h-0 flex-1 object-contain" /></div>}
     </div>, document.body)}
+    {open && previewProduct && <GalleryProductPreviewDialog product={previewProduct} onClose={() => setProductPreviewId(null)} onChoose={() => { chooseProduct(previewProduct.id); setProductPreviewId(null); }} />}
   </>;
 }

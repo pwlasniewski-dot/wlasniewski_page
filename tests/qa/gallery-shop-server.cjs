@@ -56,6 +56,23 @@ await check('global PATCH scoped to shared products, gallery PATCH cannot mutate
  assert.equal((await patch('12','101')).status,404);assert.equal((await patch('default','102')).status,404);assert.equal((await patch('default','101')).status,200);
  assert.equal((await loadGalleryShop(44)).catalog.products[0].price,12500);assert.equal(products.find(p=>p.id===102).price,9900);
 });
+await check('product media save reread preserves galleries and rejects invalid URLs; zero price is draft only',async()=>{
+ const {PATCH}=require('../../src/app/api/admin/galleries/[id]/shop/products/[productId]/route.ts');
+ const patch=(data)=>PATCH(new NextRequest('http://localhost/api/admin/shop/product',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({title:'Album z podglądem',description:'25×25 cm · 20 stron',price:12500,is_active:true,...data})}),{params:Promise.resolve({id:'default',productId:'101'})});
+ const images=['https://nphoto.com/sites/default/files/album.jpg','https://nphoto.com/sites/default/files/cover.jpg'];
+ adminAllowed=false;assert.equal((await patch({preview_images:images})).status,401);adminAllowed=true;
+ assert.equal((await patch({preview_images:['javascript:alert(1)']})).status,400);
+ assert.equal((await patch({preview_images:['https://user:secret@example.com/image.jpg']})).status,400);
+ assert.equal((await patch({preview_images:Array(13).fill(images[0])})).status,400);
+ assert.equal((await patch({preview_images:images,image_url:images[0]})).status,200);
+ let product=(await loadGalleryShop(44)).catalog.products.find(p=>p.id===101);
+ assert.deepEqual(product.preview_images,images);assert.equal(product.description,'25×25 cm · 20 stron');assert.equal(product.price,12500);
+ assert.equal((await patch({})).status,200);assert.deepEqual((await loadGalleryShop(44)).catalog.products.find(p=>p.id===101).preview_images,images);
+ assert.equal((await patch({price:0})).status,400);
+ assert.equal((await patch({price:0,is_active:false})).status,200);assert.equal((await loadGalleryShop(44)).catalog.products.some(p=>p.id===101),false);
+ assert.equal((await patch({preview_images:[]})).status,200);assert.deepEqual((await loadGalleryShop(44)).catalog.products.find(p=>p.id===101).preview_images,[]);
+ products.find(p=>p.id===101).preview_images={invalid:true};assert.deepEqual((await loadGalleryShop(44)).catalog.products.find(p=>p.id===101).preview_images,[]);
+});
 await check('admin delete override restores shared settings without deleting products or orders',async()=>{
  const {DELETE}=require('../../src/app/api/admin/galleries/[id]/shop/route.ts');const ctx={params:Promise.resolve({id:'12'})};
  const beforeProducts=JSON.stringify(products),beforeOrders=JSON.stringify(rows),global=settings.get('gallery_shop_default');

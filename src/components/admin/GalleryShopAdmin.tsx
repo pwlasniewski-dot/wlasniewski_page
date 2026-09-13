@@ -3,11 +3,13 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 const MediaPicker = lazy(() => import('@/components/admin/MediaPicker'));
 import NphotoStarterCatalog from './NphotoStarterCatalog';
+import NphotoOfferImporter from './NphotoOfferImporter';
 import GalleryShipmentPanel from './GalleryShipmentPanel';
+import { GalleryProductPreviewDialog } from '@/components/galleries/GalleryProductPreview';
 
 
 import { validateShopConfig, type PrintFormat, type ShopConfig } from '@/lib/galleries/merchandise';
-type Product = { id: number; title: string; description?: string | null; image_url?: string | null; price: number; is_active: boolean };
+type Product = { id: number; title: string; description?: string | null; image_url?: string | null; preview_images?: string[]; price: number; is_active: boolean };
 type Photo = { id: number; file_url: string; thumbnail_url?: string | null };
 type Album = { id: number; title: string; format?: string | null; cover_image_url?: string | null };
 type Order = { id: number; created_at: string; total_amount: number; payment_status: string; metadata?: any; product_ids?: string | null };
@@ -35,6 +37,7 @@ export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId
     const [albumId, setAlbumId] = useState('');
     const [albumPrice, setAlbumPrice] = useState('');
     const [dirty, setDirty] = useState(false);
+    const [importDirty, setImportDirty] = useState(false);
     const [productDrafts, setProductDrafts] = useState<Record<number, boolean>>({});
     const hasProductDrafts = Object.values(productDrafts).some(Boolean);
     const base = `admin/galleries/${galleryId}/shop`;
@@ -51,9 +54,9 @@ export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId
     }, [base, request]);
     useEffect(() => { let active = true; setLoading(true); load().catch(e => { if (active) setError(e.message); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [load]);
     useEffect(() => {
-        const handler = (event: BeforeUnloadEvent) => { if (dirty || hasProductDrafts) { event.preventDefault(); event.returnValue = ''; } };
+        const handler = (event: BeforeUnloadEvent) => { if (dirty || hasProductDrafts || importDirty) { event.preventDefault(); event.returnValue = ''; } };
         window.addEventListener('beforeunload', handler); return () => window.removeEventListener('beforeunload', handler);
-    }, [dirty, hasProductDrafts]);
+    }, [dirty, hasProductDrafts, importDirty]);
     const update = (patch: Partial<ShopConfig>) => { setConfig(current => current ? { ...current, ...patch } : null); setDirty(true); setNotice(''); };
     const run = async (action: () => Promise<void>, message: string) => {
         if (busy) return; setBusy(true); setError(''); setNotice('');
@@ -95,7 +98,8 @@ export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId
         {hasProductDrafts && <p className="rounded-xl border border-amber-200/20 bg-amber-200/5 p-3 text-sm text-amber-200">Masz niezapisane zmiany produktów. Zapisz je przy każdej edytowanej karcie produktu.</p>}
         {dirty && <p className="text-sm text-amber-300">Masz niezapisane ustawienia oferty. Zapisz je przed opuszczeniem strony.</p>}
         {tab === 'offer' ? <div className="space-y-6">
-            {isDefault && !dirty && !hasProductDrafts && <NphotoStarterCatalog onImported={load} />}
+            {isDefault && <NphotoOfferImporter disabled={busy || dirty || hasProductDrafts} onImported={load} onDirtyChange={setImportDirty} onBusyChange={setBusy} />}
+            {isDefault && !dirty && !hasProductDrafts && !importDirty && <details className="rounded-2xl border border-white/10 p-4"><summary className="min-h-11 cursor-pointer text-sm font-semibold text-zinc-300">Gotowe propozycje startowe nPhoto</summary><NphotoStarterCatalog onImported={load} /></details>}
             <fieldset id={`shop-${galleryId}-visibility`} disabled={busy} className={panelClass}><legend className="px-2 text-lg font-semibold text-white">Widoczność i treści</legend>
                 <label className="flex min-h-11 items-center gap-3"><input type="checkbox" checked={config.enabled} onChange={e => update({ enabled: e.target.checked })} />Sklep aktywny</label><p className="text-sm leading-relaxed text-zinc-400">{isDefault ? 'Włącz po przygotowaniu cen i dostawy, a następnie zapisz. Oferta trafi do galerii korzystających ze wspólnego standardu.' : 'Włącz po przygotowaniu cen i dostawy, a następnie zapisz ustawienia. Zapis tworzy ustawienia indywidualne tej galerii.'}</p>
                 <div className="grid gap-4 lg:grid-cols-2"><label className="text-sm">Nagłówek sklepu<input className={inputClass} value={config.title} maxLength={160} onChange={e => update({ title: e.target.value })} /></label><label className="text-sm">Tekst przycisku<input className={inputClass} value={config.buttonLabel} maxLength={80} onChange={e => update({ buttonLabel: e.target.value })} /></label></div>
@@ -137,19 +141,24 @@ export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId
 function ProductEditor({ product, rule, disabled, onRule, onSave, onDirty }: { onDirty: (dirty: boolean) => void; product: Product; rule: { minPhotos: number; maxPhotos: number }; disabled: boolean; onRule: (value: { minPhotos: number; maxPhotos: number }) => void; onSave: (patch: Product) => void }) {
     const [draft, setDraft] = useState(product);
     const [mediaOpen, setMediaOpen] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
     const editDraft = (next: Product) => { setDraft(next); onDirty(JSON.stringify(next) !== JSON.stringify(product)); };
     const [validation, setValidation] = useState('');
     useEffect(() => { setDraft(product); }, [product]);
     return <fieldset disabled={disabled} className="min-w-0 space-y-4 rounded-2xl border border-white/10 bg-zinc-950/40 p-4 sm:p-5"><legend className="px-2 text-sm font-semibold">Produkt #{product.id} — {product.title}</legend>
         <div className="overflow-hidden rounded-xl border border-white/10 bg-zinc-900"><div className="flex aspect-[4/3] items-center justify-center bg-[#efede8] p-5">{draft.image_url && /^https?:\/\//i.test(draft.image_url) ? <img src={draft.image_url} alt={draft.title || 'Zdjęcie produktu'} loading="lazy" className="h-full w-full object-contain" /> : <div className="text-center text-zinc-500"><span aria-hidden="true" className="text-4xl">▧</span><p className="mt-2 text-sm">Dodaj zdjęcie produktu</p></div>}</div><div className="space-y-2 p-4"><div className="flex flex-wrap items-start justify-between gap-2"><h5 className="font-semibold text-white">{draft.title || 'Nazwa produktu'}</h5><span className="text-sm font-semibold text-amber-200">{Number.isFinite(draft.price) ? money(draft.price) : 'Ustal cenę'}</span></div>{draft.description && <p className="line-clamp-3 text-sm leading-relaxed text-zinc-400">{draft.description}</p>}<span className={`inline-block rounded-full px-2.5 py-1 text-xs ${draft.is_active ? 'bg-emerald-300/10 text-emerald-200' : 'bg-white/5 text-zinc-400'}`}>{draft.is_active ? 'Widoczny w ofercie po zapisie' : 'Ukryty w ofercie po zapisie'}</span></div></div>
         <label className="block text-sm">Nazwa produktu #{product.id}<input className={inputClass} value={draft.title} onChange={e => editDraft({ ...draft, title: e.target.value })} /></label>
+        <button type="button" className={buttonClass} onClick={() => setPreviewOpen(true)}>Podgląd klienta produktu #{product.id}</button>
+        {previewOpen && <GalleryProductPreviewDialog product={{ ...draft, ...rule }} onClose={() => setPreviewOpen(false)} />}
         <label className="block text-sm">Opis produktu #{product.id}<textarea className={inputClass} value={draft.description || ''} onChange={e => editDraft({ ...draft, description: e.target.value })} /></label>
         <label className="block text-sm">Adres zdjęcia produktu #{product.id}<input className={inputClass} type="url" value={draft.image_url || ''} onChange={e => editDraft({ ...draft, image_url: e.target.value })} /></label>
+        <label className="block text-sm">Dodatkowe zdjęcia produktu #{product.id} (adres w każdym wierszu)<textarea className={inputClass} rows={3} value={(draft.preview_images || []).join('\n')} onChange={e => editDraft({ ...draft, preview_images: e.target.value.split('\n') })} /></label><p className="text-xs leading-relaxed text-zinc-400">Do 12 adresów HTTPS. Kolejność wierszy określa kolejność ujęć w podglądzie; zdjęcie główne wyświetla się jako pierwsze.</p>
         <div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} onClick={() => setMediaOpen(true)}>Wybierz zdjęcie produktu #{product.id}</button>{draft.image_url && <button type="button" className={buttonClass} onClick={() => editDraft({ ...draft, image_url: '' })}>Usuń zdjęcie produktu #{product.id}</button>}</div>
+        {!!draft.preview_images?.some(url => /^https:\/\//i.test(url)) && <div className="space-y-3"><p className="text-xs text-zinc-400">Dodatkowe ujęcia w szczegółach produktu. Zmiany zapisuje przycisk „Zapisz produkt”.</p><div className="flex flex-wrap gap-3">{draft.preview_images.map((url, index) => /^https:\/\//i.test(url) && <div key={`${url}-${index}`} className="w-28 rounded-xl border border-white/10 p-2"><img src={url} alt={`${draft.title} — ujęcie ${index + 1}`} loading="lazy" className="h-20 w-full rounded-lg bg-[#efede8] object-contain" /><button type="button" className={`${buttonClass} mt-2 w-full !px-2`} aria-label={`Usuń ujęcie ${index + 1} produktu #${product.id}`} onClick={() => editDraft({ ...draft, preview_images: draft.preview_images?.filter((_, current) => current !== index) })}>Usuń ujęcie</button></div>)}</div></div>}
         {mediaOpen && <Suspense fallback={<p role="status" className="text-sm text-zinc-400">Wczytywanie biblioteki zdjęć…</p>}><MediaPicker isOpen={mediaOpen} onClose={() => setMediaOpen(false)} onSelect={url => { editDraft({ ...draft, image_url: Array.isArray(url) ? url[0] : url }); setMediaOpen(false); }} /></Suspense>}
-        <div className="grid gap-3 sm:grid-cols-2"><label className="text-sm">Cena produktu #{product.id} (zł)<input className={inputClass} type="number" min="0.01" step="0.01" value={moneyValue(draft.price)} onChange={e => editDraft({ ...draft, price: amountFromInput(e.target.value) })} /></label><label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={draft.is_active} onChange={e => editDraft({ ...draft, is_active: e.target.checked })} />Produkt #{product.id} widoczny</label></div>
+        <div className="grid gap-3 sm:grid-cols-2"><label className="text-sm">Cena produktu #{product.id} (zł)<input className={inputClass} type="number" min={draft.is_active ? '0.01' : '0'} step="0.01" value={moneyValue(draft.price)} onChange={e => editDraft({ ...draft, price: amountFromInput(e.target.value) })} /></label><label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={draft.is_active} onChange={e => editDraft({ ...draft, is_active: e.target.checked })} />Produkt #{product.id} widoczny</label></div>
         {validation && <p role="alert" className="text-red-300">{validation}</p>}
-        <button type="button" className={buttonClass} onClick={() => { if (!draft.title.trim() || !validAmount(draft.price) || draft.price === 0) { setValidation('Uzupełnij nazwę i dodatnią cenę produktu.'); return; } if (draft.image_url && !/^https?:\/\//i.test(draft.image_url)) { setValidation('Adres zdjęcia musi zaczynać się od https:// lub http://.'); return; } setValidation(''); onSave(draft); }}>Zapisz produkt #{product.id}</button>
+        <button type="button" className={buttonClass} onClick={() => { if (!draft.title.trim() || !validAmount(draft.price) || (draft.is_active && draft.price === 0)) { setValidation('Uzupełnij nazwę. Produkt widoczny wymaga dodatniej ceny; ukryty szkic może mieć cenę 0.'); return; } if (draft.image_url && !/^https?:\/\//i.test(draft.image_url)) { setValidation('Adres zdjęcia musi zaczynać się od https:// lub http://.'); return; } const previewImages = [...new Set((draft.preview_images || []).map(url => url.trim()).filter(Boolean))]; if (previewImages.length > 12 || previewImages.some(url => !/^https:\/\//i.test(url))) { setValidation('Podaj maksymalnie 12 poprawnych adresów HTTPS zdjęć podglądu.'); return; } setValidation(''); onSave({ ...draft, preview_images: previewImages }); }}>Zapisz produkt #{product.id}</button>
         <div className="grid gap-3 border-t border-zinc-700 pt-3 sm:grid-cols-2"><label className="text-sm">Produkt #{product.id} minimum zdjęć<input className={inputClass} type="number" min="1" step="1" value={Number.isFinite(rule.minPhotos) ? rule.minPhotos : ''} onChange={e => onRule({ ...rule, minPhotos: e.target.value === '' ? NaN : Number(e.target.value) })} /></label><label className="text-sm">Produkt #{product.id} maksimum zdjęć<input className={inputClass} type="number" min="1" step="1" value={Number.isFinite(rule.maxPhotos) ? rule.maxPhotos : ''} onChange={e => onRule({ ...rule, maxPhotos: e.target.value === '' ? NaN : Number(e.target.value) })} /></label></div><p className="text-xs text-zinc-400">Limity zdjęć zapisuje przycisk „Zapisz ustawienia sklepu”.</p>
     </fieldset>;
 }
