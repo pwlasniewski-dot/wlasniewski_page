@@ -16,7 +16,14 @@ export async function loadGalleryShop(galleryId: number | null) {
  ]);
  const inherited = galleryId !== null && !setting;
  const config=readShopConfig((setting || globalSetting)?.setting_value);
- const catalog: ShopCatalog={galleryId:galleryId ?? 0,enabled:config.enabled,title:config.title,introduction:config.introduction,buttonLabel:config.buttonLabel,formats:config.formats.filter(f=>f.active),delivery:config.delivery,products:products.filter(p=>p.is_active && p.price>0).map(p=>({id:p.id,title:p.title,description:p.description,price:p.price,image_url:p.image_url,preview_images:readProductImages(p.preview_images),product_type:p.product_type,nphoto_product_id:p.nphoto_product_id,nphoto_url:p.nphoto_url,...(config.productRules[String(p.id)] || readShopConfig(globalSetting?.setting_value).productRules[String(p.id)] || {minPhotos:1,maxPhotos:50})}))};
+ const globalConfig = galleryId === null ? config : readShopConfig(globalSetting?.setting_value);
+ const catalog: ShopCatalog={galleryId:galleryId ?? 0,enabled:config.enabled,title:config.title,introduction:config.introduction,buttonLabel:config.buttonLabel,formats:config.formats.filter(f=>f.active),delivery:config.delivery,products:products.filter(p=>p.is_active && p.price>0).map(p=>{
+  const globalRule = p.gallery_id === null ? globalConfig.productRules[String(p.id)] : undefined;
+  const rule = config.productRules[String(p.id)] || globalRule || {minPhotos:1,maxPhotos:50};
+  // A local photo-count override cannot relax a shared product's shipping constraints.
+  const deliveryMethods = globalRule?.deliveryMethods ? globalRule.deliveryMethods.filter(method => !rule.deliveryMethods || rule.deliveryMethods.includes(method)) : rule.deliveryMethods;
+  return {id:p.id,title:p.title,description:p.description,price:p.price,image_url:p.image_url,preview_images:readProductImages(p.preview_images),product_type:p.product_type,nphoto_product_id:p.nphoto_product_id,nphoto_url:p.nphoto_url,...rule,...(deliveryMethods ? {deliveryMethods} : {})};
+ }).filter(product => !product.deliveryMethods || product.deliveryMethods.some(method => config.delivery[method].enabled))};
  catalog.enabled = config.enabled && (catalog.formats.length > 0 || catalog.products.length > 0);
  const editableProducts = products.map(p => ({...p, preview_images:readProductImages(p.preview_images)}));
  return {config,catalog,inherited,products:editableProducts.filter(p=>p.gallery_id===galleryId),sharedProducts:galleryId===null?[]:editableProducts.filter(p=>p.gallery_id===null)};

@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom';
 import InPostPointPicker from './InPostPointPicker';
 import { GalleryProductPreviewDialog } from './GalleryProductPreview';
 import type { ShopCatalog, ShopLine, ShopDelivery } from '@/lib/galleries/merchandise';
+import { parseShopIntent, replaceShopIntent, trackShopIntent } from '@/lib/galleries/shop-intent';
+import { availableShopDelivery } from '@/lib/galleries/shop-delivery';
 
 type Photo = { id: number; file_url: string; thumbnail_url?: string | null; width?: number | null; height?: number | null };
 type Props = { endpoint: string; headers?: Record<string, string>; photos: Photo[]; onAvailabilityChange?: (enabled: boolean) => void };
@@ -17,6 +19,10 @@ const newId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.r
 
 export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, onAvailabilityChange }: Props) {
   const [catalog, setCatalog] = useState<ShopCatalog | null>(null);
+  const [catalogLoadedEndpoint, setCatalogLoadedEndpoint] = useState<string | null>(null);
+  const [catalogError, setCatalogError] = useState('');
+  const [catalogAttempt, setCatalogAttempt] = useState(0);
+  const intentHandledEndpoint = useRef<string | null>(null);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<'gallery' | 'products' | 'cart'>('gallery');
   const [selected, setSelected] = useState<number[]>([]);
@@ -53,6 +59,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   const carouselRef = useRef<HTMLDivElement>(null);
   const idempotency = useRef<{ body: string; key: string } | null>(null);
   const headersKey = JSON.stringify(headers);
+  const availableDelivery = catalog ? availableShopDelivery(catalog, lines) : null;
   const activeEndpoint = useRef(endpoint);
   activeEndpoint.current = endpoint;
   const clearIdempotency = () => {
@@ -99,7 +106,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
 
   useEffect(() => { addInFlight.current = false; }, [selected, productPhotos]);
   useEffect(() => {
-    setHydratedEndpoint(null); setCatalog(null); setFormat(''); onAvailabilityChange?.(false);
+    setHydratedEndpoint(null); setCatalog(null); setCatalogLoadedEndpoint(null); setCatalogError(''); intentHandledEndpoint.current = null; setFormat(''); onAvailabilityChange?.(false);
     setProductPreviewId(null);
     setLines([]); setRemoved([]); setCheckedLines([]); setSelected([]); setProductId(null); setProductPhotos([]); setProductQuantity(1); setQuantity(1); setEditingProduct(null); productDrafts.current = {}; setPendingOrder(null); setPendingPaymentUrl(null); setOpen(false); setTab('gallery'); setCheckout(false); setNotice(''); setError(''); idempotency.current = null;
     setDelivery({ method: 'locker', recipientName: '', email: '', phone: '', pointCode: '', address: { street: '', postalCode: '', city: '' } });
@@ -152,17 +159,56 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
 
   useEffect(() => {
     let active = true;
+    setCatalogError('');
     fetch(endpoint, { headers: JSON.parse(headersKey) }).then(async response => {
       const result = await response.json();
       if (!active) return;
-      const value = response.ok && result.success ? result.catalog : null;
+      if (!response.ok || !result.success) throw new Error('Nie udało się odczytać oferty.');
+      const value = result.catalog;
       setCatalog(value);
+      setCatalogLoadedEndpoint(endpoint);
       onAvailabilityChange?.(!!value?.enabled);
       if (value?.formats?.length) setFormat(value.formats[0].id);
       if (value?.delivery) setDelivery(previous => ({ ...previous, method: value.delivery[previous.method]?.enabled ? previous.method : value.delivery.locker.enabled ? 'locker' : 'courier' }));
-    }).catch(() => { if (active) onAvailabilityChange?.(false); });
+    }).catch(() => { if (active) { onAvailabilityChange?.(false); if (parseShopIntent(window.location.search)) setCatalogError('Nie udało się odczytać oferty dla wybranego produktu. Twój wybór jest zachowany.'); } });
     return () => { active = false; };
-  }, [endpoint, headersKey, onAvailabilityChange]);
+  }, [endpoint, headersKey, onAvailabilityChange, catalogAttempt]);
+
+  useEffect(() => {
+    if (catalogLoadedEndpoint !== endpoint || hydratedEndpoint !== endpoint || intentHandledEndpoint.current === endpoint) return;
+    // A payment return always wins. A public product link can never replace that state.
+    if (pendingOrder || checkingPayment || new URLSearchParams(window.location.search).has('shopOrder')) return;
+    const intent = parseShopIntent(window.location.search);
+    if (!intent) return;
+    intentHandledEndpoint.current = endpoint;
+    const offered = catalog?.enabled && (intent.kind === 'product'
+      ? catalog.products.find(item => item.id === intent.productId)
+      : catalog.formats.find(item => item.id === intent.formatId && item.active));
+    if (!offered) {
+      setNotice('Wybrany produkt nie jest dostępny w tej galerii. Możesz wybrać inną pozycję z oferty lub skontaktować się z fotografem.');
+      if (catalog?.enabled) { setOpen(true); setTab(intent.kind === 'product' ? 'products' : 'gallery'); }
+      replaceShopIntent(null);
+      return;
+    }
+    setOpen(true); setCheckout(false); setError('');
+    if (intent.kind === 'product') {
+      if (productId && !editingProduct) productDrafts.current[productId] = { photos: productPhotos, quantity: productQuantity };
+      const saved = productDrafts.current[intent.productId];
+      setEditingProduct(null); setProductId(intent.productId); setProductPhotos(saved?.photos || []); setProductQuantity(saved?.quantity || 1); setTab('products');
+    } else { setFormat(intent.formatId); setTab('gallery'); }
+    setNotice('Produkt wybrany. Sprawdź cenę w tej galerii i zaznacz zdjęcia. Nic nie zostało jeszcze dodane do koszyka.');
+    replaceShopIntent(null);
+    trackShopIntent('selection_opened', intent);
+  }, [catalog, catalogLoadedEndpoint, hydratedEndpoint, endpoint, pendingOrder, checkingPayment]);
+
+  useEffect(() => {
+    if (!availableDelivery || availableDelivery[delivery.method].enabled) return;
+    const next = availableDelivery.locker.enabled ? 'locker' : availableDelivery.courier.enabled ? 'courier' : null;
+    if (next) {
+      setDelivery(previous => ({ ...previous, method: next }));
+      if (lines.length) setNotice(next === 'courier' ? 'Wybrany produkt wymaga dostawy kurierem. Koszt dostawy został zaktualizowany w podsumowaniu.' : 'Dostawa została dopasowana do produktów w koszyku.');
+    }
+  }, [availableDelivery?.locker.enabled, availableDelivery?.courier.enabled, delivery.method]);
 
   useEffect(() => {
     if (!open || !catalog?.enabled) return;
@@ -185,7 +231,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
     return () => { document.body.style.overflow = previous; document.removeEventListener('keydown', onKey); entryRef.current?.focus(); };
   }, [open, catalog?.enabled]);
 
-  if (!catalog?.enabled) return null;
+  if (!catalog?.enabled) return catalogError ? <div role="alert" className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900"><p>{catalogError}</p><button type="button" className={`${button} mt-3`} onClick={() => setCatalogAttempt(value => value + 1)}>Wczytaj ofertę ponownie</button></div> : notice ? <p role="status" className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900">{notice}</p> : null;
   const remaining = Math.max(0, 500 - lines.length);
   const currentFormat = catalog.formats.find(item => item.id === format);
   const product = catalog.products.find(item => item.id === productId);
@@ -200,12 +246,12 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   const linePrice = (line: CartLine) => line.kind === 'print' ? catalog.formats.find(item => item.id === line.formatId)?.unitAmount || 0 : catalog.products.find(item => item.id === line.productId)?.price || 0;
   const invalidLines = lines.length > 500 || lines.some(line => line.kind === 'print' ? !catalog.formats.some(item => item.id === line.formatId && item.active) || !photos.some(photo => photo.id === line.photoId) : !catalog.products.some(item => item.id === line.productId && line.photoIds.length >= item.minPhotos && line.photoIds.length <= item.maxPhotos) || line.photoIds.some(id => !photos.some(photo => photo.id === id)));
   const subtotal = lines.reduce((sum, line) => sum + linePrice(line) * line.quantity, 0);
-  const deliveryPrice = catalog.delivery[delivery.method]?.amount || 0;
+  const deliveryPrice = availableDelivery?.[delivery.method]?.amount || 0;
   const total = subtotal + deliveryPrice;
   const navigate = (value: typeof tab) => { setTab(value); setCheckout(false); setError(''); mainRef.current?.scrollTo?.({ top: 0 }); };
   const togglePhoto = (id: number, isProduct: boolean) => {
     const change = (ids: number[]) => ids.includes(id) ? ids.filter(value => value !== id) : [...ids, id];
-    if (isProduct) setProductPhotos(change); else setSelected(change);
+    if (isProduct) setProductPhotos(ids => product?.maxPhotos === 1 ? ids.includes(id) ? [] : [id] : change(ids)); else setSelected(change);
   };
   const addPrints = () => {
     if (!selected.length || selected.length > remaining || !currentFormat || selected.some(id => !photoById(id)) || busy || addInFlight.current) return;
@@ -230,7 +276,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   };
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (busy || pendingOrder || !lines.length || invalidLines) return;
+    if (busy || pendingOrder || !lines.length || invalidLines || !availableDelivery?.[delivery.method]?.enabled) return;
     setBusy(true); setError('');
     const body = JSON.stringify({ lines, delivery, expectedTotal: total });
     if (!idempotency.current) {
@@ -318,9 +364,9 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
           </article>)}</div>
           {!catalog.products.length && <p className="rounded-3xl border border-dashed border-stone-300 bg-white px-6 py-16 text-center text-stone-500">Fotograf nie udostępnił jeszcze produktów w tej galerii.</p>}
           {product && <div ref={productConfigRef} className="scroll-mt-6 rounded-3xl border border-stone-200 bg-white p-4 sm:p-7">
-            <h4 className="text-xl font-semibold">{product.title} — wybór zdjęć</h4><p className="my-3">Wybierz {product.minPhotos === product.maxPhotos ? product.minPhotos : `${product.minPhotos}–${product.maxPhotos}`} zdjęć. Wybrano: {productPhotos.length}. Pierwsze zdjęcie jest propozycją okładki. Projekt przygotuje fotograf.</p>
+            <h4 className="text-xl font-semibold">{product.title} — wybór zdjęć</h4><p className="my-3">{product.maxPhotos === 1 ? 'Wybierz jedno zdjęcie produktu. Możesz je zmienić, wskazując inne zdjęcie.' : `Wybierz ${product.minPhotos === product.maxPhotos ? product.minPhotos : `${product.minPhotos}–${product.maxPhotos}`} zdjęć. Pierwsze zdjęcie jest zdjęciem głównym do projektu. Projekt i układ przygotuje fotograf zgodnie z opisem produktu.`} Wybrano: {productPhotos.length}.</p>
             <div className="mb-4 flex flex-wrap items-end gap-3"><label>Ilość produktów<input aria-label="Ilość produktów" className={input} type="number" inputMode="numeric" min="1" max="99" value={productQuantity} onChange={event => setProductQuantity(Math.max(1, Math.min(99, Math.floor(Number(event.target.value)) || 1)))} /></label><button className={primary} disabled={(!editingProduct && !remaining) || productPhotos.some(id => !photoById(id)) || productPhotos.length < product.minPhotos || productPhotos.length > product.maxPhotos} onClick={addProduct}>{editingProduct ? 'Zapisz zmiany produktu' : 'Dodaj produkt do koszyka'} · {money(product.price * productQuantity)}</button><button className={button} onClick={() => { setProductId(null); setProductPhotos([]); setEditingProduct(null); delete productDrafts.current[product.id]; }}>Anuluj wybór produktu</button></div>
-            {productPhotos.length > 0 && <ol className="mb-5 flex flex-wrap gap-3" aria-label="Kolejność zdjęć produktu">{productPhotos.map((id, index) => <li key={id} className="flex flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 p-2">{photoById(id) && <img src={photoById(id)!.thumbnail_url || photoById(id)!.file_url} alt="" className="h-12 w-12 rounded-lg object-cover" loading="lazy" />}<span className="text-sm">{index + 1}. Zdjęcie {id}{index === 0 ? ' · Okładka' : ''}</span><button className={button} disabled={index === 0} aria-label={`Przesuń zdjęcie ${id} wcześniej`} onClick={() => setProductPhotos(ids => { const next = [...ids]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; return next; })}>←</button><button className={button} aria-label={`Usuń zdjęcie ${id} z produktu`} onClick={() => togglePhoto(id, true)}>Usuń</button></li>)}</ol>}
+            {productPhotos.length > 0 && <ol className="mb-5 flex flex-wrap gap-3" aria-label={product.maxPhotos === 1 ? 'Zdjęcie produktu' : 'Kolejność zdjęć produktu'}>{productPhotos.map((id, index) => <li key={id} className="flex flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 p-2">{photoById(id) && <img src={photoById(id)!.thumbnail_url || photoById(id)!.file_url} alt="" className="h-12 w-12 rounded-lg object-cover" loading="lazy" />}<span className="text-sm">{product.maxPhotos === 1 ? `Zdjęcie produktu: ${id}` : `${index + 1}. Zdjęcie ${id}${index === 0 ? ' · Zdjęcie główne' : ''}`}</span>{product.maxPhotos > 1 && <button className={button} disabled={index === 0} aria-label={`Przesuń zdjęcie ${id} wcześniej`} onClick={() => setProductPhotos(ids => { const next = [...ids]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; return next; })}>←</button>}<button className={button} aria-label={`Usuń zdjęcie ${id} z produktu`} onClick={() => togglePhoto(id, true)}>Usuń</button></li>)}</ol>}
             {renderPhotos(true)}
           </div>}
         </section>}
@@ -331,16 +377,17 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
           <div className="space-y-4">{lines.map((line, index) => { const photo = photoById(line.kind === 'print' ? line.photoId : line.photoIds[0]); const item = line.kind === 'product' ? catalog.products.find(value => value.id === line.productId) : null; return <article key={line.id} aria-label={`Pozycja ${index + 1}`} className="flex flex-wrap items-center gap-3 rounded-2xl border border-stone-200 bg-white p-4 sm:gap-5 sm:p-5">
             <input type="checkbox" className="h-5 w-5 shrink-0 accent-stone-800" aria-label={`Zaznacz pozycję ${index + 1}`} checked={checkedLines.includes(line.id)} onChange={() => setCheckedLines(ids => ids.includes(line.id) ? ids.filter(id => id !== line.id) : [...ids, line.id])} />
             {photo && <button aria-label={`Podgląd pozycji ${index + 1}`} onClick={() => setPreview(photo)}><img src={photo.thumbnail_url || photo.file_url} alt={`Zdjęcie ${photo.id}`} className="h-24 w-24 object-contain" /></button>}
-            <div className="min-w-40 flex-1"><h4 className="font-semibold">{line.kind === 'print' ? `Odbitka · zdjęcie ${line.photoId}` : item?.title || 'Produkt niedostępny'}</h4>{line.kind === 'print' ? <select className={input} aria-label={`Format pozycji ${index + 1}`} value={line.formatId} onChange={event => setLines(previous => previous.map(value => value.id === line.id ? { ...value, formatId: event.target.value } : value))}>{catalog.formats.map(value => <option key={value.id} value={value.id}>{value.label} — {money(value.unitAmount)}</option>)}</select> : <><p>{line.photoIds.length} zdjęć · Okładka: {line.coverPhotoId}</p><button className={button} aria-label={`Edytuj zdjęcia pozycji ${index + 1}`} onClick={() => { if (productId && !editingProduct) productDrafts.current[productId] = { photos: productPhotos, quantity: productQuantity }; setEditingProduct(line.id); setProductId(line.productId); setProductPhotos([...line.photoIds]); setProductQuantity(line.quantity); navigate('products'); }}>Edytuj zdjęcia i okładkę</button></>}</div>
+            <div className="min-w-40 flex-1"><h4 className="font-semibold">{line.kind === 'print' ? `Odbitka · zdjęcie ${line.photoId}` : item?.title || 'Produkt niedostępny'}</h4>{line.kind === 'print' ? <select className={input} aria-label={`Format pozycji ${index + 1}`} value={line.formatId} onChange={event => setLines(previous => previous.map(value => value.id === line.id ? { ...value, formatId: event.target.value } : value))}>{catalog.formats.map(value => <option key={value.id} value={value.id}>{value.label} — {money(value.unitAmount)}</option>)}</select> : <><p>{item?.maxPhotos === 1 ? `Zdjęcie produktu: ${line.coverPhotoId}` : `${line.photoIds.length} zdjęć · Zdjęcie główne: ${line.coverPhotoId}`}</p><button className={button} aria-label={`Edytuj zdjęcia pozycji ${index + 1}`} onClick={() => { if (productId && !editingProduct) productDrafts.current[productId] = { photos: productPhotos, quantity: productQuantity }; setEditingProduct(line.id); setProductId(line.productId); setProductPhotos([...line.photoIds]); setProductQuantity(line.quantity); navigate('products'); }}>{item?.maxPhotos === 1 ? 'Zmień zdjęcie produktu' : 'Edytuj zdjęcia i kolejność'}</button></>}</div>
             <label className="w-24">Ilość<input className={input} type="number" inputMode="numeric" min="1" max="99" aria-label={`Ilość pozycji ${index + 1}`} value={line.quantity} onChange={event => setLines(previous => previous.map(value => value.id === line.id ? { ...value, quantity: Math.max(1, Math.min(99, Math.floor(Number(event.target.value)) || 1)) } : value))} /></label>
             <strong>{money(linePrice(line) * line.quantity)}</strong><button className={button} aria-label={`Usuń pozycję ${index + 1}`} onClick={() => removeLines([line.id])}>Usuń</button>
           </article>; })}</div>
           {!!lines.length && <div className="mt-8 rounded-3xl border border-stone-200 bg-white p-5 sm:p-8"><p className="mb-3 text-xl font-semibold">Produkty: {money(subtotal)}</p>{!checkout && <button className={primary} onClick={() => setCheckout(true)}>Dostawa i podsumowanie</button>}
             {checkout && <form onSubmit={submit} className="space-y-4">
-              <label className="block">Sposób dostawy<select className={input} aria-label="Sposób dostawy" value={delivery.method} onChange={event => setDelivery(previous => ({ ...previous, method: event.target.value as ShopDelivery['method'] }))}>{Object.entries(catalog.delivery).filter(([, value]) => value.enabled).map(([key, value]) => <option value={key} key={key}>{key === 'locker' ? 'InPost Paczkomat' : 'Kurier'} · {money(value.amount)}</option>)}</select></label>
+              {!availableDelivery?.locker.enabled && !availableDelivery?.courier.enabled && <p role="alert" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">Brak wspólnego sposobu dostawy dla produktów w koszyku. Zmień koszyk lub skontaktuj się z fotografem przed zamówieniem.</p>}
+              <label className="block">Sposób dostawy<select className={input} aria-label="Sposób dostawy" value={delivery.method} onChange={event => setDelivery(previous => ({ ...previous, method: event.target.value as ShopDelivery['method'] }))}>{Object.entries(availableDelivery || {}).filter(([, value]) => value.enabled).map(([key, value]) => <option value={key} key={key}>{key === 'locker' ? 'InPost Paczkomat' : 'Kurier'} · {money(value.amount)}</option>)}</select></label>
               <div className="grid gap-4 sm:grid-cols-2">{(['recipientName', 'email', 'phone'] as const).map(field => <label key={field}>{field === 'recipientName' ? 'Imię i nazwisko' : field === 'email' ? 'E-mail' : 'Telefon'}<input className={input} required autoComplete={field === 'recipientName' ? 'name' : field === 'email' ? 'email' : 'tel'} type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'} value={delivery[field]} onChange={event => setDelivery(previous => ({ ...previous, [field]: event.target.value }))} /></label>)}</div>
               {delivery.method === 'locker' ? <InPostPointPicker value={delivery.pointCode || ''} onChange={pointCode => setDelivery(previous => ({ ...previous, pointCode }))} /> : <div className="grid gap-4 sm:grid-cols-3">{(['street', 'postalCode', 'city'] as const).map(field => <label key={field}>{field === 'street' ? 'Ulica, numer domu i lokalu' : field === 'postalCode' ? 'Kod pocztowy' : 'Miejscowość'}<input className={input} required value={delivery.address?.[field] || ''} onChange={event => setDelivery(previous => ({ ...previous, address: { street: '', postalCode: '', city: '', ...previous.address, [field]: event.target.value } }))} /></label>)}</div>}
-              <p>Dostawa: {money(deliveryPrice)} · Razem: <strong>{money(total)}</strong></p><button className={primary} disabled={busy || !!pendingOrder || invalidLines || !catalog.delivery[delivery.method]?.enabled} type="submit">{busy ? 'Przygotowuję płatność…' : `Zamawiam i płacę ${money(total)}`}</button><button className={`${button} sm:ml-3`} type="button" onClick={() => setCheckout(false)}>Wróć do koszyka</button>
+              <p>Dostawa: {money(deliveryPrice)} · Razem: <strong>{money(total)}</strong></p><button className={primary} disabled={busy || !!pendingOrder || invalidLines || !availableDelivery?.[delivery.method]?.enabled} type="submit">{busy ? 'Przygotowuję płatność…' : `Zamawiam i płacę ${money(total)}`}</button><button className={`${button} sm:ml-3`} type="button" onClick={() => setCheckout(false)}>Wróć do koszyka</button>
             </form>}
           </div>}
         </section>}

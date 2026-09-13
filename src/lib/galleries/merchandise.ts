@@ -1,8 +1,11 @@
 /** Shared private-gallery merchandise contract. Amounts are integer grosze. */
+import { validatePublicOffer, type PublicShopOffer } from './public-offer';
+import { availableShopDelivery } from './shop-delivery';
 export type PrintFormat = { id: string; label: string; widthMm: number; heightMm: number; unitAmount: number; active: boolean; paper: string };
-export type ShopProduct = { id: number; title: string; description: string | null; price: number; image_url: string | null; preview_images?: string[]; product_type: string | null; minPhotos: number; maxPhotos: number; nphoto_product_id?: string | null; nphoto_url?: string | null };
-export type ShopConfig = { version: 1; enabled: boolean; title: string; introduction: string; buttonLabel: string; formats: PrintFormat[]; productRules: Record<string, {minPhotos: number; maxPhotos: number}>; delivery: {locker: {enabled: boolean; amount: number}; courier: {enabled: boolean; amount: number}} };
-export type ShopCatalog = Omit<ShopConfig, 'version' | 'productRules'> & {galleryId: number; products: ShopProduct[]};
+export type ProductShopRule = {minPhotos: number; maxPhotos: number; deliveryMethods?: ('locker' | 'courier')[]};
+export type ShopProduct = { id: number; title: string; description: string | null; price: number; image_url: string | null; preview_images?: string[]; product_type: string | null; minPhotos: number; maxPhotos: number; deliveryMethods?: ('locker' | 'courier')[]; nphoto_product_id?: string | null; nphoto_url?: string | null };
+export type ShopConfig = { version: 1; enabled: boolean; title: string; introduction: string; buttonLabel: string; formats: PrintFormat[]; productRules: Record<string, ProductShopRule>; delivery: {locker: {enabled: boolean; amount: number}; courier: {enabled: boolean; amount: number}}; publicOffer?: PublicShopOffer };
+export type ShopCatalog = Omit<ShopConfig, 'version' | 'productRules' | 'publicOffer'> & {galleryId: number; products: ShopProduct[]};
 export type ShopCrop = {mode: 'fit' | 'fill'; x: number; y: number; zoom: number};
 export type ShopLine = {id: string; kind: 'print'; photoId: number; formatId: string; quantity: number; crop: ShopCrop; confirmed: boolean} | {id: string; kind: 'product'; productId: number; photoIds: number[]; coverPhotoId: number; quantity: number};
 export type ShopDelivery = {method: 'locker' | 'courier'; recipientName: string; email: string; phone: string; pointCode?: string; address?: {street: string; postalCode: string; city: string}};
@@ -21,9 +24,13 @@ export function validateShopConfig(input: unknown): ShopConfig {
  const ids = new Set<string>();
  for (const f of c.formats) {check(f && typeof f.id === 'string' && /^[a-zA-Z0-9_-]{1,60}$/.test(f.id) && !ids.has(f.id), 'Format musi mieć unikalny identyfikator.'); ids.add(f.id); check(typeof f.label === 'string' && f.label.trim() && f.label.length <= 160 && typeof f.paper === 'string' && f.paper.length <= 100 && typeof f.active === 'boolean', 'Uzupełnij nazwę formatu i papier.'); check(integer(f.widthMm,1,2000) && integer(f.heightMm,1,2000) && integer(f.unitAmount,f.active ? 1 : 0,10000000), 'Nieprawidłowy rozmiar lub cena formatu.');}
  check(c.productRules && typeof c.productRules === 'object' && !Array.isArray(c.productRules), 'Nieprawidłowe reguły produktów.');
- for (const [id, r] of Object.entries(c.productRules)) check(/^\d+$/.test(id) && r && integer(r.minPhotos,1,500) && integer(r.maxPhotos,r.minPhotos,500), 'Nieprawidłowa liczba zdjęć produktu.');
+ for (const [id, r] of Object.entries(c.productRules)) {
+  check(/^\d+$/.test(id) && r && integer(r.minPhotos,1,500) && integer(r.maxPhotos,r.minPhotos,500), 'Nieprawidłowa liczba zdjęć produktu.');
+  if (r.deliveryMethods !== undefined) check(Array.isArray(r.deliveryMethods) && r.deliveryMethods.length >= 1 && r.deliveryMethods.length <= 2 && new Set(r.deliveryMethods).size === r.deliveryMethods.length && r.deliveryMethods.every(method => method === 'locker' || method === 'courier'), 'Wybierz przynajmniej jeden poprawny sposób dostawy produktu.');
+ }
  for (const method of ['locker','courier'] as const) check(c.delivery?.[method] && typeof c.delivery[method].enabled === 'boolean' && integer(c.delivery[method].amount,0,1000000), 'Nieprawidłowa cena dostawy.');
  if(c.enabled) check(c.delivery.locker.enabled || c.delivery.courier.enabled, 'Włącz przynajmniej jedną metodę dostawy.');
+ if (c.publicOffer !== undefined) {try { validatePublicOffer(c.publicOffer); } catch (error) { throw new ShopValidationError(error instanceof Error ? error.message : 'Sprawdź prezentację oferty.'); }}
  return JSON.parse(JSON.stringify(c));
 }
 export function readShopConfig(raw: string | null | undefined): ShopConfig {try {return validateShopConfig(JSON.parse(raw || ''));} catch {return defaultShopConfig();}}
@@ -49,6 +56,7 @@ export function priceShopCart(catalog: ShopCatalog, input: unknown, deliveryInpu
  });
  const d = deliveryInput as ShopDelivery;
  check(d && ['locker','courier'].includes(d.method) && catalog.delivery[d.method]?.enabled, 'Wybierz dostępną dostawę.');
+ check(availableShopDelivery(catalog, lines)[d.method].enabled, 'Wybrana dostawa nie obsługuje wszystkich produktów w koszyku. Zmień sposób dostawy lub skontaktuj się z fotografem.');
  check(typeof d.recipientName === 'string' && d.recipientName.trim().split(/\s+/).length >= 2 && d.recipientName.length <= 150, 'Uzupełnij odbiorcę.');
  check(typeof d.email === 'string' && d.email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email), 'Uzupełnij poprawny e-mail.');
  check(typeof d.phone === 'string' && /^\+?[\d ()-]{9,20}$/.test(d.phone) && /^(?:48)?\d{9}$/.test(d.phone.replace(/\D/g,'')), 'Uzupełnij telefon.');

@@ -34,6 +34,8 @@ import ClientStyleGuidePanel from '@/components/StyleGuide/ClientStyleGuidePanel
 import AccountTabButton from '@/components/client/AccountTabButton';
 import { createPortalEventReporter, portalResponseDiagnostics } from '@/lib/client-portal-events-client';
 import type { PortalClientEvent, PortalModule } from '@/lib/client-portal-events';
+import PhotoProductStorefront from '@/components/shop/PhotoProductStorefront';
+import { parseShopIntent, shopAccountHref } from '@/lib/galleries/shop-intent';
 
 type Tab = 'overview' | 'sessions' | 'bookings' | 'documents' | 'gift_cards' | 'workshops' | 'preparation' | 'settings' | 'partner';
 
@@ -53,7 +55,10 @@ export default function AccountPage() {
     const router = useRouter();
     const { user, token, logout, isLoading: authLoading } = useAuth();
     useEffect(() => {
-        if (!authLoading && !token) router.push('/logowanie');
+        if (!authLoading && !token) {
+            const intent = parseShopIntent(window.location.search);
+            router.push(intent ? `/logowanie?returnTo=${encodeURIComponent(shopAccountHref(intent))}` : '/logowanie');
+        }
     }, [authLoading, token, router]);
 
     if (authLoading || !token) return <AccountLoading />;
@@ -372,6 +377,7 @@ function AuthenticatedAccountPage({ user, token, logout }: Pick<ReturnType<typeo
             </div>
 
             <main className="max-w-6xl mx-auto px-4">
+                {(activeTab === 'overview' || activeTab === 'sessions') && <PhotoProductStorefront mode="account" token={token} onAction={trackAction} className="mb-8" />}
                 {moduleError && activeTab !== 'overview' && (
                     <div role="alert" className="mb-6 rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-100">
                         <p>{moduleError.message}</p>

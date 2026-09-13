@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import GiftCard from '@/components/GiftCard';
+import PhotoProductStorefront from '@/components/shop/PhotoProductStorefront';
 
 interface GiftCardType {
     id: string;
@@ -42,22 +43,6 @@ export default function GiftCardShop() {
         fetchData();
     }, []);
 
-    if (loading) {
-        return (
-            <main className="min-h-screen bg-black text-white pt-40">
-                <div className="max-w-7xl mx-auto px-6 py-20">
-                    <div className="flex items-center justify-center min-h-96">
-                        <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                            className="w-12 h-12 border-4 border-gold-500/30 border-t-gold-500 rounded-full"
-                        />
-                    </div>
-                </div>
-            </main>
-        );
-    }
-
     return (
         <main className="min-h-screen bg-black text-white pt-40">
             <section className="py-20 px-6 border-b border-zinc-800">
@@ -81,7 +66,11 @@ export default function GiftCardShop() {
 
             <section className="py-20 px-6">
                 <div className="max-w-7xl mx-auto">
-                    {cards.length === 0 ? (
+                    {loading ? (
+                        <div role="status" aria-label="Ładowanie kart podarunkowych" className="flex min-h-48 items-center justify-center">
+                            <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }} className="h-10 w-10 rounded-full border-2 border-gold-500/30 border-t-gold-500" />
+                        </div>
+                    ) : cards.length === 0 ? (
                         <div className="text-center py-20">
                             <p className="text-zinc-400 text-lg">Brak dostępnych kart</p>
                         </div>
@@ -127,6 +116,7 @@ export default function GiftCardShop() {
                     )}
                 </div>
             </section>
+            <div className="mx-auto max-w-7xl px-6"><PhotoProductStorefront /></div>
         </main>
     );
 }
