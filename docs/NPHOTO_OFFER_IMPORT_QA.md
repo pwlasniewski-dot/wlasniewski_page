@@ -25,6 +25,14 @@ Kontrola niezależnego agenta: brak wykrytych P0/P1. Poprawiono rozbieżność p
 
 Lokalny odczyt nPhoto osiągnął bezpieczny limit 8 sekund. Nie obchodzono ograniczeń. Dopóki rzeczywisty odczyt w deploy-preview nie przejdzie, nie wolno deklarować importu online jako w pełni zweryfikowanego. Rzeczywisty zapis nowej oferty i jej publikacja nie były wykonywane — właściciel nie wskazał jeszcze docelowych produktów i cen. PR pozostaje draftem.
 
+### Uzupełnienie: odczyt online i kontrola wizualna
+
+Na wdrożonym `2dfb050` odczyt `/pl/fotoalbumy/fotoalbum-pro` przez formularz administratora zakończył się sukcesem: nazwa, opis, 12 prawdziwych zdjęć produktu i dwa zestawy parametrów. Obejrzano zdjęcia oraz wspólny podgląd. Brak ceny pozostaje opisany jako „Cena do ustalenia”. Nie potwierdzono uprawnień do materiałów, nie zapisano szkicu ani nie włączono widoczności.
+
+W tej samej przeglądarce potwierdzono szczegóły istniejącego produktu klienta, prawidłową cenę, Escape zamykający tylko szczegóły i przejście do wyboru zdjęć. Wybór anulowano, koszyk pozostał pusty. Istniejące dane testowe (literówki i zdjęcie niezwiązane z albumem) pozostawiono bez podmiany. Kontrola dotyczy desktopowego Chrome ze wspólną sesją admina, nie fizycznego iPhone/Safari ani izolowanej sesji klienta.
+
+Poprawka `cc07e11` usuwa kopiowanie limitów zdjęć do opisu: są wyświetlane dynamicznie z reguł produktu, więc zmiana limitu w adminie nie pozostawia starej liczby w opisie. 13 testów importu i 5 interfejsu przeszły ponownie po tej poprawce. Sukces pojedynczego odczytu online nie oznacza pełnej obsługi wszystkich produktów ani automatycznego zlecania produkcji.
+
 ## Ustalenia dotyczące dostawców
 
 - [Crystal Albums w Photonesto](https://help.photonesto.com/pl/articles/11652809-integracja-photonesto-z-crystal-albums-przewodnik-krok-po-kroku): potwierdzone klucz i tajny kod API w koncie producenta oraz przekazywanie odbitek do koszyka. Dokumentacja partnera nie potwierdza udostępnienia API własnemu sklepowi ani pełnego katalogu albumów.
