@@ -7,6 +7,7 @@ import prisma from '@/lib/db/prisma';
 // Use standard import for library
 import { createPayUOrder, extractClientIpv4 } from '@/lib/payu';
 import { authorizeIndividualGallery, galleryAccessDenied } from '@/lib/galleries/individual-access';
+import { readShopConfig } from '@/lib/galleries/merchandise';
 import { galleryCartFingerprint } from '@/lib/galleries/order-idempotency';
 
 function existingOrderResponse(order: {
@@ -109,6 +110,16 @@ export async function POST(
                 return NextResponse.json({ success: false, error: 'Nieprawidłowy klucz operacji' }, { status: 409 });
             }
             return existingOrderResponse(existingOrder);
+        }
+
+        // A stale browser tab must not bypass the physical cart's configuration and delivery.
+        if (productIds.length) {
+            const local = await prisma.setting.findUnique({ where: { setting_key: `gallery_shop_${gallery.id}` } });
+            const setting = local || await prisma.setting.findUnique({ where: { setting_key: 'gallery_shop_default' } });
+            if (readShopConfig(setting?.setting_value).enabled) return NextResponse.json({
+                success: false, code: 'SHOP_CART_REQUIRED',
+                error: 'Oferta produktów została odświeżona. Otwórz zakupy w galerii i dodaj produkty do nowego koszyka.',
+            }, { status: 409 });
         }
 
         const paidOrders = await prisma.photoOrder.findMany({

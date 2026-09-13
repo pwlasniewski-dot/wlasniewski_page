@@ -59,6 +59,8 @@ const navigation = [
         ]
     },
     { name: 'Galerie', href: '/admin/galleries', icon: Image },
+    { name: 'Oferta galerii', href: '/admin/gallery-shop', icon: Box },
+    { name: 'Zamówienia i przesyłki', href: '/admin/gallery-orders', icon: Box },
     { name: 'Albumy nPhoto', href: '/admin/nphoto-albums', icon: Box },
     { name: 'Multimedia', href: '/admin/multimedia', icon: Sparkles },
     { name: 'Kostka 3D', href: '/admin/photo-cube', icon: Box },

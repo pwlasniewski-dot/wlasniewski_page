@@ -8,6 +8,8 @@ import { randomUUID } from 'node:crypto';
 import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
 import { clientOwnershipWhere, contractOwnershipWhere } from '@/lib/auth/document-access';
 import { CLIENT_VISIBLE_CONTRACT_STATUS_VALUES } from '@/lib/contracts/status';
+import { recordPortalResponse } from '@/lib/client-portal-events-server';
+import { clientJson } from '@/lib/client-operations';
 
 function replaceContractPlaceholders(text: string, context: {
     contractNumber: string | null;
@@ -25,6 +27,7 @@ function replaceContractPlaceholders(text: string, context: {
 }
 
 export async function GET(req: NextRequest) {
+    const startedAt = Date.now();
     const correlationId = randomUUID();
     let incidentClientId: number | null = null;
     let incidentClientEmail: string | null = null;
@@ -125,7 +128,8 @@ export async function GET(req: NextRequest) {
             }),
         }));
 
-        return NextResponse.json({
+        recordPortalResponse({ clientId: userResult.id, module: 'account', correlationId, startedAt, httpStatus: 200 });
+        return clientJson({
             success: true,
             user: {
                 id: userResult.id,
@@ -140,8 +144,9 @@ export async function GET(req: NextRequest) {
                 contracts: processedContracts,
                 photo_orders: photoOrders,
             }
-        });
+        }, { correlationId });
     } catch (error: any) {
+        recordPortalResponse({ clientId: incidentClientId, module: 'account', correlationId, startedAt, httpStatus: 500, errorCode: error?.code });
         console.error('Fetch user error:', error);
         await recordAdminIncidentSafely({
             severity: 'P1',
@@ -158,6 +163,6 @@ export async function GET(req: NextRequest) {
             },
         });
         await logSystem('ERROR', 'SYSTEM', 'Failed to fetch personal profile (me)', { error: error.message });
-        return NextResponse.json({ error: 'Server error' }, { status: 500 });
+        return clientJson({ error: 'Nie udało się załadować danych panelu.' }, { status: 500, correlationId });
     }
 }

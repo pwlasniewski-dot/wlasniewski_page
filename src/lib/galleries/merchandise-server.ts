@@ -1,3 +1,4 @@
+import { verifyParcelPoint } from '@/lib/shipping/inpost-point';
 import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
@@ -5,15 +6,18 @@ import { authorizeIndividualGallery } from './individual-access';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
 import { createPayUOrder, extractClientIpv4 } from '@/lib/payu';
 import { priceShopCart, readShopConfig, readShopMetadata, ShopValidationError, type ShopCatalog, type ShopMetadata } from './merchandise';
-export const shopSettingKey = (id: number) => `gallery_shop_${id}`;
-export async function loadGalleryShop(galleryId: number) {
- const [setting, products] = await Promise.all([
+export const shopSettingKey = (id: number | null) => id === null ? 'gallery_shop_default' : `gallery_shop_${id}`;
+export async function loadGalleryShop(galleryId: number | null) {
+ const [setting, globalSetting, products] = await Promise.all([
   prisma.setting.findUnique({where:{setting_key:shopSettingKey(galleryId)}}),
-  prisma.galleryProduct.findMany({where:{gallery_id:galleryId},orderBy:[{sort_order:'asc'},{id:'asc'}]})
+  galleryId === null ? Promise.resolve(null) : prisma.setting.findUnique({where:{setting_key:shopSettingKey(null)}}),
+  prisma.galleryProduct.findMany({where:galleryId === null ? {gallery_id:null} : {OR:[{gallery_id:galleryId},{gallery_id:null}]},orderBy:[{sort_order:'asc'},{id:'asc'}]})
  ]);
- const config=readShopConfig(setting?.setting_value);
- const catalog: ShopCatalog={galleryId,enabled:config.enabled,title:config.title,introduction:config.introduction,buttonLabel:config.buttonLabel,formats:config.formats.filter(f=>f.active),delivery:config.delivery,products:products.filter(p=>p.is_active && p.price>0).map(p=>({id:p.id,title:p.title,description:p.description,price:p.price,image_url:p.image_url,product_type:p.product_type,...(config.productRules[String(p.id)] || {minPhotos:1,maxPhotos:50})}))};
- return {config,catalog,products};
+ const inherited = galleryId !== null && !setting;
+ const config=readShopConfig((setting || globalSetting)?.setting_value);
+ const catalog: ShopCatalog={galleryId:galleryId ?? 0,enabled:config.enabled,title:config.title,introduction:config.introduction,buttonLabel:config.buttonLabel,formats:config.formats.filter(f=>f.active),delivery:config.delivery,products:products.filter(p=>p.is_active && p.price>0).map(p=>({id:p.id,title:p.title,description:p.description,price:p.price,image_url:p.image_url,product_type:p.product_type,nphoto_product_id:p.nphoto_product_id,nphoto_url:p.nphoto_url,...(config.productRules[String(p.id)] || readShopConfig(globalSetting?.setting_value).productRules[String(p.id)] || {minPhotos:1,maxPhotos:50})}))};
+ catalog.enabled = config.enabled && (catalog.formats.length > 0 || catalog.products.length > 0);
+ return {config,catalog,inherited,products:products.filter(p=>p.gallery_id===galleryId),sharedProducts:galleryId===null?[]:products.filter(p=>p.gallery_id===null)};
 }
 export async function authorizeShop(request: NextRequest, scope: {accessCode:string} | {participantId:number}) {
  let participantId: number | null=null;
@@ -24,7 +28,7 @@ export async function authorizeShop(request: NextRequest, scope: {accessCode:str
   if(!payload || payload.participant_id!==scope.participantId) throw new ShopValidationError('Zaloguj się jako uczestnik tej galerii.',401);
   const participant=await prisma.galleryParticipant.findUnique({where:{id:scope.participantId},include:{gallery:true}});
   if(!participant || participant.gallery_id!==payload.gallery_id || participant.gallery.gallery_mode!=='GROUP') throw new ShopValidationError('Nie znaleziono galerii.',404);
-  if(!participant.allow_extra_photo_purchase && !participant.gallery.allow_extra_photo_purchase) throw new ShopValidationError('Zakupy nie są dostępne dla tego uczestnika.',403);
+  // Physical merchandise is enabled by its own catalog, independently of digital extras.
   participantId=participant.id; gallery=participant.gallery;
  } else {
   gallery=await prisma.clientGallery.findUnique({where:{access_code:scope.accessCode}});
@@ -65,6 +69,7 @@ export async function postShopOrder(request:NextRequest,scope:{accessCode:string
   }
   const priced=priceShopCart(catalog,body.lines,body.delivery,allowed);
   if(priced.total!==body.expectedTotal) return NextResponse.json({success:false,code:'PRICE_CHANGED',error:'Cennik się zmienił. Sprawdź aktualne podsumowanie przed płatnością.',catalog,total:priced.total},{status:409});
+  if(priced.delivery.method==='locker') await verifyParcelPoint(priced.delivery.pointCode!);
   const metadata:ShopMetadata={kind:'gallery_merchandise',version:1,lines:priced.lines,delivery:priced.delivery,fulfillment:{status:'new',trackingNumber:null}};
   let order;
   try {order=await prisma.photoOrder.create({data:{gallery_id:gallery.id,participant_id:participantId,photo_ids:'[]',photo_count:priced.lines.filter(l=>l.kind==='print').reduce((sum,l)=>sum+l.quantity,0),product_ids:JSON.stringify(metadata),total_amount:priced.total,payment_status:'initializing',idempotency_key:key,checkout_fingerprint:fingerprint}});}catch(error){if((error as {code?:string})?.code!=='P2002') throw error; const raced=await prisma.photoOrder.findUnique({where:{idempotency_key:key}});if(!raced) throw error;return existingResponse(raced);}
@@ -88,5 +93,5 @@ export async function getShopOrder(request:NextRequest,scope:{accessCode:string}
  const metadata=readShopMetadata(order?.product_ids);
  if(!order||!metadata) throw new ShopValidationError('Nie znaleziono zamówienia.',404);
  if(participantId===null && request.headers.get('x-shop-order-key')!==order.idempotency_key) throw new ShopValidationError('Szczegóły zamówienia są dostępne w sesji, w której zostało złożone.',403);
- return NextResponse.json({success:true,order:{id:order.id,payment_status:order.payment_status,total_amount:order.total_amount,metadata}},{headers:{'Cache-Control':'private, no-store'}});
+ return NextResponse.json({success:true,order:{id:order.id,payment_status:order.payment_status,total_amount:order.total_amount,paymentUrl:order.payment_status==='pending'?order.payment_url:null,metadata}},{headers:{'Cache-Control':'private, no-store'}});
  }catch(e){return shopError(e);}}

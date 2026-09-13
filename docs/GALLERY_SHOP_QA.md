@@ -59,3 +59,13 @@ Ostatnie wspólne uruchomienie wszystkich trzech komend: exit 0 dla każdej. Har
 `npm run typecheck`: exit 2, 126 diagnostyk w niezmienionych plikach; brak diagnostyk w plikach tej zmiany. `npm run test:unit`: 292 testy, 288 PASS i 4 FAIL. Niepowodzenia dotyczą istniejących testów booking-conversion-funnel, gallery-offer-security (guard wymagający bazy), group-gallery-operating-model (archiwum) i service-growth (SEO). Pliki implementacji sprawdzane przez te cztery niepowodzenia nie były modyfikowane w tej zmianie. Pełny build nie jest potwierdzony. Środowisko wykonywało Node 24.19, projekt deklaruje Node 22; CI/odbiór na Node 22 pozostaje wymagany.
 
 Końcowy `npm run test:gallery-shop`: 8 testów domeny + 11 grup ReactDOM + 15 grup serwera, exit 0. Dodatkowo sprawdzono poprawne zamówienie uczestnika grupowego bez nadania dostępu do plików oraz blokowanie nowego checkoutu po niepewnej płatności (również po zmianie ilości w koszyku).
+
+## Odbiór 2026-09-13
+
+55 grup PASS: 10 domena + 11 ReactDOM (3 rundy) + 20 API sklepu + 9 InPost przesyłki + 5 picker punktów. Testy obejmują dziedziczenie/wyjątek/reset, izolację produktów, pusty katalog, snapshot nPhoto, parser realizacji, blokady nadania/odbioru po timeout i równoległych kliknięciach. Baza, PayU i mutacje InPost są mockowane; publiczny odczyt listy punktów Torunia dodatkowo potwierdzony na żywym API. Nie wykonano obciążenia konta.
+
+Pełny build Node22 ukończony dla wcześniejszej części aktualizacji; końcowy wynik zapisany w opisie PR. Pełny typecheck wykazuje istniejące diagnostyki projektu; nie jest to PASS. Build projektu ma istniejące ignoreBuildErrors i ignoreDuringBuilds, więc nie jest dowodem pełnej zgodności typów.
+
+Browser: podany deploy-preview odpowiada. Prywatna galeria poprawnie wymaga właściciela. Próba logowania admina przez bezpieczny formularz zakończyła się widocznym Invalid credentials. Nie potwierdzono wizualnie zalogowanego admina/klienta ani fizycznego Safari iPhone. Nie zgłaszać tej bramki jako ukończonej. Lokalne http://localhost:3000 zablokowane przez przeglądarkę, bez obejścia.
+
+Otwarte: rzeczywisty zapis/odczyt w środowisku z bazą i odbiór zalogowanej przeglądarki; PayU sandbox; InPost sandbox; dostęp partnerski nPhoto dla bezpośredniego zlecania produkcji; historia nowych zakupów klienta poza bieżącą sesją; zwroty opłaconych zamówień. Centrum admina ma trwałą historię.

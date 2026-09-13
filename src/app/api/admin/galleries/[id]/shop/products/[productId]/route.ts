@@ -6,9 +6,9 @@ import { withAuth } from '@/lib/auth/middleware';
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string; productId: string }> }) {
     return withAuth(request, async () => {
         const { id, productId } = await params;
-        const galleryId = Number(id);
+        const galleryId = id === 'default' ? null : Number(id);
         const itemId = Number(productId);
-        if (!Number.isSafeInteger(galleryId) || galleryId < 1 || !Number.isSafeInteger(itemId) || itemId < 1) return NextResponse.json({ error: 'Nieprawidłowy identyfikator.' }, { status: 400 });
+        if ((galleryId !== null && (!Number.isSafeInteger(galleryId) || galleryId < 1)) || !Number.isSafeInteger(itemId) || itemId < 1) return NextResponse.json({ error: 'Nieprawidłowy identyfikator.' }, { status: 400 });
         try {
             const body = await request.json();
             if (!body || typeof body !== 'object' || Array.isArray(body)) return NextResponse.json({ error: 'Nieprawidłowe dane.' }, { status: 400 });

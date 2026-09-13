@@ -13,6 +13,7 @@ import {
 import toast from 'react-hot-toast';
 import GalleryAdmin from '@/components/admin/GalleryAdmin';
 import { parsePlnAmount } from '@/lib/money/pln';
+import { PORTAL_EVENT_LABELS, PORTAL_SECTION_LABELS, PORTAL_ACTION_LABELS } from '@/lib/client-portal-events';
 
 interface ClientDetails {
     id: number;
@@ -141,7 +142,7 @@ function ClientDetailsContent({ id }: { id: string }) {
     const searchParams = useSearchParams();
     const [client, setClient] = useState<ClientDetails | null>(null);
     const [loading, setLoading] = useState(true);
-    const tabFromUrl = searchParams.get('tab') as 'overview' | 'galleries' | 'offers' | 'contracts' | 'settings' | 'permissions' | null;
+    const tabFromUrl = searchParams.get('tab') as 'overview' | 'galleries' | 'offers' | 'contracts' | 'activity' | 'settings' | 'permissions' | null;
     const [activeTab, setActiveTab] = useState<'overview' | 'galleries' | 'offers' | 'contracts' | 'activity' | 'settings' | 'permissions'>(tabFromUrl || 'overview');
     const [permissions, setPermissions] = useState<Record<string, boolean>>({
         galleries: true, offers: true, contracts: true, bookings: true, gift_cards: true
@@ -175,14 +176,18 @@ function ClientDetailsContent({ id }: { id: string }) {
     const [activities, setActivities] = useState<any[]>([]);
     const [activitiesLoading, setActivitiesLoading] = useState(false);
     const [activitiesTotal, setActivitiesTotal] = useState(0);
+    const [activitiesError, setActivitiesError] = useState<string | null>(null);
+    const [activitiesOffset, setActivitiesOffset] = useState(0);
 
-    const loadActivities = async () => {
+    const loadActivities = async (offset = 0) => {
         setActivitiesLoading(true);
+        setActivitiesError(null);
         try {
             const token = localStorage.getItem('admin_token');
             const params = new URLSearchParams({
                 client_id: String(id),
-                limit: '200',
+                limit: '100',
+                offset: String(offset),
             });
 
             if (client?.email) {
@@ -196,8 +201,12 @@ function ClientDetailsContent({ id }: { id: string }) {
                 const data = await res.json();
                 setActivities(data.activities || []);
                 setActivitiesTotal(data.total || 0);
+                setActivitiesOffset(offset);
+            } else {
+                setActivitiesError('Nie udało się pobrać historii. Spróbuj ponownie.');
             }
         } catch (e) {
+            setActivitiesError('Nie udało się połączyć z historią aktywności.');
             console.error('Failed to load activities:', e);
         } finally {
             setActivitiesLoading(false);
@@ -1757,34 +1766,36 @@ function ClientDetailsContent({ id }: { id: string }) {
                 {/* ACTIVITY TAB */}
                 {activeTab === 'activity' && (
                     <div>
-                        <div className="flex items-center justify-between mb-6">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between mb-6">
                             <div>
                                 <h2 className="text-2xl font-bold flex items-center gap-2">
                                     <Activity className="w-6 h-6 text-gold-500" /> Aktywność Klienta w CRM
                                 </h2>
                                 <p className="text-zinc-500 text-sm mt-1">
-                                    Co klient robił: przeglądanie ofert, podpisywanie umów, pobieranie PDF, notatki, błędy.
+                                    Historia CRM i diagnostyka panelu. Kliknięcie nie potwierdza wykonania działania.
                                     {activitiesTotal > 0 && <span className="ml-2 text-zinc-400">({activitiesTotal} zdarzeń)</span>}
                                 </p>
                             </div>
                             <button
-                                onClick={loadActivities}
+                                onClick={() => loadActivities(activitiesOffset)}
                                 disabled={activitiesLoading}
                                 className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm flex items-center gap-2"
                             >
                                 <RefreshCw className={`w-4 h-4 ${activitiesLoading ? 'animate-spin' : ''}`} /> Odśwież
                             </button>
                         </div>
+                        <p className="text-xs text-zinc-400 mb-4">Czas: Polska (Europe/Warsaw). Zdarzenia przeglądarki mogą być niepełne przy utracie połączenia. Nowa diagnostyka nie odtwarza wcześniejszych kliknięć.</p>
+                        {activitiesError && <p role="alert" className="mb-4 rounded-xl border border-red-500/30 p-4 text-red-300">{activitiesError}</p>}
 
                         {activitiesLoading && activities.length === 0 ? (
                             <div className="flex items-center justify-center py-20 text-zinc-500">
                                 <RefreshCw className="w-6 h-6 animate-spin mr-3" /> Ładowanie aktywności...
                             </div>
-                        ) : activities.length === 0 ? (
+                        ) : activities.length === 0 && !activitiesError ? (
                             <div className="text-center py-20 text-zinc-600">
                                 <Activity className="w-12 h-12 mx-auto mb-4 opacity-30" />
                                 <p className="text-lg font-medium">Brak zarejestrowanej aktywności</p>
-                                <p className="text-sm mt-1">Aktywność klienta pojawi się tutaj po jego pierwszej interakcji z portalem.</p>
+                                <p className="text-sm mt-1">Brak zapisów nie oznacza braku działania. Nie wszystkie wcześniejsze kroki były rejestrowane.</p>
                             </div>
                         ) : (
                             <div className="space-y-1">
@@ -1806,16 +1817,17 @@ function ClientDetailsContent({ id }: { id: string }) {
                                         gallery_order_placed: { icon: ShoppingCart, color: 'text-emerald-400', label: 'Złożył zamówienie z galerii' },
                                         login: { icon: User, color: 'text-zinc-400', label: 'Zalogował się' },
                                         error: { icon: AlertTriangle, color: 'text-red-500', label: 'Wystąpił błąd' },
+                                        portal_event: { icon: Activity, color: act.details?.event?.endsWith('failed') ? 'text-red-400' : 'text-sky-300', label: PORTAL_EVENT_LABELS[act.details?.event] || 'Zdarzenie panelu' },
                                     };
 
                                     const cfg = actionConfig[act.action] || { icon: Activity, color: 'text-zinc-500', label: act.action };
                                     const IconComponent = cfg.icon;
                                     const time = new Date(act.created_at);
-                                    const timeStr = time.toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                                    const timeStr = time.toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
                                     const details = act.details;
 
                                     return (
-                                        <div key={act.id} className="flex items-start gap-4 p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl hover:bg-zinc-800/50 transition-colors">
+                                        <div key={act.id} className="flex flex-wrap sm:flex-nowrap items-start gap-3 p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl hover:bg-zinc-800/50 transition-colors">
                                             <div className={`mt-0.5 flex-shrink-0 w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center ${cfg.color}`}>
                                                 <IconComponent className="w-4 h-4" />
                                             </div>
@@ -1828,6 +1840,16 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                         </span>
                                                     )}
                                                 </div>
+                                                {act.action === 'portal_event' && details && (
+                                                    <div className="mt-2 space-y-1 text-xs text-zinc-400 break-words">
+                                                        <p>{details.source === 'server' ? 'Wynik serwera' : 'Obserwacja przeglądarki'}{details.section ? ` · ${PORTAL_SECTION_LABELS[details.section] || 'Sekcja'}` : ''}{details.module ? ` · ${PORTAL_SECTION_LABELS[details.module] || 'Moduł'}` : ''}</p>
+                                                        {details.action && <p>{PORTAL_ACTION_LABELS[details.action] || 'Działanie'}</p>}
+                                                        {typeof details.durationMs === 'number' && <p>Czas: {(details.durationMs / 1000).toFixed(2)} s{details.httpStatus ? ` · HTTP ${details.httpStatus}` : ''}</p>}
+                                                        {details.errorCode && <p>Błąd: {details.errorCode}</p>}
+                                                        {details.correlationId && <p className="font-mono break-all">Korelacja: {details.correlationId}</p>}
+                                                        {details.sessionId && <p className="font-mono break-all">Wizyta: {details.sessionId} · krok {details.sequence}</p>}
+                                                    </div>
+                                                )}
                                                 {details && (
                                                     <div className="mt-1 text-xs text-zinc-500 space-x-3">
                                                         {details.title && <span>„{details.title}"</span>}
@@ -1843,7 +1865,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                     <p className="mt-1 text-[10px] text-zinc-700 font-mono">{act.ip_address}</p>
                                                 )}
                                             </div>
-                                            <div className="flex-shrink-0 text-right">
+                                            <div className="w-full sm:w-auto flex-shrink-0 sm:text-right">
                                                 <p className="text-xs text-zinc-500 flex items-center gap-1">
                                                     <Clock className="w-3 h-3" /> {timeStr}
                                                 </p>
@@ -1851,6 +1873,11 @@ function ClientDetailsContent({ id }: { id: string }) {
                                         </div>
                                     );
                                 })}
+                                <div className="flex flex-wrap justify-between items-center gap-3 pt-4 text-sm text-zinc-400">
+                                    <button disabled={activitiesLoading || activitiesOffset === 0} onClick={() => loadActivities(Math.max(0, activitiesOffset - 100))} className="rounded-lg bg-zinc-800 px-4 py-2 disabled:opacity-40">Nowsze</button>
+                                    <span>{activitiesOffset + 1}–{activitiesOffset + activities.length} z {activitiesTotal}</span>
+                                    <button disabled={activitiesLoading || activitiesOffset + activities.length >= activitiesTotal} onClick={() => loadActivities(activitiesOffset + 100)} className="rounded-lg bg-zinc-800 px-4 py-2 disabled:opacity-40">Starsze</button>
+                                </div>
                             </div>
                         )}
                     </div>

@@ -38,6 +38,10 @@
 [functions."cleanup-booking-payment-holds"]
   schedule = "*/15 * * * *"
 
+# Expire only the new operational portal diagnostics after 30 days, in bounded batches.
+[functions."cleanup-portal-diagnostics"]
+  schedule = "17 * * * *"
+
 # Cache headers for static assets
 [[headers]]
   for = "/_next/static/*"

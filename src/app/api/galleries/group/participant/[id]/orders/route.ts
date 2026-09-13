@@ -17,10 +17,10 @@ type OrderLine = {
 // opcjonalnie pojedyncze zamówienie po ?order_id=N (do ekranu potwierdzenia po PayU).
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const participantId = parseInt(params.id, 10);
+    const participantId = parseInt((await params).id, 10);
     if (Number.isNaN(participantId)) {
       return NextResponse.json({ error: 'Nieprawidłowe ID uczestnika' }, { status: 400 });
     }

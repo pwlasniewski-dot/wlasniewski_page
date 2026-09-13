@@ -8,6 +8,7 @@ import { isClientVisibleOfferStatus } from '@/lib/offers/status';
 import { randomUUID } from 'node:crypto';
 import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
 import { clientJson } from '@/lib/client-operations';
+import { recordPortalVoucherResponse } from '@/lib/client-portal-events-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,6 +18,9 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const correlationId = randomUUID();
+    const startedAt = Date.now();
+    let voucherClientId: number | null = null;
+    let voucherOfferId: number | null = null;
     try {
         const tokenCandidates = [
             extractToken(request.headers.get('authorization')),
@@ -73,7 +77,7 @@ export async function GET(
             if (activeClient) {
                 hasActiveClient = true;
                 isOwner = isClientRecordOwner(offer, activeClient);
-                if (isOwner) break;
+                if (isOwner) { voucherClientId = activeClient.id; break; }
             }
         }
         if (!isAdmin && !hasActiveClient) {
@@ -97,6 +101,7 @@ export async function GET(
         if (!isAdmin && !isClientVisibleOfferStatus(offer.status)) {
             return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
         }
+        voucherOfferId = offerId;
 
         const isFamilySession = (offer.category || '').toLowerCase().includes('rodzin') || (offer.category || '').toLowerCase() === 'family';
         if (!isFamilySession) {
@@ -128,16 +133,19 @@ export async function GET(
             qrTarget,
         });
 
+        recordPortalVoucherResponse({ clientId: voucherClientId, offerId: voucherOfferId, correlationId, startedAt, httpStatus: 200 });
         return new NextResponse(pdfBuffer as any, {
             status: 200,
             headers: {
                 'Content-Type': 'application/pdf',
                 'Content-Disposition': `inline; filename="voucher-rodzinny-${offerId}.pdf"`,
                 'Cache-Control': 'private, no-store',
+                'X-Correlation-ID': correlationId,
             },
         });
     } catch (error) {
+        recordPortalVoucherResponse({ clientId: voucherClientId, offerId: voucherOfferId, correlationId, startedAt, httpStatus: 500 });
         console.error('[family-voucher] error:', error);
-        return NextResponse.json({ error: 'PDF generation failed' }, { status: 500 });
+        return clientJson({ error: 'PDF generation failed' }, { status: 500, correlationId });
     }
 }

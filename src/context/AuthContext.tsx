@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 
 interface User {
     id: number;
@@ -26,15 +26,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const sessionRevision = useRef(0);
 
     const clearSession = () => {
+        sessionRevision.current += 1;
         localStorage.removeItem('user_token');
         localStorage.removeItem('user_info');
         setToken(null);
         setUser(null);
+        setIsLoading(false);
     };
 
     const refreshUser = async (manualToken?: string) => {
+        const revision = ++sessionRevision.current;
         const storedToken = manualToken || token || localStorage.getItem('user_token');
         if (!storedToken) {
             setUser(null);
@@ -44,24 +48,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         try {
-            const res = await fetch('/api/user/me', {
-                headers: { 'Authorization': `Bearer ${storedToken}` }
+            const res = await fetch('/api/user/session', {
+                headers: { 'Authorization': `Bearer ${storedToken}` },
+                cache: 'no-store',
+                signal: AbortSignal.timeout(15_000),
             });
+            if (revision !== sessionRevision.current) return;
 
             if (res.ok) {
                 const data = await res.json();
+                if (revision !== sessionRevision.current) return;
                 setUser(data.user);
                 setToken(storedToken);
                 localStorage.setItem('user_info', JSON.stringify(data.user));
-            } else {
+            } else if (res.status === 401 || res.status === 403) {
                 // An expired session must not throw visitors off public pages.
                 // Only an explicit logout action redirects to the login screen.
                 clearSession();
+            } else {
+                // A temporary backend failure is not proof of an expired session.
+                // Protected endpoints still authenticate every request. Never restore cached private data.
+                setToken(storedToken);
             }
         } catch (error) {
-            console.error('Auth refresh error:', error);
+            if (revision !== sessionRevision.current) return;
+            setToken(storedToken);
+            console.warn('Auth refresh temporarily unavailable');
         } finally {
-            setIsLoading(false);
+            if (revision === sessionRevision.current) setIsLoading(false);
         }
     };
 
@@ -70,13 +84,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const login = (newToken: string, newUser: User) => {
+        sessionRevision.current += 1;
         localStorage.setItem('user_token', newToken);
         localStorage.setItem('user_info', JSON.stringify(newUser));
         setToken(newToken);
         setUser(newUser);
+        setIsLoading(false);
     };
 
     const logout = async () => {
+        sessionRevision.current += 1;
         try {
             await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
         } catch (error) {

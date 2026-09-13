@@ -1,19 +1,21 @@
 const {assert,check,log}=require('./gallery-shop-dom.cjs');
 const Module=require('node:module');
 let rows=[],payuCalls=0,access=true,participant=3,adminAllowed=true,mails=0,ledger=new Map();
-const matches=(r,where)=>Object.entries(where).every(([k,v])=>v&&typeof v==='object'?('not' in v?r[k]!==v.not:'in' in v?v.in.includes(r[k]):false):r[k]===v);
+const matches=(r,where)=>Object.entries(where).every(([k,v])=>k==='OR'?v.some(branch=>matches(r,branch)):v&&typeof v==='object'?('not' in v?r[k]!==v.not:'in' in v?v.in.includes(r[k]):false):r[k]===v);
 const gallery={id:12,access_code:'private',is_active:true,expires_at:null,gallery_mode:'INDIVIDUAL'};
 const config={version:1,enabled:true,title:'Sklep',introduction:'Oferta',buttonLabel:'Zamów',formats:[{id:'p10',label:'10×15',widthMm:100,heightMm:150,unitAmount:350,active:true,paper:'mat'}],productRules:{},delivery:{locker:{enabled:true,amount:1500},courier:{enabled:true,amount:2000}}};
-const db={paymentLedger:{upsert:async({where,create,update})=>{let key=where.provider_provider_payment_id.provider_payment_id;ledger.set(key,{...(ledger.get(key)||create),...update});return ledger.get(key)}},setting:{findUnique:async()=>({setting_value:JSON.stringify(config)}),upsert:async({update})=>{Object.assign(config,JSON.parse(update.setting_value));return {setting_value:update.setting_value}}},nphotoAlbum:{findMany:async()=>[]},galleryProduct:{findMany:async()=>[],findFirst:async()=>null},clientGallery:{findUnique:async()=>gallery},galleryParticipant:{findUnique:async()=>({id:3,gallery_id:12,allow_extra_photo_purchase:true,gallery:{...gallery,gallery_mode:'GROUP'}})},galleryPhoto:{findMany:async()=>[{id:1,is_standard:true},{id:2,is_standard:false}]},photoOrder:{findFirst:async({where})=>rows.find(r=>matches(r,where))||null,findUnique:async({where})=>rows.find(r=>matches(r,where))||null,findMany:async()=>[],create:async({data})=>{if(rows.some(r=>r.idempotency_key===data.idempotency_key))throw {code:'P2002'};const row={id:rows.length+1,...data};rows.push(row);return row},update:async({where,data})=>Object.assign(rows.find(r=>r.id===where.id),data),updateMany:async({where,data})=>{let r=rows.find(r=>matches(r,where));if(!r)return {count:0};Object.assign(r,data);return {count:1}}}};
+const settings=new Map([['gallery_shop_12',JSON.stringify(config)]]);
+let products=[];
+const db={paymentLedger:{upsert:async({where,create,update})=>{let key=where.provider_provider_payment_id.provider_payment_id;ledger.set(key,{...(ledger.get(key)||create),...update});return ledger.get(key)}},setting:{findUnique:async({where})=>settings.has(where.setting_key)?{setting_key:where.setting_key,setting_value:settings.get(where.setting_key)}:null,upsert:async({where,create,update})=>{const row=settings.has(where.setting_key)?update:create;settings.set(where.setting_key,row.setting_value);return {setting_key:where.setting_key,setting_value:row.setting_value}},deleteMany:async({where})=>({count:settings.delete(where.setting_key)?1:0})},nphotoAlbum:{findMany:async()=>[]},galleryProduct:{findMany:async({where})=>products.filter(p=>matches(p,where)),findFirst:async({where})=>products.find(p=>matches(p,where))||null,update:async({where,data})=>Object.assign(products.find(p=>matches(p,where)),data)},clientGallery:{findUnique:async()=>gallery},galleryParticipant:{findUnique:async()=>({id:3,gallery_id:12,allow_extra_photo_purchase:false,gallery:{...gallery,gallery_mode:'GROUP',allow_extra_photo_purchase:false}})},galleryPhoto:{findMany:async()=>[{id:1,is_standard:true},{id:2,is_standard:false}]},photoOrder:{findFirst:async({where})=>rows.find(r=>matches(r,where))||null,findUnique:async({where})=>rows.find(r=>matches(r,where))||null,findMany:async()=>[],create:async({data})=>{if(rows.some(r=>r.idempotency_key===data.idempotency_key))throw {code:'P2002'};const row={id:rows.length+1,...data};rows.push(row);return row},update:async({where,data})=>Object.assign(rows.find(r=>r.id===where.id),data),updateMany:async({where,data})=>{let r=rows.find(r=>matches(r,where));if(!r)return {count:0};Object.assign(r,data);return {count:1}}}};
 const load=Module._load;
-Module._load=function(request,parent,isMain){if(request==='@/lib/email/sender')return {sendEmail:async()=>{mails++},getAdminEmail:async()=> 'admin@example.com'};if(request==='@/lib/auth/middleware')return {withAuth:async(req,fn)=>adminAllowed?fn():require('next/server').NextResponse.json({error:'Unauthorized'},{status:401})};if(request==='@/lib/db/prisma')return {__esModule:true,default:db};if(request==='./individual-access')return {authorizeIndividualGallery:async()=>({allowed:access})};if(request==='@/lib/auth/parent-jwt')return {extractTokenFromHeader:x=>x,verifyParentToken:async()=>({participant_id:participant,gallery_id:12})};if(request==='@/lib/payu')return {createPayUOrder:async()=>{payuCalls++;return {orderId:'pay'+payuCalls,redirectUri:'https://payments.example/order'}},extractClientIpv4:()=> '127.0.0.1'};return load.apply(this,arguments)};
+Module._load=function(request,parent,isMain){if(request==='@/lib/shipping/inpost-point')return {verifyParcelPoint:async()=>{}};if(request==='@/lib/email/sender')return {sendEmail:async()=>{mails++},getAdminEmail:async()=> 'admin@example.com'};if(request==='@/lib/auth/middleware')return {withAuth:async(req,fn)=>adminAllowed?fn():require('next/server').NextResponse.json({error:'Unauthorized'},{status:401})};if(request==='@/lib/db/prisma')return {__esModule:true,default:db};if(request==='./individual-access')return {authorizeIndividualGallery:async()=>({allowed:access})};if(request==='@/lib/auth/parent-jwt')return {extractTokenFromHeader:x=>x,verifyParentToken:async()=>({participant_id:participant,gallery_id:12})};if(request==='@/lib/payu')return {createPayUOrder:async()=>{payuCalls++;return {orderId:'pay'+payuCalls,redirectUri:'https://payments.example/order'}},extractClientIpv4:()=> '127.0.0.1'};return load.apply(this,arguments)};
 const {NextRequest}=require('next/server');
-const {postShopOrder,authorizeShop,shopCheckoutFingerprint,getShopOrder}=require('../../src/lib/galleries/merchandise-server.ts');
+const {postShopOrder,authorizeShop,shopCheckoutFingerprint,getShopOrder,loadGalleryShop}=require('../../src/lib/galleries/merchandise-server.ts');
 const body={lines:[{id:'one',kind:'print',photoId:1,formatId:'p10',quantity:2,crop:{mode:'fit',x:50,y:50,zoom:1},confirmed:true}],delivery:{method:'locker',recipientName:'Anna Testowa',email:'a@example.com',phone:'501222333',pointCode:'TOR01M'},expectedTotal:2200};
 const req=(b=body,key='unique-order-key-0001')=>new NextRequest('http://localhost/api/gallery/shop/orders',{method:'POST',headers:{'content-type':'application/json','idempotency-key':key,'x-shop-order-key':key,'authorization':'token'},body:JSON.stringify(b)});
 (async()=>{
 await check('auth rejects unauthorized private gallery before order creation',async()=>{access=false;assert.equal((await postShopOrder(req(),{accessCode:'private'})).status,401);assert.equal(rows.length,0);access=true});
-await check('group participant authorized on own gallery',async()=>{const context=await authorizeShop(req(),{participantId:3});assert.equal(context.participantId,3);assert.equal(context.gallery.id,12);});
+await check('physical shop authorizes own group participant even when digital extras are disabled',async()=>{const context=await authorizeShop(req(),{participantId:3});assert.equal(context.participantId,3);assert.equal(context.gallery.id,12);});
 await check('auth rejects participant ID mismatch',async()=>{participant=4;await assert.rejects(authorizeShop(req(),{participantId:3}));participant=3});
 await check('nonstandard unpaid photo not orderable in private gallery',async()=>{assert.equal((await postShopOrder(req({...body,lines:[{...body.lines[0],photoId:2}]}),{accessCode:'private'})).status,400);assert.equal(rows.length,0)});
 await check('real server stale price returns409 and creates no order',async()=>{assert.equal((await postShopOrder(req({...body,expectedTotal:1}),{accessCode:'private'})).status,409);assert.equal(rows.length,0)});
@@ -27,5 +29,49 @@ await check('payment canceled/rejected then completed is idempotent; late cancel
 await check('real admin PUT auth denied/invalid config and valid save GET reread',async()=>{const {PUT,GET}=require('../../src/app/api/admin/galleries/[id]/shop/route.ts');const ctx={params:Promise.resolve({id:'12'})};const put=(value)=>PUT(new NextRequest('http://localhost/api/admin/shop',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({config:value})}),ctx);adminAllowed=false;assert.equal((await put(config)).status,401);adminAllowed=true;assert.equal((await put({...config,formats:[{...config.formats[0],unitAmount:-1}]})).status,400);assert.equal((await put({...config,title:'Po zapisie QA'})).status,200);const r=await GET(req(),ctx);assert.equal(r.status,200);assert.equal((await r.json()).config.title,'Po zapisie QA')});
 await check('real admin product PATCH rejects item from other gallery',async()=>{const {PATCH}=require('../../src/app/api/admin/galleries/[id]/shop/products/[productId]/route.ts');const request=new NextRequest('http://localhost/api/admin/shop/product',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({title:'Album',price:1000,is_active:true})});assert.equal((await PATCH(request,{params:Promise.resolve({id:'99',productId:'10'})})).status,404)});
 await check('group order persists participant and never grants paid digital photo IDs',async()=>{const result=await postShopOrder(req({...body,lines:[{...body.lines[0],photoId:2}]},'unique-group-order-0002'),{participantId:3});assert.equal(result.status,200);assert.equal(rows.at(-1).participant_id,3);assert.equal(rows.at(-1).photo_ids,'[]');});
+
+await check('global config inherited by new gallery, local override remains independent',async()=>{
+ const global={...config,title:'Wspólny cennik',formats:config.formats.map(f=>({...f,unitAmount:450}))};
+ const {PUT,GET}=require('../../src/app/api/admin/galleries/[id]/shop/route.ts');const ctx={params:Promise.resolve({id:'default'})};
+ const response=await PUT(new NextRequest('http://localhost/api/admin/shop',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({config:global})}),ctx);assert.equal(response.status,200);
+ assert.equal((await (await GET(req(),ctx)).json()).config.title,'Wspólny cennik');
+ const inherited=await loadGalleryShop(44),local=await loadGalleryShop(12);
+ assert.equal(inherited.inherited,true);assert.equal(inherited.catalog.title,'Wspólny cennik');assert.equal(inherited.catalog.formats[0].unitAmount,450);
+ assert.equal(local.inherited,false);assert.equal(local.catalog.title,'Po zapisie QA');assert.equal(local.catalog.formats[0].unitAmount,350);
+ const changed={...global,title:'Nowy wspólny cennik'};settings.set('gallery_shop_default',JSON.stringify(changed));
+ assert.equal((await loadGalleryShop(44)).catalog.title,'Nowy wspólny cennik');assert.equal((await loadGalleryShop(12)).catalog.title,'Po zapisie QA');
+});
+await check('shared products appear in all galleries; private and inactive products stay scoped',async()=>{
+ const seed={title:'Album',description:'25x25, 20 stron',price:9900,image_url:null,product_type:'album',is_active:true,sort_order:0};
+ products=[{...seed,id:101,gallery_id:null},{...seed,id:102,gallery_id:12},{...seed,id:103,gallery_id:99},{...seed,id:104,gallery_id:null,is_active:false}];
+ const global=JSON.parse(settings.get('gallery_shop_default'));global.productRules={'101':{minPhotos:10,maxPhotos:20}};settings.set('gallery_shop_default',JSON.stringify(global));
+ const local=await loadGalleryShop(12),other=await loadGalleryShop(44),shared=await loadGalleryShop(null);
+ assert.deepEqual(local.catalog.products.map(p=>p.id),[101,102]);assert.deepEqual(other.catalog.products.map(p=>p.id),[101]);assert.deepEqual(shared.catalog.products.map(p=>p.id),[101]);
+ assert.equal(local.catalog.products[0].minPhotos,10);assert.equal(local.catalog.products[0].maxPhotos,20);
+ assert.deepEqual(local.products.map(p=>p.id),[102]);assert.deepEqual(local.sharedProducts.map(p=>p.id),[101,104]);
+});
+await check('global PATCH scoped to shared products, gallery PATCH cannot mutate global',async()=>{
+ const {PATCH}=require('../../src/app/api/admin/galleries/[id]/shop/products/[productId]/route.ts');
+ const patch=(id,productId)=>PATCH(new NextRequest('http://localhost/api/admin/shop/product',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({title:'Album QA',price:12500,is_active:true})}),{params:Promise.resolve({id,productId})});
+ assert.equal((await patch('12','101')).status,404);assert.equal((await patch('default','102')).status,404);assert.equal((await patch('default','101')).status,200);
+ assert.equal((await loadGalleryShop(44)).catalog.products[0].price,12500);assert.equal(products.find(p=>p.id===102).price,9900);
+});
+await check('admin delete override restores shared settings without deleting products or orders',async()=>{
+ const {DELETE}=require('../../src/app/api/admin/galleries/[id]/shop/route.ts');const ctx={params:Promise.resolve({id:'12'})};
+ const beforeProducts=JSON.stringify(products),beforeOrders=JSON.stringify(rows),global=settings.get('gallery_shop_default');
+ adminAllowed=false;assert.equal((await DELETE(req(),ctx)).status,401);assert.equal(settings.has('gallery_shop_12'),true);adminAllowed=true;
+ assert.equal((await DELETE(req(),{params:Promise.resolve({id:'default'})})).status,404);
+ const result=await DELETE(req(),ctx);assert.equal(result.status,200);const data=await result.json();assert.equal(data.inherited,true);assert.equal(data.catalog.title,'Nowy wspólny cennik');
+ assert.equal(settings.has('gallery_shop_12'),false);assert.equal(settings.get('gallery_shop_default'),global);assert.equal(JSON.stringify(products),beforeProducts);assert.equal(JSON.stringify(rows),beforeOrders);
+});
+await check('empty published catalog stays hidden; physical-only or product-only offer remains visible',async()=>{
+ const previous=settings.get('gallery_shop_default'),previousProducts=products;products=[];
+ const empty={...config,formats:[]};settings.set('gallery_shop_default',JSON.stringify(empty));
+ assert.equal((await loadGalleryShop(44)).catalog.enabled,false);
+ settings.set('gallery_shop_default',JSON.stringify({...empty,formats:config.formats}));assert.equal((await loadGalleryShop(44)).catalog.enabled,true);
+ settings.set('gallery_shop_default',JSON.stringify(empty));products=[{id:201,gallery_id:null,title:'Album',price:10000,is_active:true}];assert.equal((await loadGalleryShop(44)).catalog.enabled,true);
+ settings.set('gallery_shop_default',previous);products=previousProducts;
+});
+
 console.log(JSON.stringify({checks:log,orders:rows.length,payuCalls},null,2));
 })().catch(e=>{console.error(e);process.exitCode=1});

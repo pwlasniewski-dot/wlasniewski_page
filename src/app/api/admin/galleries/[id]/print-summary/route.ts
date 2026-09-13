@@ -1,3 +1,4 @@
+import { merchandisePrintEntries } from '@/lib/galleries/merchandise';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
@@ -5,6 +6,8 @@ import { withAuth } from '@/lib/auth/middleware';
 type PaidLine = { photoId: number; quantity: number; format: string };
 
 function paidLines(photoIdsRaw: string, productIdsRaw: string | null): PaidLine[] {
+  const merchandise = merchandisePrintEntries(productIdsRaw);
+  if (merchandise !== null) return merchandise.map(({photo_id, ...line}) => ({photoId: photo_id, ...line}));
   try {
     const snapshot = productIdsRaw ? JSON.parse(productIdsRaw) as Record<string, unknown> : null;
     if (snapshot?.kind === 'group_extra_prints' && Array.isArray(snapshot.lines)) {
