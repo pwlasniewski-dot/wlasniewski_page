@@ -27,8 +27,8 @@ export function nphotoOfferDescription(input: Pick<NphotoDraftInput, 'draft' | '
     input.pageCount !== null ? input.pageUnit === 'spreads'
       ? `Liczba rozkładówek: ${input.pageCount} (${input.pageCount * 2} stron).`
       : `Liczba stron: ${input.pageCount}.` : '',
-    input.minPhotos === input.maxPhotos ? `Wybierz ${input.minPhotos} zdjęć.` : `Wybierz od ${input.minPhotos} do ${input.maxPhotos} zdjęć.`,
-    'Projekt przygotowuje fotograf.',
   ].filter(Boolean).join(' ');
+  // Photo limits are rendered from productRules, not copied into editable prose:
+  // changing a rule must never leave an obsolete limit in the product description.
   return [input.draft.description.trim(), details].filter(Boolean).join('\n\n');
 }

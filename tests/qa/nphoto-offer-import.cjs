@@ -62,6 +62,7 @@ const htmlResponse=()=>new Response(fixture,{headers:{'content-type':'text/html;
   const paragraphs=validateNphotoDraftInput({...input,draft:{...draft,description:'Pierwszy akapit.\n\nDrugi akapit.<script>bad</script>'}});assert.equal(paragraphs.draft.description,'Pierwszy akapit.\n\nDrugi akapit.');
   const {nphotoOfferDescription}=require('../../src/lib/nphoto/offer-import.ts');
   const longest=validateNphotoDraftInput({...input,format:'f'.repeat(120),pageCount:500,minPhotos:499,maxPhotos:500,draft:{...draft,description:'a'.repeat(4500)}});assert.ok(nphotoOfferDescription(longest).length<=5000);
+  assert.equal(nphotoOfferDescription({...longest,minPhotos:1,maxPhotos:2}),nphotoOfferDescription(longest),'photo limits remain dynamic and cannot become stale in description');
   assert.throws(()=>validateNphotoDraftInput({...input,draft:{...draft,description:'a'.repeat(4501)}}));
  });
  await check('preview and draft routes authenticate before fetch or persistence',async()=>{
