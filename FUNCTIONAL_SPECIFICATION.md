@@ -1,5 +1,7 @@
 ## Zatwierdzony katalog testowy — 2026-09-14
 
+Aktualny katalog i status odbioru opisuje docs/NPHOTO_LAUNCH_QA.md; snapshot zapisanej konfiguracji to docs/NPHOTO_QA_CATALOG.json. Ceny użytkownika 2,50/1,50 zł mają pierwszeństwo przed historycznymi progami propozycji marży. Zatwierdzono podłączenie tej bazy do konkretnej gałęzi preview w Netlify. Zgoda nie oznacza wykonanego zapisu ani odebranej sprzedaży: sesja hostingu wygasła, a mimo późniejszego potwierdzenia połączenia integracji Netlify jej operacje nie są jeszcze dostępne w bieżącej sesji.
+
 Po jednoznacznym zatwierdzeniu użytkownika wykonano transakcję wyłącznie na gałęzi Neon audit-admin-unification-20260914 (br-dawn-scene-aeokidlt): aktywne produkty 6–9 z pełnymi opisami i rzeczywistymi materiałami; stare 1/3/4/5 ukryte; wspólna oferta i galeria 26 mają aktualne ceny użytkownika 2,50/1,50 zł oraz dostawę 17/25 zł. Pierwszy rekord ustawień ma publiczny POS PayU 300746 w sandbox oraz callback do preview75. Produkcja została sprawdzona odczytowo: 6–9 nadal nieaktywne. Nie wykonano płatności ani nadania.
 
 ## Odbiór preview — 2026-09-14

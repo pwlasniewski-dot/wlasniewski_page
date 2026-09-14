@@ -2,7 +2,8 @@
 
 - [x] Zatwierdzona konfiguracja osobnej bazy i publicznego POS sandbox PayU.
 - [x] Odczyt i wykonanie loadera, wyceny oraz podglądu na faktycznie zapisanym katalogu.
-- [ ] Podłączenie testowej bazy do Netlify — odrzucone przez automatyczną kontrolę, formularz anulowany.
+- [x] Osobna zgoda na sekret GALLERY_QA_DATABASE_URL w Netlify helpful-axolotl-cc1cbb, tylko fix/admin-unification-audit-20260914, Builds i Functions; pozostałe konteksty puste.
+- [ ] Zapisać zatwierdzony sekret i ponownie wdrożyć preview — sesja Netlify wygasła; integracja jest już połączona, ale jej operacje nie pojawiły się jeszcze w bieżącej sesji.
 - [ ] Rzeczywista transakcja sandbox i obsługa wysyłki po podłączeniu.
 
 ## Odbiór preview — 2026-09-14
@@ -19,7 +20,8 @@
 - [x] Aktualne autoryzowane API Points i zgodność z nazwą istniejącego tokenu mapy.
 - [x] Sprawdzenie połączeń InPost/PayU bez zamówień i opłat w istniejącej sekcji dostawy.
 - [x] Przygotować konkretne opisy, realne media, ceny i dostawę 17/25 zł do przeglądu.
-- [ ] Dokończyć izolowany zapis konfiguracji i test realnego sandbox PayU/ShipX — wymaga zgody po automatycznym odrzuceniu transakcji.
+- [x] Wykonać zatwierdzony izolowany zapis konfiguracji katalogu i publicznego POS sandbox PayU.
+- [ ] Test transakcji sandbox PayU/ShipX — po podłączeniu zatwierdzonej bazy do preview i skonfigurowaniu testowego InPost.
 - [ ] Uruchomić katalog na produkcji po odbiorze procesu.
 
 - [x] Naprawić i przetestować błędy odczytu wyborów rodzica, ZIP-a i kalendarza warsztatów.

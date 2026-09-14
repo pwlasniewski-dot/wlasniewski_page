@@ -567,6 +567,12 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### 2026-09-14 — zgoda na podłączenie preview i aktualizacja odbioru
+
+Użytkownik zatwierdził sekret GALLERY_QA_DATABASE_URL w Netlify helpful-axolotl-cc1cbb, tylko dla fix/admin-unification-audit-20260914, Builds i Functions, z pustymi wartościami innych kontekstów. Nie ponawiać zgody na ten sam zakres. Przeglądarka po wznowieniu nie zachowała sesji Netlify i pokazała logowanie; nie wykonano zapisu ani redeployu. Następnie użytkownik połączył integrację Netlify, co potwierdzono. Jej operacje nie pojawiły się jednak w bieżącej sesji, dlatego zatwierdzony zapis nadal nie został wykonany.
+
+Poprawiono nieaktualny początek docs/NPHOTO_LAUNCH_QA.md: odzwierciedla wykonany zapis osobnej bazy, aktualne ceny użytkownika 2,50/1,50 zł, dostawę 17/25 zł i zakres już udzielonych zgód. Historyczna propozycja marży nie zastępuje zapisanej konfiguracji. Nie zmieniano kodu, bazy ani produkcji; nie powtarzano testów wykonawczych dla zmiany dokumentacji.
+
 ### 2026-09-14 — zatwierdzony zapis katalogu i PayU na odizolowanej bazie
 
 Po jednoznacznym zatwierdzeniu użytkownika wykonano transakcję wyłącznie na gałęzi Neon audit-admin-unification-20260914 (br-dawn-scene-aeokidlt): aktywne produkty 6–9 z pełnymi opisami i rzeczywistymi materiałami; stare 1/3/4/5 ukryte; wspólna oferta i galeria 26 mają aktualne ceny użytkownika 2,50/1,50 zł oraz dostawę 17/25 zł. Pierwszy rekord ustawień ma publiczny POS PayU 300746 w sandbox oraz callback do preview75. Produkcja została sprawdzona odczytowo: 6–9 nadal nieaktywne. Nie wykonano płatności ani nadania.
