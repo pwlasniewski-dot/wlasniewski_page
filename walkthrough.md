@@ -1,3 +1,9 @@
+## Odbiór live 119887c — 2026-09-14
+
+Netlify zgłosiło sukces wdrożenia preview75 dla commitu 119887c5792e7bd69d76267ff8ffa79cf639a058. W zalogowanej przeglądarce przed wdrożeniem checkbox produktu #1 nie uaktywniał zapisu; po wdrożeniu: brak osobnego przycisku „Zapisz produkt”, zapis disabled przed zmianą, enabled po odznaczeniu, disabled po przywróceniu. Przywrócono pierwotny stan bez zapisu do wspólnej bazy. Siedem grup API/React pokrywa zapis i odczyt, ale odbiór live samego zapisu wymaga odizolowanego QA.
+
+Panel integracji preview: InPost sandbox bez INPOST_API_TOKEN/INPOST_ORGANIZATION_ID, brak tokenu mapy i danych odbioru. OAuth PayU production potwierdzony; nie utworzono płatności. Nie potwierdzono etykiety, wysyłki ani pełnej sprzedaży. Netlify CLI wciąż oczekuje zatwierdzenia natywnego logowania; zakres sekretu QA pozostaje wcześniej zatwierdzony.
+
 ## 2026-09-14 — regresja zgłoszonego checkboxa produktu
 
 Nowy tests/qa/gallery-shop-save.cjs: 7 grup PASS — rzeczywisty React, istniejący PUT/GET, wspólny loader i render panelu klienta; baza i uwierzytelnienie podstawione. Sprawdzono on/off/cofnięcie, zapis kilku produktów, ponowny odczyt, zniknięcie z klienta, zapis cen i mediów z limitami, rollback, odmowę dostępu, cudze produkty, konflikt edycji, zachowanie dziedziczenia i awarię odczytu po udanym zapisie. Istniejące nphoto-offer-ui (5), gallery-shop-rounds (12), gallery-shop-server (21) i shop-launch-readiness (6) także PASS. Poprzedni build po usunięciu wygenerowanego .next/export zakończył się sukcesem; końcowy build obecnej poprawki również PASS (Node 22, 261/261 tras). TSC pozostaje na 106 wcześniejszych diagnostykach, bez błędów w zmienionych plikach. Zmiany nie zostały jeszcze wdrożone.

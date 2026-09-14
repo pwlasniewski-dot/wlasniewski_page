@@ -4,7 +4,7 @@
 - [x] Atomowa walidacja i zapis, kontrola własności, konflikty, zachowanie dziedziczenia.
 - [x] Siedem regresji React → API → odczyt → klient oraz dotychczasowe 44 grupy PASS.
 - [x] Końcowy build Node 22: PASS, 261/261 tras.
-- [ ] Zapisać zweryfikowaną poprawkę w PR75.
+- [x] Zapisać poprawkę w PR75 (119887c), potwierdzić sukces preview i zmianę stanu zapisu w zalogowanej przeglądarce.
 - [ ] Po autoryzacji CLI skonfigurować zatwierdzone QA i wykonać odbiór live.
 
 ## 2026-09-14 — podłączenie przez Netlify CLI

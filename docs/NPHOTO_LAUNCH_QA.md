@@ -1,3 +1,9 @@
+## Odbiór live 119887c — 2026-09-14
+
+Netlify zgłosiło sukces wdrożenia preview75 dla commitu 119887c5792e7bd69d76267ff8ffa79cf639a058. W zalogowanej przeglądarce przed wdrożeniem checkbox produktu #1 nie uaktywniał zapisu; po wdrożeniu: brak osobnego przycisku „Zapisz produkt”, zapis disabled przed zmianą, enabled po odznaczeniu, disabled po przywróceniu. Przywrócono pierwotny stan bez zapisu do wspólnej bazy. Siedem grup API/React pokrywa zapis i odczyt, ale odbiór live samego zapisu wymaga odizolowanego QA.
+
+Panel integracji preview: InPost sandbox bez INPOST_API_TOKEN/INPOST_ORGANIZATION_ID, brak tokenu mapy i danych odbioru. OAuth PayU production potwierdzony; nie utworzono płatności. Nie potwierdzono etykiety, wysyłki ani pełnej sprzedaży. Netlify CLI wciąż oczekuje zatwierdzenia natywnego logowania; zakres sekretu QA pozostaje wcześniej zatwierdzony.
+
 ## Zapis widoczności produktu — 2026-09-14
 
 Zgłoszony przez użytkownika nieaktywny zapis naprawiono w istniejącym edytorze: stan wszystkich kart jest wspólny, jeden PUT zapisuje produkty i ustawienia atomowo. Siedem nowych regresji obejmuje zapis i ponowny render klienta; transport bazy i logowanie podstawione. Build Node 22 PASS, 261/261 tras. TSC: 106 wcześniejszych diagnostyk, brak w zmienionych plikach. Nie jest to potwierdzenie odbioru live. Logowanie CLI nadal oczekuje autoryzacji użytkownika; zatwierdzone zmienne QA pozostają do podłączenia.

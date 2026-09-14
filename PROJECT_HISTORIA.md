@@ -567,6 +567,10 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### 2026-09-14 — odbiór checkboxa po wdrożeniu preview
+
+Commit 119887c: Netlify success; zalogowana przeglądarka potwierdziła jeden przycisk i cykl disabled → enabled po odznaczeniu → disabled po cofnięciu. Bez zapisu do wspólnej bazy. Panel połączeń potwierdził brak konfiguracji InPost w preview i działający OAuth PayU production. CLI nadal wymaga dokończenia logowania, QA i transakcje pozostają otwarte.
+
 ### 2026-09-14 — wspólny zapis produktów zamiast rozdzielonych przycisków
 
 Zgłoszenie checkboxa ujawniło podział szkiców produktów i ustawień. Jeden przycisk zapisuje teraz wszystkie zmiany przez istniejący PUT i transakcję; walidacja współdzielona z PATCH, kontrola własności i konfliktu edycji, zachowanie dziedziczenia. Nowe 7 regresji PASS, dotychczasowe 44 grupy edytora/serwera/publikacji PASS. Bez nowej zakładki i bez migracji. Build poprzedniej poprawki PASS po usunięciu wygenerowanego katalogu; build tej poprawki również PASS (Node 22, 261/261 tras). TSC: 106 wcześniejszych diagnostyk, brak w zmienionych plikach. Autoryzacja CLI Netlify nadal pending; nie zapisano zmiennych i nie wdrożono poprawek.
