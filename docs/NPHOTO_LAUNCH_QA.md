@@ -1,3 +1,7 @@
+## Odczyt naprawy galerii — 2026-09-14
+
+Korekta produkcyjnego gallery_shop_26 wykonana z porównaniem poprzedniej wartości. Ponowny SELECT potwierdził formats_match=true, delivery_match=true, enabled=true. Nowy test rzeczywistego klienta odtwarza pierwotny brak formatu, a następnie wykonuje trzy ścieżki wyboru → koszyk → dostawa na zapisanym snapshocie: 15×21 za 19,50 zł z dostawą, 10×15 za 18,50 zł i dwie odbitki 15×21 za 22,00 zł. Nie klika płatności. Cały istniejący test storefront stanowi również etap builda.
+
 ## 2026-09-14 — poprawka zdarzeń panelu i wyboru odbitek po wdrożeniu
 
 Zrzuty produkcji pokazały POST /api/user/events 403 oraz niedostępny wybór nphoto-15x21-silk w galerii 26. Odczyt bazy potwierdził lokalne identyfikatory formatu i stawki 15/20 zł przy wspólnej ofercie 17/25 zł. Przygotowano ograniczoną korektę formatów i dostawy tej galerii z kontrolą poprzedniej wartości; ceny odbitek 2,50/1,50 zł pozostają te same. Snapshot przed/po: docs/fixes/gallery-26-shop-2026-09-14.json. Historyczne zamówienia nie są modyfikowane.
