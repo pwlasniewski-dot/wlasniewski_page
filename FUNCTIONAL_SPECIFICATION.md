@@ -1,3 +1,13 @@
+## 2026-09-14 — zapis produktów i widoczności
+
+Jeden przycisk „Zapisz ustawienia sklepu” zapisuje wszystkie zmienione produkty, ich media, ceny, widoczność oraz limity i ustawienia oferty. Zmiana samego checkboxa uaktywnia zapis; cofnięcie do zapisanej wartości usuwa szkic. Nie ma osobnych przycisków zapisu każdej karty. Komunikaty wyniku pozostają przy przycisku. Nieudany zapis zachowuje formularz; potwierdzony zapis z błędem późniejszego odczytu jest wyraźnie opisany i nie pozostawia nieaktualnego szkicu do ponownego wysłania.
+
+## 2026-09-14 — uruchomienie odizolowanego odbioru
+
+Błąd wyszukiwania punktów nie odsyła klienta do mapy, której konfiguracja może być nieobecna. Dostęp do mapy pozostaje widoczny tylko przy skonfigurowanym publicznym tokenie. Stawki lokalnej oferty nie zmieniają się od edycji wspólnego cennika; w konfiguracji odbiorowej galerii 26 uzgodniono 17/25 zł.
+
+Podgląd testowej sprzedaży rozpoznaje jawne środowisko również w Functions, gdzie nie ma automatycznie buildowego CONTEXT. GALLERY_QA_CONTEXT=deploy-preview ma obowiązywać wyłącznie w gałęzi odbioru. Użytkownik nadal widzi ten sam panel oferty i tę samą listę Rezerwacje → Zamówienia. Sama poprawka konfiguracji nie oznacza zaliczonej płatności ani wysyłki.
+
 ## Zatwierdzony katalog testowy — 2026-09-14
 
 Aktualny katalog i status odbioru opisuje docs/NPHOTO_LAUNCH_QA.md; snapshot zapisanej konfiguracji to docs/NPHOTO_QA_CATALOG.json. Ceny użytkownika 2,50/1,50 zł mają pierwszeństwo przed historycznymi progami propozycji marży. Zatwierdzono podłączenie tej bazy do konkretnej gałęzi preview w Netlify. Zgoda nie oznacza wykonanego zapisu ani odebranej sprzedaży: sesja hostingu wygasła, a mimo późniejszego potwierdzenia połączenia integracji Netlify jej operacje nie są jeszcze dostępne w bieżącej sesji.

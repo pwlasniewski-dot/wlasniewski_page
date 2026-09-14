@@ -567,6 +567,18 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### 2026-09-14 — wspólny zapis produktów zamiast rozdzielonych przycisków
+
+Zgłoszenie checkboxa ujawniło podział szkiców produktów i ustawień. Jeden przycisk zapisuje teraz wszystkie zmiany przez istniejący PUT i transakcję; walidacja współdzielona z PATCH, kontrola własności i konfliktu edycji, zachowanie dziedziczenia. Nowe 7 regresji PASS, dotychczasowe 44 grupy edytora/serwera/publikacji PASS. Bez nowej zakładki i bez migracji. Build poprzedniej poprawki PASS po usunięciu wygenerowanego katalogu; build tej poprawki również PASS (Node 22, 261/261 tras). TSC: 106 wcześniejszych diagnostyk, brak w zmienionych plikach. Autoryzacja CLI Netlify nadal pending; nie zapisano zmiennych i nie wdrożono poprawek.
+
+### 2026-09-14 — przygotowanie CLI i naprawa kontekstu Functions
+
+Po zrzucie klienta potwierdzono źródło rozbieżnych stawek: produkcyjne gallery_shop_26 ma własne 15/20 zł przy wspólnych 17/25 zł, natomiast przygotowana baza QA ma już spójne 17/25 zł. Live preview zwraca Points 503 i token mapy null. Usunięto odesłanie do nieobecnej mapy z błędu API; 6 regresji InPost PASS. Nie zmieniano konfiguracji produkcyjnej.
+
+Integracja Netlify udostępnia instrukcje pracy przez CLI. Zainstalowano CLI, potwierdzono brak logowania i uruchomiono natywny przepływ autoryzacji. Zgoda na zapis połączenia osobnej bazy nadal obowiązuje; nie wykonano jeszcze zapisu ani transakcji.
+
+Zweryfikowano w oficjalnej dokumentacji i adapterze Next.js, że CONTEXT nie jest automatycznie dostępny podczas wykonywania Functions. Bez poprawki podłączenie bazy QA blokowałoby uruchomienie Prisma poza buildem. Dodano jawny, niesekretny GALLERY_QA_CONTEXT w tym samym zakresie gałęzi co zatwierdzone połączenie; nadrzędne CONTEXT ma pierwszeństwo i zachowano walidację izolacji hostów. Dwa testy runtime/production/branch-deploy przeszły. Instrukcja konfiguracji nie zawiera wartości sekretów.
+
 ### 2026-09-14 — zgoda na podłączenie preview i aktualizacja odbioru
 
 Użytkownik zatwierdził sekret GALLERY_QA_DATABASE_URL w Netlify helpful-axolotl-cc1cbb, tylko dla fix/admin-unification-audit-20260914, Builds i Functions, z pustymi wartościami innych kontekstów. Nie ponawiać zgody na ten sam zakres. Przeglądarka po wznowieniu nie zachowała sesji Netlify i pokazała logowanie; nie wykonano zapisu ani redeployu. Następnie użytkownik połączył integrację Netlify, co potwierdzono. Jej operacje nie pojawiły się jednak w bieżącej sesji, dlatego zatwierdzony zapis nadal nie został wykonany.

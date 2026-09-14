@@ -1,4 +1,12 @@
+## Zapis widoczności produktu — 2026-09-14
+
+Zgłoszony przez użytkownika nieaktywny zapis naprawiono w istniejącym edytorze: stan wszystkich kart jest wspólny, jeden PUT zapisuje produkty i ustawienia atomowo. Siedem nowych regresji obejmuje zapis i ponowny render klienta; transport bazy i logowanie podstawione. Build Node 22 PASS, 261/261 tras. TSC: 106 wcześniejszych diagnostyk, brak w zmienionych plikach. Nie jest to potwierdzenie odbioru live. Logowanie CLI nadal oczekuje autoryzacji użytkownika; zatwierdzone zmienne QA pozostają do podłączenia.
+
 ## Stan domknięcia 2026-09-14
+
+Zgłoszenie ze zrzutu koszyka sprawdzono odczytowo: produkcyjne gallery_shop_26 ma lokalną dostawę 15/20 zł, a gallery_shop_default już 17/25 zł. Lokalna oferta zawiera wcześniejszy album komunijny. Na osobnej bazie QA obie konfiguracje mają 17/25 zł i wybór 6–9. Live preview API zwróciło 503 dla punktów w Płużnicy oraz brak tokenu mapy. Poprawiono komunikat API, aby nie odsyłał do niedostępnej mapy; sześć grup inpost-picker PASS. Nie naprawia to brakującego dostępu API InPost; jego rzeczywisty odbiór pozostaje otwarty.
+
+Najnowszy krok: CLI Netlify jest zainstalowane i oczekuje na zakończenie natywnej autoryzacji konta. Poprawiono rozpoznawanie QA w Functions, które nie otrzymują automatycznie buildowego CONTEXT; do zatwierdzonego połączenia trzeba dodać niesekretny GALLERY_QA_CONTEXT=deploy-preview w identycznym zakresie gałęzi. Dwie regresje izolacji PASS. Zmienne i test zakupu nie są jeszcze wykonane. Instrukcja: [NETLIFY_ENV_SETUP.md](../NETLIFY_ENV_SETUP.md).
 
 Zapisana konfiguracja osobnej bazy testowej: [NPHOTO_QA_CATALOG.json](NPHOTO_QA_CATALOG.json). Cztery produkty nPhoto są w niej aktywne: Harmonijka 41,54 zł, PRO 257,70 zł (20 stron), Lite 140,59 zł (16 stron), canvas 119,24 zł. Odbitki zachowują aktualne ceny użytkownika: 15×21 za 2,50 zł oraz 10×15 za 1,50 zł. Publiczna oferta wybiera pierwszy format i cztery produkty; panel galerii ma oba formaty. Dostawa: Paczkomat 17 zł, kurier 25 zł; canvas tylko kurier. Rzeczywiste zdjęcia pochodzą z folderu Media → nPhoto — produkty. Wcześniejszy [NPHOTO_LAUNCH_PRESET.json](NPHOTO_LAUNCH_PRESET.json) jest historyczną propozycją, nie konfiguracją do automatycznego nadpisania cen użytkownika.
 

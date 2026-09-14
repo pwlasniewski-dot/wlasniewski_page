@@ -1,3 +1,15 @@
+## 2026-09-14 — regresja zgłoszonego checkboxa produktu
+
+Nowy tests/qa/gallery-shop-save.cjs: 7 grup PASS — rzeczywisty React, istniejący PUT/GET, wspólny loader i render panelu klienta; baza i uwierzytelnienie podstawione. Sprawdzono on/off/cofnięcie, zapis kilku produktów, ponowny odczyt, zniknięcie z klienta, zapis cen i mediów z limitami, rollback, odmowę dostępu, cudze produkty, konflikt edycji, zachowanie dziedziczenia i awarię odczytu po udanym zapisie. Istniejące nphoto-offer-ui (5), gallery-shop-rounds (12), gallery-shop-server (21) i shop-launch-readiness (6) także PASS. Poprzedni build po usunięciu wygenerowanego .next/export zakończył się sukcesem; końcowy build obecnej poprawki również PASS (Node 22, 261/261 tras). TSC pozostaje na 106 wcześniejszych diagnostykach, bez błędów w zmienionych plikach. Zmiany nie zostały jeszcze wdrożone.
+
+## 2026-09-14 — CLI i regresja kontekstu Functions
+
+Zrzut klienta: SELECT produkcji potwierdził lokalne stawki galerii 26 (15/20 zł) przy wspólnych 17/25 zł. SELECT osobnej bazy potwierdził poprawione stawki 17/25 zł w obu ustawieniach. Live preview: Points 503 dla Płużnicy, config mapy token=null. Zmieniono mylący komunikat API; tests/qa/inpost-picker.cjs: 6 grup PASS, transport InPost podstawiony. Pierwszy lokalny build wygenerował 261/261 tras, ale zakończył się błędem usuwania .next/export (ENOTEMPTY); usunięto wyłącznie ten wygenerowany katalog przed ponowieniem.
+
+Zainstalowano Netlify CLI; status potwierdził brak logowania. Uruchomiono natywne jednorazowe logowanie CLI i przekazano użytkownikowi adres autoryzacji. Nie zapisano jeszcze zmiennych ani nie wykonano checkoutu. Nie wymaga to ponownej zgody na ustalony zakres sekretu.
+
+Oficjalna dokumentacja i kod adaptera potwierdzają brak automatycznego CONTEXT w Functions. Poprawka dodaje jawny GALLERY_QA_CONTEXT w zakresie gałęzi. Dwa testy tests/unit/shop-qa.test.ts PASS: runtime bez CONTEXT, pierwszeństwo production/branch-deploy, ignorowanie QA w production, blokada wspólnego hosta i brak aktywacji samym oznaczeniem bez połączenia. Po zapisie obu kluczy i deployu wymagany jest odczyt isolatedReview i testowego PayU w adminie.
+
 ## Zatwierdzony katalog testowy — 2026-09-14
 
 Najnowszy stan: użytkownik zatwierdził zapis GALLERY_QA_DATABASE_URL w Netlify helpful-axolotl-cc1cbb, tylko dla fix/admin-unification-audit-20260914, Builds i Functions, bez wartości w innych kontekstach. Po wznowieniu przeglądarka miała jedną pustą kartę; wejście w ustawienia projektu pokazało logowanie. Nie zapisano sekretu, nie wykonano redeployu ani zamówienia. Użytkownik następnie połączył integrację Netlify i potwierdzono ten stan; jej operacje nie pojawiły się jednak w bieżącej sesji. Dalsza praca wymaga dostępu, a nie kolejnej zgody na ten sam zakres. Starszy opis odrzucenia poniżej zachowano jako historię.

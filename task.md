@@ -1,3 +1,24 @@
+## 2026-09-14 — zapis widoczności produktów
+
+- [x] Usunąć rozdzielenie zapisu produktu i ustawień; jeden zapis wszystkich szkiców.
+- [x] Atomowa walidacja i zapis, kontrola własności, konflikty, zachowanie dziedziczenia.
+- [x] Siedem regresji React → API → odczyt → klient oraz dotychczasowe 44 grupy PASS.
+- [x] Końcowy build Node 22: PASS, 261/261 tras.
+- [ ] Zapisać zweryfikowaną poprawkę w PR75.
+- [ ] Po autoryzacji CLI skonfigurować zatwierdzone QA i wykonać odbiór live.
+
+## 2026-09-14 — podłączenie przez Netlify CLI
+
+- [x] Potwierdzić źródło 15/20 zł w lokalnej konfiguracji galerii 26 i 17/25 zł w przygotowanej bazie QA.
+- [x] Odtworzyć Points 503 oraz brak mapy w preview; usunąć mylące odesłanie do mapy i wykonać 6 regresji.
+- [x] Ponowić build po ENOTEMPTY w wygenerowanym .next/export.
+
+- [x] Zainstalować CLI i sprawdzić dostęp; wymaga osobnego logowania do konta.
+- [x] Utworzyć natywny link autoryzacji CLI dla użytkownika.
+- [x] Naprawić obsługę jawnego kontekstu Functions i wykonać dwie regresje izolacji.
+- [ ] Dokończyć autoryzację CLI, zapisać zatwierdzony sekret oraz niesekretny GALLERY_QA_CONTEXT wyłącznie dla gałęzi odbioru, zakresy Builds i Functions.
+- [ ] Redeploy i potwierdzenie izolacji w runtime; następnie testowa płatność i obsługa zamówienia.
+
 ## Zatwierdzony katalog testowy — 2026-09-14
 
 - [x] Zatwierdzona konfiguracja osobnej bazy i publicznego POS sandbox PayU.

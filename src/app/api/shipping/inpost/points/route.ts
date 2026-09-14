@@ -32,6 +32,6 @@ export async function GET(request: NextRequest) {
     }));
     return NextResponse.json({ success: true, points, page, hasMore: Number(data.total_pages) > page && page < 100 }, { headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300' } });
   } catch {
-    return NextResponse.json({ success: false, error: 'Nie udało się pobrać punktów InPost. Spróbuj ponownie lub wybierz punkt na mapie.' }, { status: 503 });
+    return NextResponse.json({ success: false, error: 'Nie udało się pobrać punktów InPost. Spróbuj ponownie za chwilę.' }, { status: 503 });
   }
 }

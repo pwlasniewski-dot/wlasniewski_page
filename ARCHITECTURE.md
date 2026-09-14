@@ -1,3 +1,11 @@
+## 2026-09-14 — jeden zapis edytora oferty
+
+GalleryShopAdmin przechowuje szkice produktów razem ze stanem ustawień. Istniejący PUT sklepu obsługuje productEdits (id, data, expected) oraz opcjonalny config. Walidacja wszystkich pól i kontrola własności poprzedza atomowy zapis Serializable. Wspólny product-edit obsługuje także istniejący PATCH; brak migracji lub nowej zakładki. Produkt-only nie zapisuje ustawień, więc zachowuje dziedziczenie galerii. Porównanie pierwotnych danych wykrywa równoczesne zmiany produktu (409).
+
+## 2026-09-14 — kontekst QA podczas wykonywania funkcji
+
+Netlify przekazuje CONTEXT podczas builda, ale nie gwarantuje go w Functions. shop-qa.ts uwzględnia dodatkowy GALLERY_QA_CONTEXT, który musi być zapisany w tym samym zakresie konkretnej gałęzi co GALLERY_QA_DATABASE_URL. CONTEXT ma pierwszeństwo: production ignoruje bazę QA, branch-deploy nie staje się preview przez dodatkowy klucz. Brak obu oznaczeń nadal blokuje QA poza lokalnym development/test. Walidacja osobnego hosta (z normalizacją pooler) pozostaje aktywna. Szczegóły konfiguracji: NETLIFY_ENV_SETUP.md. Nie przenosi to sekretu do kodu ani nie potwierdza wykonanego zapisu w Netlify.
+
 ## Zatwierdzony katalog testowy — 2026-09-14
 
 Aktualizacja dostępu: użytkownik zatwierdził zapis sekretu GALLERY_QA_DATABASE_URL w Netlify helpful-axolotl-cc1cbb, tylko dla fix/admin-unification-audit-20260914 w zakresach Builds i Functions; inne konteksty pozostają puste. Ta zgoda obowiązuje. Próba wznowienia pokazała ekran logowania Netlify; zapis ani redeploy nie zostały wykonane. Połączenie integracji Netlify zostało następnie potwierdzone, ale bieżąca sesja nie udostępniła jeszcze jej operacji; blokada dotyczy dostępności narzędzi, nie zgody użytkownika. Nie zmieniać mechanizmu izolacji ani produkcyjnego DATABASE_URL w celu obejścia braku dostępu.

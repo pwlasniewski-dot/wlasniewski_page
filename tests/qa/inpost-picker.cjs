@@ -21,7 +21,7 @@ const request = (query) => new NextRequest(`https://example.test/api/shipping/in
   });
   await check('InPost: carrier error is safe and public config never exposes shipping token', async () => {
     global.fetch = async () => { throw Error('Bearer private-secret'); };
-    const response = await pointsRoute.GET(request('q=Toruń')); assert.equal(response.status, 503); assert.ok(!JSON.stringify(await response.json()).includes('private-secret'));
+    const response = await pointsRoute.GET(request('q=Toruń')); assert.equal(response.status, 503); const failure = await response.json(); assert.ok(!JSON.stringify(failure).includes('private-secret')); assert.doesNotMatch(failure.error, /mapie/);
     process.env.INPOST_API_TOKEN = 'private-secret'; process.env.INPOST_GEOWIDGET_TOKEN = 'public-widget';
     assert.deepEqual(await (await configRoute.GET()).json(), { token: 'public-widget' });
     delete process.env.INPOST_GEOWIDGET_TOKEN; delete process.env.INPOST_API_TOKEN;
