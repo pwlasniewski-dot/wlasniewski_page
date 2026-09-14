@@ -1,5 +1,6 @@
 /** ShipX PL adapter. Secrets stay server-side. No automatic retries of billable requests. */
 import { ShopValidationError, type ShopDelivery } from '@/lib/galleries/merchandise';
+import { isShopQa } from '@/lib/shop-qa';
 export type ShipXShipment = { id: number; status: string; tracking_number?: string | null; reference?: string };
 export type ShipXDispatch = { id: number; status: string };
 export type ParcelInput = { template?: 'small' | 'medium' | 'large'; length?: number; width?: number; height?: number; weight: number };
@@ -21,6 +22,7 @@ export function inpostConfiguration() {
 }
 export async function shipX<T>(path: string, method = 'GET', body?: unknown, binary = false): Promise<T> {
  const config = inpostConfiguration();
+ if (isShopQa() && config.environment === 'production' && method !== 'GET') throw new ShopValidationError('Testy sklepu wymagają testowego konta InPost. Nadanie produkcyjne jest zablokowane.',503);
  if (config.missing.length) throw new ShopValidationError('Uzupełnij konfigurację InPost w ustawieniach serwera.', 503);
  let response: Response;
  try { response = await fetch(`${config.base}${path}`, {method, headers: {Authorization: `Bearer ${process.env.INPOST_API_TOKEN}`, 'Content-Type': 'application/json'}, ...(body === undefined ? {} : {body: JSON.stringify(body)}), cache: 'no-store', signal: AbortSignal.timeout(20000), redirect: 'error'}); }

@@ -16,6 +16,8 @@ interface AdminUser {
 export default function UsersPage() {
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [currentAdminId, setCurrentAdminId] = useState<number | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [editingUser, setEditingUser] = useState<Partial<AdminUser> & { password?: string } | null>(null);
 
@@ -30,9 +32,9 @@ export default function UsersPage() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
-            if (data.success) {
-                setUsers(data.users);
-            }
+            if (res.ok && data.success) {
+                setUsers(data.users); setCurrentAdminId(data.currentAdminId);
+            } else { toast.error(data.error || 'Nie udało się wczytać administratorów.'); }
         } catch (error) {
             toast.error('Błąd pobierania użytkowników');
         } finally {
@@ -41,11 +43,13 @@ export default function UsersPage() {
     };
 
     const handleSave = async () => {
+        if (saving) return;
         if (!editingUser?.email) {
             toast.error('Email jest wymagany');
             return;
         }
 
+        setSaving(true);
         try {
             const token = localStorage.getItem('admin_token');
             const isEdit = !!editingUser.id;
@@ -63,7 +67,7 @@ export default function UsersPage() {
 
             const data = await res.json();
 
-            if (data.success) {
+            if (res.ok && data.success) {
                 toast.success(isEdit ? 'Zaktualizowano użytkownika' : 'Utworzono użytkownika');
                 setShowModal(false);
                 setEditingUser(null);
@@ -73,7 +77,7 @@ export default function UsersPage() {
             }
         } catch (error) {
             toast.error('Wystąpił błąd');
-        }
+        } finally { setSaving(false); }
     };
 
     const handleDelete = async (id: number) => {
@@ -90,7 +94,8 @@ export default function UsersPage() {
                 toast.success('Usunięto użytkownika');
                 fetchUsers();
             } else {
-                toast.error('Błąd usuwania');
+                const data = await res.json().catch(() => ({}));
+                toast.error(data.error || 'Błąd usuwania');
             }
         } catch (error) {
             toast.error('Wystąpił błąd');
@@ -101,7 +106,7 @@ export default function UsersPage() {
         setEditingUser({
             email: '',
             name: '',
-            role: 'USER',
+            role: 'ADMIN',
             password: ''
         });
         setShowModal(true);
@@ -118,17 +123,17 @@ export default function UsersPage() {
     return (
         <div>
             <div className="flex items-center justify-between mb-8">
-                <h1 className="text-2xl font-display font-semibold text-white">Użytkownicy</h1>
+                <h1 className="text-2xl font-display font-semibold text-white">Administratorzy</h1>
                 <button
                     onClick={openNewUser}
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-gold-500 hover:bg-gold-400"
                 >
                     <Plus className="-ml-1 mr-2 h-5 w-5" />
-                    Dodaj użytkownika
+                    Dodaj administratora
                 </button>
             </div>
 
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-x-auto">
                 <table className="min-w-full divide-y divide-zinc-800">
                     <thead className="bg-zinc-800/50">
                         <tr>
@@ -139,6 +144,7 @@ export default function UsersPage() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-800">
+                        {loading && <tr><td colSpan={4} className="p-6 text-zinc-400">Wczytywanie administratorów…</td></tr>}
                         {users.map((user) => (
                             <tr key={user.id}>
                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -163,19 +169,15 @@ export default function UsersPage() {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button
+                                        aria-label={`Edytuj administratora ${user.email}`}
                                         onClick={() => openEditUser(user)}
                                         className="text-gold-400 hover:text-gold-300 mr-4"
                                     >
                                         <Edit2 className="w-5 h-5" />
                                     </button>
                                     <button
-                                        onClick={() => window.location.href = `/admin/galleries?createFor=${encodeURIComponent(JSON.stringify({ name: user.name, email: user.email }))}`}
-                                        className="text-green-400 hover:text-green-300 mr-4"
-                                        title="Utwórz galerię"
-                                    >
-                                        <Plus className="w-5 h-5" />
-                                    </button>
-                                    <button
+                                        aria-label={`Usuń administratora ${user.email}`}
+                                        disabled={user.id === currentAdminId || saving}
                                         onClick={() => handleDelete(user.id)}
                                         className="text-red-400 hover:text-red-300"
                                     >
@@ -220,11 +222,12 @@ export default function UsersPage() {
                         <div>
                             <label className="block text-sm text-zinc-400 mb-1">Rola</label>
                             <select
-                                value={editingUser.role || 'USER'}
+                                value={editingUser.role || 'ADMIN'}
+                                disabled={editingUser.id === currentAdminId}
                                 onChange={e => setEditingUser({ ...editingUser, role: e.target.value })}
                                 className="w-full bg-zinc-800 border-zinc-700 rounded-md text-white"
                             >
-                                <option value="USER">Użytkownik</option>
+                                <option value="USER">Bez dostępu do panelu</option>
                                 <option value="ADMIN">Administrator</option>
                             </select>
                         </div>
@@ -250,6 +253,7 @@ export default function UsersPage() {
                             </button>
                             <button
                                 onClick={handleSave}
+                                disabled={saving}
                                 className="px-4 py-2 bg-gold-500 text-black rounded hover:bg-gold-400"
                             >
                                 Zapisz

@@ -7,6 +7,7 @@ const ts=require('typescript');
 const {JSDOM}=require(process.env.JSDOM_PATH||'jsdom');
 const dom=new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>',{url:'http://localhost/qa'});
 for(const k of ['window','document','navigator','HTMLElement','HTMLInputElement','HTMLSelectElement','Node','Event','MouseEvent','CustomEvent','localStorage','sessionStorage']) global[k]=dom.window[k];
+global.self=dom.window;
 global.IS_REACT_ACT_ENVIRONMENT=true;
 global.requestAnimationFrame=(cb)=>setTimeout(cb,0);
 global.cancelAnimationFrame=clearTimeout;

@@ -567,6 +567,78 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### 2026-09-14 — zgoda na wdrożenie PR75 do produkcji
+
+Użytkownik polecił opublikować poprawki i zadeklarował testowanie produkcji. Odmowa przekazania sekretu QA nadal obowiązuje; wcześniejsza zgoda na transfer została cofnięta. Podgląd c74ac0a: Netlify ready, bez wykrytych sekretów, brak konfliktów z main 750b325. Publikacja zachowuje istniejącą bazę i jej konfigurację; nie wykonuje migracji, płatności ani nadania. Pełny odbiór sprzedaży pozostaje otwarty. Środowisko wykonawcze tej sesji jest niedostępne; wdrożenie wykonujemy przez połączone GitHub/Netlify, na wcześniej sprawdzonym kodzie. Stan publikacji zostanie potwierdzony w PR.
+
+### 2026-09-14 — autoryzacja Netlify i potwierdzenie przyczyny InPost na produkcji
+
+CLI authorized; GALLERY_QA_CONTEXT zapisany wyłącznie dla gałęzi QA (Builds/Functions). Automatyczny przegląd ponownie odrzucił transfer połączenia z hasłem; odczyt potwierdził brak sekretu QA. Nie ponawiano inną drogą. Produkcja 750b325 ma starszy kod mapy (inna nazwa zmiennej) i Points (bez Authorization), mimo wcześniejszego zapisu zmiennych Netlify. Poprawki pozostają w PR75. Nie wykonano transakcji ani produkcyjnego deployu.
+
+### 2026-09-14 — odbiór checkboxa po wdrożeniu preview
+
+Commit 119887c: Netlify success; zalogowana przeglądarka potwierdziła jeden przycisk i cykl disabled → enabled po odznaczeniu → disabled po cofnięciu. Bez zapisu do wspólnej bazy. Panel połączeń potwierdził brak konfiguracji InPost w preview i działający OAuth PayU production. CLI nadal wymaga dokończenia logowania, QA i transakcje pozostają otwarte.
+
+### 2026-09-14 — wspólny zapis produktów zamiast rozdzielonych przycisków
+
+Zgłoszenie checkboxa ujawniło podział szkiców produktów i ustawień. Jeden przycisk zapisuje teraz wszystkie zmiany przez istniejący PUT i transakcję; walidacja współdzielona z PATCH, kontrola własności i konfliktu edycji, zachowanie dziedziczenia. Nowe 7 regresji PASS, dotychczasowe 44 grupy edytora/serwera/publikacji PASS. Bez nowej zakładki i bez migracji. Build poprzedniej poprawki PASS po usunięciu wygenerowanego katalogu; build tej poprawki również PASS (Node 22, 261/261 tras). TSC: 106 wcześniejszych diagnostyk, brak w zmienionych plikach. Autoryzacja CLI Netlify nadal pending; nie zapisano zmiennych i nie wdrożono poprawek.
+
+### 2026-09-14 — przygotowanie CLI i naprawa kontekstu Functions
+
+Po zrzucie klienta potwierdzono źródło rozbieżnych stawek: produkcyjne gallery_shop_26 ma własne 15/20 zł przy wspólnych 17/25 zł, natomiast przygotowana baza QA ma już spójne 17/25 zł. Live preview zwraca Points 503 i token mapy null. Usunięto odesłanie do nieobecnej mapy z błędu API; 6 regresji InPost PASS. Nie zmieniano konfiguracji produkcyjnej.
+
+Integracja Netlify udostępnia instrukcje pracy przez CLI. Zainstalowano CLI, potwierdzono brak logowania i uruchomiono natywny przepływ autoryzacji. Zgoda na zapis połączenia osobnej bazy nadal obowiązuje; nie wykonano jeszcze zapisu ani transakcji.
+
+Zweryfikowano w oficjalnej dokumentacji i adapterze Next.js, że CONTEXT nie jest automatycznie dostępny podczas wykonywania Functions. Bez poprawki podłączenie bazy QA blokowałoby uruchomienie Prisma poza buildem. Dodano jawny, niesekretny GALLERY_QA_CONTEXT w tym samym zakresie gałęzi co zatwierdzone połączenie; nadrzędne CONTEXT ma pierwszeństwo i zachowano walidację izolacji hostów. Dwa testy runtime/production/branch-deploy przeszły. Instrukcja konfiguracji nie zawiera wartości sekretów.
+
+### 2026-09-14 — zgoda na podłączenie preview i aktualizacja odbioru
+
+Użytkownik zatwierdził sekret GALLERY_QA_DATABASE_URL w Netlify helpful-axolotl-cc1cbb, tylko dla fix/admin-unification-audit-20260914, Builds i Functions, z pustymi wartościami innych kontekstów. Nie ponawiać zgody na ten sam zakres. Przeglądarka po wznowieniu nie zachowała sesji Netlify i pokazała logowanie; nie wykonano zapisu ani redeployu. Następnie użytkownik połączył integrację Netlify, co potwierdzono. Jej operacje nie pojawiły się jednak w bieżącej sesji, dlatego zatwierdzony zapis nadal nie został wykonany.
+
+Poprawiono nieaktualny początek docs/NPHOTO_LAUNCH_QA.md: odzwierciedla wykonany zapis osobnej bazy, aktualne ceny użytkownika 2,50/1,50 zł, dostawę 17/25 zł i zakres już udzielonych zgód. Historyczna propozycja marży nie zastępuje zapisanej konfiguracji. Nie zmieniano kodu, bazy ani produkcji; nie powtarzano testów wykonawczych dla zmiany dokumentacji.
+
+### 2026-09-14 — zatwierdzony zapis katalogu i PayU na odizolowanej bazie
+
+Po jednoznacznym zatwierdzeniu użytkownika wykonano transakcję wyłącznie na gałęzi Neon audit-admin-unification-20260914 (br-dawn-scene-aeokidlt): aktywne produkty 6–9 z pełnymi opisami i rzeczywistymi materiałami; stare 1/3/4/5 ukryte; wspólna oferta i galeria 26 mają aktualne ceny użytkownika 2,50/1,50 zł oraz dostawę 17/25 zł. Pierwszy rekord ustawień ma publiczny POS PayU 300746 w sandbox oraz callback do preview75. Produkcja została sprawdzona odczytowo: 6–9 nadal nieaktywne. Nie wykonano płatności ani nadania.
+
+Snapshot odczytu docs/NPHOTO_QA_CATALOG.json i scripts/verify-nphoto-qa-catalog.cjs: PASS. Wykonano wspólny loader, projekcję publiczną, wycenę serwerową i interaktywny render React. Pięć ofert, dwa formaty klienta, minimum zdjęć 12/20/16/1, Canvas tylko kurier. Sumy pojedynczych produktów z właściwą dostawą: 58,54 / 274,70 / 157,59 / 144,24 zł. Dziesięć odbitek z Paczkomatem 42 zł; koszyk mieszany 609,07 zł. Test używa zapisanych danych, ale nie wywołuje dostawców i nie tworzy zamówień.
+
+Automatyczny przegląd ponownie odrzucił konkretną czynność: przekazanie uprzywilejowanego adresu połączenia tej bazy do Netlify, żądając osobnej zgody na ujawnienie tego połączenia i dokładny zakres gałęzi. Formularz anulowano bez zapisu. Wymagany zakres: Netlify helpful-axolotl-cc1cbb, sekret GALLERY_QA_DATABASE_URL, tylko fix/admin-unification-audit-20260914, Builds i Functions; puste wartości pozostałych kontekstów. Żaden sekret nie został zapisany w repozytorium. Preview nadal korzysta ze zwykłej bazy; nie można jeszcze wykonywać na nim testowej sprzedaży.
+
+### 2026-09-14 — widoczna oferta i uczciwy wynik diagnostyki
+
+Odbiór live commitu 78cd694: Netlify Complete. W przeglądarce potwierdzono odbitki 15×21 za 2,50 zł i realne zdjęcie; cztery produkty nPhoto nadal są szkicami. Użytkownik ustawił też 10×15 za 1,50 zł (format nie należy do wyboru publicznego). Tych cen nie nadpisano. Nieodpłatny test OAuth PayU: dostęp produkcyjny potwierdzony. Preview: brak INPOST_API_TOKEN i INPOST_ORGANIZATION_ID oraz tokenu mapy. Nie potwierdza to stanu InPost w kontekście production. Dalsza poprawka przenosi sekcję zdjęć przed karty, dodaje odnośnik z etykietą CMS oraz naprawia rozpoznawanie preview za proxy i komunikat braku mapy. Regresje: 16 grup storefront i 6 grup readiness PASS.
+
+### 2026-09-14 — widoczność nPhoto, wspólny cennik i diagnostyka dostawy
+
+Naprawiono mylący status aktywnej oferty liczący stare produkty spoza publicznego wyboru. Preview informuje o współdzielonej bazie przed zapisem. Dodano jawną atomową publikację przygotowanych produktów w istniejącym CMS, progi cen odbitek liczone łącznie po formacie, aktualny adapter API Points oraz odczyt istniejącej nazwy tokenu Geowidget. Sprawdzenie połączenia z kontem/usługami InPost i OAuth PayU znajduje się w sekcji dostawy, bez nowej zakładki. Ceny i pełniejsze opisy pięciu pozycji są przygotowane w NPHOTO_LAUNCH_PRESET.json, bez automatycznego zapisu danych.
+
+Automatyczna kontrola zatrzymała odczyt edytora sekretu bazy produkcyjnej i transakcję przygotowania osobnej bazy testowej z publicznymi danymi sandbox PayU. Nie obchodzono blokady; docelowe dane nie zostały zapisane i nie wykonano realnej sprzedaży ani nadania. Wymaga to osobnego zatwierdzenia konkretnego zakresu testu. Weryfikacja lokalna: pełny zestaw admina i sklepu PASS, 328 wcześniejszych testów jednostkowych plus nowy test izolacji bazy PASS. Build Node 22: 261/261 tras; ostatnie doprecyzowanie ochrony bazy QA jest objęte końcowym powtórzeniem builda. Pełny typecheck zachowuje 106 wcześniejszych diagnostyk, bez nowych w zakresie tej zmiany. Wdrożenie preview jest w przygotowaniu.
+
+
+### 2026-09-14 — dalsze regresje zakupu i dokumentów
+
+Przegląd zalogowanego preview potwierdził wspólną listę, filtry, kontekst galerii, historyczne zdjęcia i ochronę kont. Ujawnił także błędny skrót pulpitu Zarządzaj terminami do kodów rabatowych; naprawiono link do istniejącego kalendarza.
+
+Endpoint purchase-extras oczekuje params: Promise zgodnie z Next.js. Endpoint PDF wywołuje wspólny generator z includeSignatureSection=true, zachowuje prywatne przekierowanie podpisanego pliku, waliduje ID i koduje tytuł przez istniejący escapeHtml. Nie dodano alternatywnego generatora ani rejestru zamówień. Dodano sześć testów wykonania obejmujących autoryzację, wycenę i źródło podpisanego dokumentu. Wszystkie przechodzą.
+
+Dalszy audyt wykrył realne błędy wykonania: GET wyborów rodzica odwoływał się do niezdefiniowanego participant_id, POST ZIP-a do correlationId zadeklarowanego tylko w GET, a null w dniu warsztatu przerywał kalendarz. Poprawiono zakresy zmiennych i walidację dni. tests/qa/gallery-operating-regressions.cjs wykonuje te endpointy (odczyt wyborów, utworzenie/reuse ZIP-a, brak HQ, uszkodzony harmonogram); wszystkie scenariusze przeszły.
+
+
+## 2026-09-14 — unifikacja całego panelu: zamówienia, sesja, konta i audyt
+
+- Zasada w AGENTS.md: rozwijamy istniejące procesy i dane, bez równoległych zakładek. Rezerwacje → Zamówienia jest jedynym miejscem realizacji; galeria przekazuje filtr, stary adres przekierowuje.
+- Wspólna nawigacja wybiera jeden aktywny adres; usunięto zdublowany kalendarz. Sesja rozróżnia brak dostępu od awarii sieci, odrzuca spóźnione odpowiedzi, obsługuje cookie i nie przeładowuje formularzy przy zmianie sekcji. Wylogowanie usuwa właściwe HttpOnly cookie.
+- Naprawiono utratę etapu po ponownym otwarciu zamówienia, filtr paid/completed, utratę filtrów przy odświeżaniu, późną odpowiedź poprzedniej galerii, wybór niedozwolonego etapu oraz ręczne przepisywanie numeru zwróconego przez InPost.
+- Konta administratorów: walidacja, brak samousunięcia/degradacji, blokada transakcyjna i ponowne sprawdzenie uprawnień po jej uzyskaniu. Usunięto mylące tworzenie galerii klienta z konta administratora. Klienci pozostają w CRM.
+- Audyt produkcji wyłącznie odczytowy. Sprawdzono 98 modeli/1365 pól i 83 FK. 13 różnic NOT NULL dotyczy poradnika; naprawę sprawdzamy tylko na osobnej gałęzi Neon. Historyczne brakujące wpisy ledger mają zgodne identyfikatory, kwoty i walutę w historycznych logach COMPLETED PayU; nie zmieniono księgowań.
+- Testy regresji oraz przegląd zmienionego preview poprzedzają decyzję o wdrożeniu. Nie składano płatnych zamówień ani przesyłek.
+
+
+### 2026-09-14 — korekta niespójnej obsługi zamówień
+
+Usunięto osobną pozycję Zamówienia i przesyłki. Istniejąca lista Rezerwacje → Zamówienia otrzymuje snapshot produktów, dostawę oraz obsługę realizacji i InPost. Powód: osobna lista dublowała istniejący proces i utrudniała obsługę. Bez usuwania zamówień i zmiany płatności. Stan: weryfikacja przed publikacją.
+
 ### [2026-02-21] S3 PDF Generation & CRM PDF Download Fixes
 
 **Zmiany:**

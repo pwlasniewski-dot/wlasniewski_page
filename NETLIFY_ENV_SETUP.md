@@ -1,4 +1,23 @@
+## 2026-09-14 — decyzja o wdrożeniu produkcyjnym
+
+Użytkownik odmówił przekazania połączenia bazy QA do Netlify, a następnie wyraźnie polecił wdrożyć PR75 na produkcję i zapowiedział własne testy. Odmowa nadal obowiązuje: nie przekazywać GALLERY_QA_DATABASE_URL ani nie traktować wdrożenia jako zgody na ten transfer. Wcześniejsze wpisy o zgodzie na sekret są historyczne i nie obowiązują.
+
+Poniższa instrukcja podłączenia QA pozostaje opisem technicznym, którego obecnie nie wolno wykonywać. Produkcyjne wdrożenie używa istniejących sekretów produkcyjnych; nie wymaga dodatkowego połączenia bazy QA.
+
 # Konfiguracja zmiennych środowiskowych w Netlify
+
+Stan 2026-09-14: CLI jest zalogowane. GALLERY_QA_CONTEXT zapisano i odczytano w opisanym niżej zakresie. Transfer GALLERY_QA_DATABASE_URL został odrzucony przez automatyczny przegląd za brak jawnej zgody na ujawnienie połączenia z hasłem; klucz nadal nie istnieje. Nie ponawiano transferu inną drogą. Nie trzeba ponownie logować CLI. Szczegóły i różnica nazw tokenu mapy na produkcji: docs/NPHOTO_LAUNCH_QA.md.
+
+## Izolowany odbiór sklepu — PR75
+
+Dla gałęzi `fix/admin-unification-audit-20260914` w projekcie `helpful-axolotl-cc1cbb` ustaw dwa klucze w zakresach **Builds i Functions**:
+
+- `GALLERY_QA_DATABASE_URL`: zatwierdzone połączenie osobnej bazy `audit-admin-unification-20260914`, oznaczone jako sekret. Nie zapisuj wartości w repozytorium ani w logach.
+- `GALLERY_QA_CONTEXT`: niesekretna wartość `deploy-preview`. Ten klucz potwierdza kontekst podczas wykonywania funkcji, ponieważ wbudowany `CONTEXT` jest dostępny podczas budowania, ale nie jest automatycznie dostępny w Functions.
+
+Oba klucze muszą mieć wartość **wyłącznie dla wskazanej gałęzi**, a pozostałe konteksty puste. Nie zmieniaj produkcyjnego `DATABASE_URL`. Po zapisie trzeba ponownie wdrożyć preview i sprawdzić w adminie `isolatedReview=true` oraz PayU sandbox przed rozpoczęciem testowej sprzedaży. Sam poprawny build nie dowodzi izolacji runtime.
+
+Źródło: [Netlify — zmienne w Functions](https://docs.netlify.com/build/functions/environment-variables/). Nadrzędny kontekst builda ma pierwszeństwo przed dodatkowym kluczem; produkcja ignoruje testowe połączenie. Brak jawnego kontekstu nadal blokuje użycie bazy QA na serwerze produkcyjnym.
 
 ## Problem
 Upload zdjęć przez uczestników warsztatów kończy się błędem 500 z komunikatem o brakujących AWS credentials.

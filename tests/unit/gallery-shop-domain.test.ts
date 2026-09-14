@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { merchandisePrintEntries, priceShopCart, type ShopCatalog, type ShopLine, type ShopDelivery } from '../../src/lib/galleries/merchandise';
+import { defaultShopConfig, validateShopConfig, printUnitAmount, merchandisePrintEntries, priceShopCart, type ShopCatalog, type ShopLine, type ShopDelivery } from '../../src/lib/galleries/merchandise';
 const catalog:ShopCatalog={galleryId:12,enabled:true,title:'Sklep',introduction:'Oferta',buttonLabel:'Zamów',formats:[{id:'p10',label:'10×15',widthMm:100,heightMm:150,unitAmount:350,active:true,paper:'mat'},{id:'p20',label:'20×30',widthMm:200,heightMm:300,unitAmount:1600,active:true,paper:'mat'}],products:[{id:10,title:'Album',description:'Album',price:9900,image_url:null,product_type:'album',minPhotos:2,maxPhotos:4}],delivery:{locker:{enabled:true,amount:1500},courier:{enabled:true,amount:2000}}};
 const delivery:ShopDelivery={method:'locker',recipientName:'Anna Testowa',email:'anna@example.com',phone:'501222333',pointCode:'TOR01M'};
 const print=(id='a',photoId=1,formatId='p10',quantity=2):ShopLine=>({id,kind:'print',photoId,formatId,quantity,crop:{mode:'fit',x:50,y:50,zoom:1},confirmed:true});
@@ -27,4 +27,19 @@ test('product snapshot retains ordered specification after catalog edits',()=>{
  const ordered=price([product],ownCatalog).lines[0];
  ownCatalog.products[0].description='Changed variant';ownCatalog.products[0].price=1;
  assert.equal(ordered.unitAmount,9900);assert.equal(ordered.product?.description,'Album');assert.equal(ordered.product?.nphoto_product_id,'nphoto-123');
+});
+
+
+test('print tiers count all photos of a format, never products or another format',()=>{
+ const cat=structuredClone(catalog);cat.formats[0].unitAmount=317;cat.formats[0].priceTiers=[{minQuantity:3,unitAmount:247},{minQuantity:6,unitAmount:157},{minQuantity:100,unitAmount:140}];
+ for(const [qty,expected] of [[1,317],[2,317],[3,247],[5,247],[6,157],[99,157],[100,140]]) assert.equal(printUnitAmount(cat.formats[0],qty),expected);
+ const result=price([print('a',1,'p10',2),print('b',2,'p10',4),print('c',3,'p20',5),product],cat);
+ assert.equal(result.lines[0].unitAmount,157);assert.equal(result.lines[1].lineTotal,628);assert.equal(result.lines[2].unitAmount,1600);assert.equal(result.total,20342);
+ const old=result.lines[0];cat.formats[0].priceTiers[1].unitAmount=999;
+ assert.equal(old.unitAmount,157);assert.equal(old.format?.priceTiers?.[1].unitAmount,157);
+});
+test('tier validation rejects ambiguous or invalid price schedules',()=>{
+ const config={...defaultShopConfig(),formats:[{...catalog.formats[0],priceTiers:[{minQuantity:3,unitAmount:200}]}]};
+ assert.equal(validateShopConfig(config).formats[0].priceTiers?.[0].unitAmount,200);
+ for(const tiers of [[{minQuantity:1,unitAmount:200}],[{minQuantity:3,unitAmount:0}],[{minQuantity:3,unitAmount:351}],[{minQuantity:3,unitAmount:200},{minQuantity:3,unitAmount:150}],[{minQuantity:3.5,unitAmount:200}],[{minQuantity:3,unitAmount:200},{minQuantity:6,unitAmount:250}]]) assert.throws(()=>validateShopConfig({...config,formats:[{...config.formats[0],priceTiers:tiers}]}));
 });

@@ -1,3 +1,91 @@
+## 2026-09-14 — decyzja o wdrożeniu produkcyjnym
+
+Użytkownik odmówił przekazania połączenia bazy QA do Netlify, a następnie wyraźnie polecił wdrożyć PR75 na produkcję i zapowiedział własne testy. Odmowa nadal obowiązuje: nie przekazywać GALLERY_QA_DATABASE_URL ani nie traktować wdrożenia jako zgody na ten transfer. Wcześniejsze wpisy o zgodzie na sekret są historyczne i nie obowiązują.
+
+- [x] Potwierdzić zgodę na produkcyjne wdrożenie i odmowę transferu sekretu QA.
+- [x] Potwierdzić brak konfliktu z main oraz poprawny deploy preview c74ac0a.
+- [ ] Scalić PR75 i potwierdzić publikację właściwego commitu w Netlify.
+- [ ] Sprawdzić publiczny sklep, Points i konfigurację mapy po wdrożeniu.
+- [ ] Odbiór właściciela: zapis widoczności, zakup, płatność i obsługa wysyłki.
+
+## 2026-09-14 — Netlify po logowaniu
+
+- [x] Potwierdzić autoryzację CLI oraz tożsamość projektu.
+- [x] Zapisać i odczytać niesekretny znacznik QA tylko we właściwej gałęzi (Builds/Functions).
+- [x] Zdiagnozować produkcję na podstawie odpowiedzi HTTP, metadanych Netlify i dokładnego kodu wdrożenia: stara nazwa tokenu mapy i brak Authorization w Points.
+- [ ] Rozstrzygnąć odrzucenie transferu GALLERY_QA_DATABASE_URL przez automatyczny przegląd; nie ponawiano operacji innym sposobem.
+- [ ] Po zapisaniu sekretu wdrożyć preview i potwierdzić izolację oraz PayU sandbox.
+- [ ] Pełny odbiór zamówienia i testowego InPost; produkcja nadal nie została wdrożona w tym odbiorze.
+
+## 2026-09-14 — zapis widoczności produktów
+
+- [x] Usunąć rozdzielenie zapisu produktu i ustawień; jeden zapis wszystkich szkiców.
+- [x] Atomowa walidacja i zapis, kontrola własności, konflikty, zachowanie dziedziczenia.
+- [x] Siedem regresji React → API → odczyt → klient oraz dotychczasowe 44 grupy PASS.
+- [x] Końcowy build Node 22: PASS, 261/261 tras.
+- [x] Zapisać poprawkę w PR75 (119887c), potwierdzić sukces preview i zmianę stanu zapisu w zalogowanej przeglądarce.
+- [ ] Po autoryzacji CLI skonfigurować zatwierdzone QA i wykonać odbiór live.
+
+## 2026-09-14 — podłączenie przez Netlify CLI
+
+- [x] Potwierdzić źródło 15/20 zł w lokalnej konfiguracji galerii 26 i 17/25 zł w przygotowanej bazie QA.
+- [x] Odtworzyć Points 503 oraz brak mapy w preview; usunąć mylące odesłanie do mapy i wykonać 6 regresji.
+- [x] Ponowić build po ENOTEMPTY w wygenerowanym .next/export.
+
+- [x] Zainstalować CLI i sprawdzić dostęp; wymaga osobnego logowania do konta.
+- [x] Utworzyć natywny link autoryzacji CLI dla użytkownika.
+- [x] Naprawić obsługę jawnego kontekstu Functions i wykonać dwie regresje izolacji.
+- [ ] Dokończyć autoryzację CLI, zapisać zatwierdzony sekret oraz niesekretny GALLERY_QA_CONTEXT wyłącznie dla gałęzi odbioru, zakresy Builds i Functions.
+- [ ] Redeploy i potwierdzenie izolacji w runtime; następnie testowa płatność i obsługa zamówienia.
+
+## Zatwierdzony katalog testowy — 2026-09-14
+
+- [x] Zatwierdzona konfiguracja osobnej bazy i publicznego POS sandbox PayU.
+- [x] Odczyt i wykonanie loadera, wyceny oraz podglądu na faktycznie zapisanym katalogu.
+- [x] Osobna zgoda na sekret GALLERY_QA_DATABASE_URL w Netlify helpful-axolotl-cc1cbb, tylko fix/admin-unification-audit-20260914, Builds i Functions; pozostałe konteksty puste.
+- [ ] Zapisać zatwierdzony sekret i ponownie wdrożyć preview — sesja Netlify wygasła; integracja jest już połączona, ale jej operacje nie pojawiły się jeszcze w bieżącej sesji.
+- [ ] Rzeczywista transakcja sandbox i obsługa wysyłki po podłączeniu.
+
+## Odbiór preview — 2026-09-14
+
+- [x] Odbiór przeglądarkowy PR75: aktywne odbitki 15×21 za 2,50 zł, dostęp OAuth PayU, ujawnione braki InPost w preview.
+- [x] Ułatwić znalezienie oferty przed kartami i zachować nowe ceny wpisane przez użytkownika.
+- [x] Naprawić komunikaty wspólnej bazy za proxy Netlify i braku tokenu mapy; regresje PASS.
+
+## 2026-09-14 — domknięcie sklepu i dostawy
+
+- [x] Zdiagnozować pusty katalog mimo włączonych przełączników.
+- [x] Dodać czytelną informację o pustej ofercie i atomową publikację przygotowanych produktów w istniejącym CMS.
+- [x] Wspólne progi cen odbitek: admin, sklep, koszyk, wycena, historyczny snapshot.
+- [x] Aktualne autoryzowane API Points i zgodność z nazwą istniejącego tokenu mapy.
+- [x] Sprawdzenie połączeń InPost/PayU bez zamówień i opłat w istniejącej sekcji dostawy.
+- [x] Przygotować konkretne opisy, realne media, ceny i dostawę 17/25 zł do przeglądu.
+- [x] Wykonać zatwierdzony izolowany zapis konfiguracji katalogu i publicznego POS sandbox PayU.
+- [ ] Test transakcji sandbox PayU/ShipX — po podłączeniu zatwierdzonej bazy do preview i skonfigurowaniu testowego InPost.
+- [ ] Uruchomić katalog na produkcji po odbiorze procesu.
+
+- [x] Naprawić i przetestować błędy odczytu wyborów rodzica, ZIP-a i kalendarza warsztatów.
+
+## 2026-09-14 — audyt i unifikacja admina
+
+- [x] Zapisać stałą zasadę unifikacji w AGENTS.md.
+- [x] Usunąć drugi widok zamówień w galerii i zachować filtr we wspólnej liście.
+- [x] Naprawić wspólną sesję, menu, odświeżanie i stan realizacji.
+- [x] Zabezpieczyć zarządzanie kontami administratorów przed utratą dostępu.
+- [x] Sprawdzić produkcyjne relacje, strukturę i historyczne potwierdzenia płatności wyłącznie SELECT.
+- [x] Przygotować naprawę NOT NULL na oddzielnej gałęzi Neon.
+- [x] Pierwsza runda: 326 testów jednostkowych, regresje admin/sklep, build 261/261 oraz wdrożenie preview PR #75.
+- [x] Naprawić i przetestować parametr zakupu odbitek oraz generator podpisanej umowy.
+- [x] Build po naprawie dokumentów/zakupu i przegląd zalogowanego preview wspólnych ekranów.
+- [ ] Odbiór wszystkich pozostałych formularzy, pełny typecheck oraz izolowana sprzedaż przed produkcją.
+- [ ] Osobny odbiór pełnej sprzedaży PayU/ShipX przed uruchomieniem oferty.
+
+## 2026-09-14 — jedno miejsce obsługi zamówień
+
+- [x] Scalić obsługę zamówień z istniejącą listą i usunąć osobny wpis menu.
+- [x] Dodać testy mapowania starego/nowego formatu i obsługi realizacji.
+- [ ] Sprawdzić build oraz preview w przeglądarce przed produkcją.
+
 ## 2026-09-14 — multimedia nPhoto
 
 - [x] Podpiąć brakujące zdjęcia Lite i Canvas na produkcji i sprawdzić po odświeżeniu.

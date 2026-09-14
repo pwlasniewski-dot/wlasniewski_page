@@ -318,7 +318,7 @@ export async function GET(request: NextRequest) {
                 // Każdy dzień z harmonogramu jako osobny event
                 for (let i = 0; i < schedule.length; i++) {
                     const day = schedule[i];
-                    if (!day.date) continue;
+                    if (!day || typeof day !== 'object' || Array.isArray(day) || typeof day.date !== 'string' || !day.date) continue;
 
                     const eventDate = new Date(day.date);
                     if (isNaN(eventDate.getTime())) continue;
@@ -328,15 +328,15 @@ export async function GET(request: NextRequest) {
                     if (dateFilter.lte && eventDate > dateFilter.lte) continue;
 
                     const dayNum = i + 1;
-                    const topic = day.topic ? ` — ${day.topic}` : '';
+                    const topic = typeof day.topic === 'string' && day.topic ? ` — ${day.topic}` : '';
 
                     events.push({
                         id: `workshop-${w.id}-day${dayNum}`,
                         source: 'workshop' as any, // Rozszerzenie typu
                         source_id: w.id,
                         date: eventDate.toISOString().slice(0, 10),
-                        start_time: day.start || null,
-                        end_time: day.end || null,
+                        start_time: typeof day.start === 'string' ? day.start : null,
+                        end_time: typeof day.end === 'string' ? day.end : null,
                         title: `🎓 ${w.title} (Dzień ${dayNum}${topic})`,
                         client_name: `Warsztat (${w._count.participants} uczestników)`,
                         email: null,
@@ -344,7 +344,7 @@ export async function GET(request: NextRequest) {
                         status: w.status === 'active' ? 'confirmed' : 'pending',
                         price: null,
                         venue: w.location || null,
-                        notes: day.plan || null,
+                        notes: typeof day.plan === 'string' ? day.plan : null,
                         photographer_id: null,
                         detail_url: `/admin/warsztaty/${w.id}`,
                         deposit_amount: null,

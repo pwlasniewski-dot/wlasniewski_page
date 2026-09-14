@@ -45,7 +45,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!Number.isInteger(galleryId)) return NextResponse.json({ error: 'Nieprawidłowe ID' }, { status: 400 });
   const loaded = await authorize(request, galleryId);
   if ('response' in loaded) return loaded.response;
-  const correlationId = randomUUID();
   const jobId = request.nextUrl.searchParams.get('job_id') || '';
   const job = await readGalleryArchiveJob(jobId).catch(() => null);
   if (!job || job.kind !== 'group' || job.galleryId !== galleryId || (job.participantId !== null && job.participantId !== loaded.participant.id)) {
@@ -80,6 +79,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!Number.isInteger(galleryId)) return NextResponse.json({ error: 'Nieprawidłowe ID' }, { status: 400 });
   const loaded = await authorize(request, galleryId);
   if ('response' in loaded) return loaded.response;
+  const correlationId = randomUUID();
   const body = await request.json().catch(() => ({}));
   const rawIds = Array.isArray(body.photoIds) ? body.photoIds : [];
   const requestedPhotoIds = [...new Set(rawIds.map(Number).filter((id: number) => Number.isInteger(id) && id > 0))] as number[];

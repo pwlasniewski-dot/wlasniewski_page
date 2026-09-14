@@ -14,6 +14,7 @@ global.fetch = async (url, init = {}) => {
   requests.push({ url, body, method: init.method || 'GET' });
   if (url.endsWith('/nphoto-preview')) return reply({ success: true, draft });
   if (url.endsWith('/nphoto-drafts')) { savedBody = body; return reply({ success: true, id: 77 }); }
+  if (url.includes('/admin/') && url.endsWith('/shop') && init.method === 'PUT') { for (const edit of body.productEdits || []) product = { ...product, ...edit.data }; return reply({ success: true, config: body.config || null, products: [product] }); }
   if (url.includes('/admin/') && url.endsWith('/shop')) return reply({ success: true, config, products: [product], sharedProducts: [], nphotoAlbums: [], orders: [] });
   if (url.includes('/products/77')) { product = { ...product, ...body }; return reply({ success: true, product }); }
   if (url === '/api/galleries/12/shop') return reply({ success: true, catalog: { ...config, galleryId: 12, products: [product] } });
@@ -101,7 +102,7 @@ const props = { onImported: async () => { imports++; }, onDirtyChange: value => 
     await set(field('Dodatkowe zdjęcia produktu #77 (adres w każdym wierszu)'), 'https://nphoto.com/new.jpg\nhttps://nphoto.com/c.jpg');
     await set(field('Film produktu #77 (MP4)'), 'https://example.com/album.mp4');
     await set(field('Przykładowe rozkładówki produktu #77 (adres w każdym wierszu)'), 'https://example.com/spread.jpg');
-    await click(button('Zapisz produkt #77'));
+    await click(button('Zapisz ustawienia sklepu'));
     assert.equal(product.video_url, 'https://example.com/album.mp4');
     assert.deepEqual(product.sample_pages, ['https://example.com/spread.jpg']);
     assert.deepEqual(product.preview_images, ['https://nphoto.com/new.jpg', 'https://nphoto.com/c.jpg']);
@@ -113,7 +114,7 @@ const props = { onImported: async () => { imports++; }, onDirtyChange: value => 
     await click(field('Pokaż ujęcie produktu 2'));
     assert.equal(document.querySelector('[aria-labelledby][role="dialog"] article img').getAttribute('src'), 'https://nphoto.com/new.jpg');
     await click(button('Zamknij szczegóły'));
-    await click(field('Produkt #77 widoczny')); await set(field('Cena produktu #77 (zł)'), 0); await click(button('Zapisz produkt #77'));
+    await click(field('Produkt #77 widoczny')); await set(field('Cena produktu #77 (zł)'), 0); await click(button('Zapisz ustawienia sklepu'));
     assert.equal(product.is_active, false); assert.equal(product.price, 0);
   });
   console.log(`${h.log.length} grup testów UI nPhoto: PASS`);

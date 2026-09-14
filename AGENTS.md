@@ -21,7 +21,17 @@ Panel administratora powinien umożliwiać, odpowiednio do rodzaju strony:
 
 Nie twórz dowolnego edytora CSS. Udostępniaj bezpieczne warianty i tokeny systemu projektu, aby zmiana w panelu nie mogła zepsuć czytelności, responsywności ani spójności marki.
 
-## Jedno źródło danych
+## Stała zasada spójności panelu administratora
+
+Każdą zmianę zaczynaj od sprawdzenia istniejącego procesu, ekranów, API i modeli danych. Rozwijaj je zamiast tworzyć równoległą zakładkę, rejestr albo drugi sposób obsługi tej samej czynności. Dotyczy to całego zakresu prac, również przyszłych zmian.
+
+- Zamówienia kart podarunkowych, zdjęć i produktów obsługuje istniejący widok **Rezerwacje → Zamówienia**. Produkcja, płatność i wysyłka należą do szczegółów tego zamówienia. Z galerii prowadź do tego widoku z zachowaniem kontekstu galerii.
+- Wspólna oferta jest domyślna; wyjątki dla galerii muszą być jawne. Nie nadpisuj nimi historycznych cen zamówień.
+- Przed usunięciem duplikatu sprawdź dane historyczne, linki i uprawnienia. Zachowaj przekierowania i nie usuwaj rekordów w ramach porządkowania menu.
+- Nie utożsamiaj odrębnych pojęć biznesowych tylko z powodu podobnej nazwy: rezerwacja sesji, zamówienie produktów, voucher ofertowy i karta podarunkowa mają różne reguły.
+- Testuj zapis, ponowny odczyt, widok klienta oraz kolejny etap realizacji. Sprawdzaj także odmowę dostępu, błąd sieci, nieopłacone zamówienie, ponowione żądanie i równoczesną zmianę danych. Sam wygląd ekranu nie potwierdza poprawności procesu.
+
+## Wspólne dane oferty
 
 Cena, nazwa, zakres i dostępność pakietu muszą pochodzić z jednego źródła danych wykorzystywanego jednocześnie przez:
 

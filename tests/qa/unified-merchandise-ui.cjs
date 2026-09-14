@@ -1,0 +1,9 @@
+const {assert,mount,reset,button,click,check,field,set}=require('./gallery-shop-dom.cjs');
+const Details=require('../../src/components/admin/MerchandiseOrderDetails.tsx').default;
+const metadata={kind:'gallery_merchandise',version:1,lines:[{kind:'print',id:'p',photoId:4,quantity:2,title:'15×21',lineTotal:500,format:{label:'15×21',paper:'Silk'},crop:{mode:'fit'}}],delivery:{method:'courier',amount:2500,recipientName:'Test',email:'test@example.com'},fulfillment:{status:'new',trackingNumber:null}};
+(async()=>{
+ await check('unpaid unified order exposes neither shipment nor production nor status mutation',async()=>{await mount(Details,{order:{id:1,galleryId:26,total:3000,createdAt:'2026-09-14',paymentStatus:'pending',metadata}});assert.ok(document.body.textContent.includes('po potwierdzeniu płatności'));assert.equal(document.querySelector('select'),null);assert.ok(!document.body.textContent.includes('Przygotuj pliki do produkcji'));});
+ await reset();
+ await check('paid unified order exposes shipping and production and saves stage in the existing detail view',async()=>{let calls=[];global.fetch=async(url,init)=>{calls.push({url,body:JSON.parse(init.body)});return Response.json({success:true,metadata:{...metadata,fulfillment:{status:'ordered',trackingNumber:null}}});};await mount(Details,{order:{id:1,galleryId:26,total:3000,createdAt:'2026-09-14',paymentStatus:'paid',metadata}});assert.ok(button('Przygotuj pliki do produkcji'));assert.ok(button('Przesyłka InPost · zamówienie #1'));await set(document.querySelector('select'),'ordered');await click(button('Zapisz etap realizacji'));assert.equal(calls.length,1);assert.equal(calls[0].url,'/api/admin/galleries/26/shop/orders/1');assert.equal(calls[0].body.status,'ordered');assert.ok(document.querySelector('summary').textContent.includes('Zamówione u producenta'));});
+ await reset();
+})().catch(e=>{console.error(e);process.exitCode=1});

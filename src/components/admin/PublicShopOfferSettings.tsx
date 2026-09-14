@@ -2,13 +2,14 @@
 
 import { defaultPublicOffer, type PublicShopOffer } from '@/lib/galleries/public-offer';
 import type { PrintFormat, ShopConfig } from '@/lib/galleries/merchandise';
+import {productsReadyToPublish} from '@/lib/galleries/shop-publication';
 
-type Product = { id: number; title: string; price: number; is_active: boolean };
+type Product = { id: number; title: string; price: number; is_active: boolean; description?:string|null;image_url?:string|null };
 const input = 'mt-2 min-h-11 w-full rounded-xl border border-white/15 bg-zinc-950 px-3 py-2 text-base text-white';
 const button = 'min-h-11 rounded-xl border border-white/20 px-3 py-2 text-sm disabled:opacity-30';
 
-export default function PublicShopOfferSettings({ value, formats, products, shopEnabled, delivery, productRules, disabled, onChange }: {
-    value?: PublicShopOffer; formats: PrintFormat[]; products: Product[]; shopEnabled: boolean; delivery: ShopConfig['delivery']; productRules: ShopConfig['productRules']; disabled: boolean; onChange: (value: PublicShopOffer) => void;
+export default function PublicShopOfferSettings({ value, formats, products, shopEnabled, delivery, productRules, disabled, onChange, onPublish }: {
+    value?: PublicShopOffer; formats: PrintFormat[]; products: Product[]; shopEnabled: boolean; delivery: ShopConfig['delivery']; productRules: ShopConfig['productRules']; disabled: boolean; onChange: (value: PublicShopOffer) => void; onPublish?:()=>void;
 }) {
     const offer = value || defaultPublicOffer();
     const edit = (patch: Partial<PublicShopOffer>) => onChange({ ...offer, ...patch });
@@ -19,10 +20,14 @@ export default function PublicShopOfferSettings({ value, formats, products, shop
     };
     const deliverable = (id: number) => (productRules[String(id)]?.deliveryMethods || ['locker', 'courier'] as const).some(method => delivery[method].enabled);
     const ready = products.filter(p => offer.productIds.includes(p.id) && p.is_active && p.price > 0 && deliverable(p.id)).length + formats.filter(f => offer.formatIds.includes(f.id) && f.active && f.unitAmount > 0).length;
+    const publishable=productsReadyToPublish({publicOffer:offer,productRules,delivery} as ShopConfig,products);
+    const drafts=publishable.filter(p=>!p.is_active);
     return <fieldset disabled={disabled} className="min-w-0 space-y-5 rounded-2xl border border-amber-200/20 bg-amber-200/[0.025] p-4 sm:p-6">
         <legend className="px-2 text-lg font-semibold text-white">Sklep publiczny i panel klienta</legend>
         <p className="text-sm leading-relaxed text-zinc-400">Ten sam katalog, te same ceny, jeden koszyk w prywatnej galerii. Wybierz produkty pokazywane obok kart podarunkowych oraz w koncie klienta. Nie trzeba przypisywać oferty osobno każdej osobie.</p>
         <label className="flex min-h-11 items-center gap-3"><input type="checkbox" checked={offer.enabled} onChange={e => edit({ enabled: e.target.checked })} />Pokaż wspólną ofertę w sklepie i koncie klienta</label>
+        {shopEnabled && offer.enabled && ready===0 && <p role="alert" className="rounded-xl border border-amber-300/40 bg-amber-300/10 p-4 text-sm text-amber-100">Sklep nie pokazuje jeszcze żadnego produktu. Przełączniki są włączone, ale wybrane pozycje są szkicami albo nie mają ceny. Uzupełnij odbitki lub aktywuj przygotowane produkty poniżej.</p>}
+        {onPublish && drafts.length>0 && <div className="rounded-xl border border-white/15 p-4"><p className="text-sm text-zinc-300">{drafts.length} wycenione produkty mają już opis, zdjęcie i dostawę. Możesz opublikować je razem w sklepie oraz galeriach korzystających ze wspólnej oferty.</p><button type="button" onClick={onPublish} className="mt-3 min-h-11 rounded-xl bg-amber-200 px-4 py-3 text-sm font-semibold text-stone-950">Aktywuj i pokaż {drafts.length} wycenione produkty</button><p className="mt-2 text-xs text-zinc-400">Zapisze bieżące ustawienia i aktywuje przygotowane produkty. Odbitki bez ceny pozostaną ukryte.</p></div>}
         <p role="status" className="rounded-xl border border-white/10 p-3 text-sm text-amber-100">{!shopEnabled ? 'Wspólny sklep jest wyłączony. Możesz przygotować prezentację; klient jeszcze jej nie zobaczy.' : !offer.enabled ? 'Prezentacja ukryta. Sprzedaż w aktywnych galeriach pozostaje bez zmian.' : `${ready} pozycji gotowych do prezentacji po zapisie. Nieaktywne szkice i ceny 0 zł pozostają ukryte.`}</p>
         <div className="grid gap-4 md:grid-cols-2">
             <label className="text-sm">Tytuł prezentacji<input className={input} maxLength={200} value={offer.title} onChange={e => edit({ title: e.target.value })} /></label>

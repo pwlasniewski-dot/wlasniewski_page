@@ -1,14 +1,17 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AlertCircle, RefreshCw, Search, ArrowLeft, ShoppingBag, Image as ImageIcon, Camera, Ticket, CircleDollarSign, Package, Clock3, SlidersHorizontal, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/api-config';
+import MerchandiseOrderDetails from '@/components/admin/MerchandiseOrderDetails';
+import type {ShopMetadata} from '@/lib/galleries/merchandise';
 
 interface Order {
     type: 'gift_card' | 'gallery_photo';
+    merchandise?: ShopMetadata;
     rawId: number;
     id: string;
     customerEmail: string;
@@ -55,13 +58,14 @@ interface Order {
 export default function AdminOrdersPage() {
     const router = useRouter();
     const [orders, setOrders] = useState<Order[]>([]);
-    const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [classFilter, setClassFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
     const [typeFilter, setTypeFilter] = useState('all');
+    const [galleryFilter, setGalleryFilter] = useState('all');
+    const requestId = useRef(0);
 
     const formatMoney = (amount: number, currency = 'PLN') => `${(amount / 100).toFixed(2)} ${currency}`;
 
@@ -81,24 +85,23 @@ export default function AdminOrdersPage() {
     ).sort((a, b) => a.localeCompare(b, 'pl'));
 
     useEffect(() => {
-        const token = localStorage.getItem('admin_token');
-        if (!token) {
-            router.push('/admin/login');
-            return;
-        }
+        const gallery = new URLSearchParams(window.location.search).get('gallery');
+        if (gallery && /^[1-9]\d*$/.test(gallery)) setGalleryFilter(gallery);
+        // Authentication belongs to AdminLayout and the API, including cookie sessions.
         setIsAuthorized(true);
-        fetchOrders();
+        void fetchOrders();
+        return () => { requestId.current += 1; };
     }, [router]);
 
-    useEffect(() => {
+    const filteredOrders = useMemo(() => {
         const lower = searchTerm.toLowerCase();
         const filtered = orders.filter(o => {
             const orderClass = extractClassLabel(o.galleryName);
             const matchesClass = classFilter === 'all' || orderClass === classFilter;
-            const matchesStatus = statusFilter === 'all' || o.status === statusFilter;
-            const matchesType = typeFilter === 'all' || o.type === typeFilter;
+            const matchesStatus = statusFilter === 'all' || (statusFilter === 'paid' ? ['paid', 'completed'].includes(o.status) : o.status === statusFilter);
+            const matchesType = typeFilter === 'all' || (typeFilter === 'merchandise' ? Boolean(o.merchandise) : o.type === typeFilter);
 
-            if (!matchesClass || !matchesStatus || !matchesType) return false;
+            if (!matchesClass || !matchesStatus || !matchesType || (galleryFilter !== 'all' && String(o.galleryId) !== galleryFilter)) return false;
 
             if (!searchTerm) return true;
 
@@ -111,11 +114,13 @@ export default function AdminOrdersPage() {
                 o.galleryName?.toLowerCase().includes(lower) ||
                 o.participantName?.toLowerCase().includes(lower) ||
                 o.participantIdentifier?.toLowerCase().includes(lower) ||
+                (o.orderItems || []).some(item => item.title.toLowerCase().includes(lower)) ||
+                o.merchandise?.fulfillment.trackingNumber?.toLowerCase().includes(lower) ||
                 (o.sizeSummary || []).some((size) => size.toLowerCase().includes(lower))
             );
         });
-        setFilteredOrders(filtered);
-    }, [searchTerm, classFilter, statusFilter, typeFilter, orders]);
+        return filtered;
+    }, [searchTerm, classFilter, statusFilter, typeFilter, galleryFilter, orders]);
 
     const stats = useMemo(() => {
         const paid = orders.filter((order) => order.status === 'paid' || order.status === 'completed');
@@ -132,31 +137,34 @@ export default function AdminOrdersPage() {
     }, [orders]);
 
     const fetchOrders = async () => {
+        const currentRequest = ++requestId.current;
         setLoading(true);
         try {
             const token = localStorage.getItem('admin_token');
             const res = await fetch(getApiUrl('admin/orders'), {
-                headers: { 'Authorization': `Bearer ${token}` }
+                credentials: 'include',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
+            if (requestId.current !== currentRequest) return;
 
-            if (res.status === 401) {
+            if (res.status === 401 || res.status === 403) {
                 localStorage.removeItem('admin_token');
                 router.push('/admin/login');
                 return;
             }
 
             const data = await res.json();
-            if (data.success) {
+            if (requestId.current !== currentRequest) return;
+            if (res.ok && data.success && Array.isArray(data.orders)) {
                 setOrders(data.orders);
-                setFilteredOrders(data.orders);
+                setSelectedOrder(current => current ? data.orders.find((order: Order) => order.id === current.id) || null : null);
             } else {
                 toast.error(data.error || 'Błąd pobierania zamówień');
             }
         } catch (error) {
-            console.error('Error:', error);
-            toast.error('Błąd połączenia');
+            if (requestId.current === currentRequest) toast.error('Błąd połączenia');
         } finally {
-            setLoading(false);
+            if (requestId.current === currentRequest) setLoading(false);
         }
     };
 
@@ -338,7 +346,7 @@ export default function AdminOrdersPage() {
                                     Zamówienia
                                 </h1>
                             </div>
-                            <p className="text-zinc-400 ml-9">Jedna lista: karty podarunkowe + dodatkowe odbitki z galerii</p>
+                            <p className="text-zinc-400 ml-9">Wszystkie zamówienia: karty podarunkowe, zdjęcia, produkty i wysyłka</p>
                         </div>
                         <button
                             onClick={fetchOrders}
@@ -386,7 +394,13 @@ export default function AdminOrdersPage() {
                                     className="w-full pl-10 pr-4 py-2 bg-zinc-950 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none placeholder-zinc-600"
                                 />
                             </div>
+                            <select aria-label="Galeria" value={galleryFilter} onChange={e => setGalleryFilter(e.target.value)} className="w-full px-3 py-2 bg-zinc-950 border border-zinc-700 rounded-lg text-white">
+                                <option value="all">Wszystkie galerie</option>
+                                {Array.from(new Map(orders.filter(order => order.galleryId).map(order => [String(order.galleryId), order.galleryName])).entries()).map(([id, name]) => <option key={id} value={id}>{name || `Galeria #${id}`}</option>)}
+                                {galleryFilter !== 'all' && !orders.some(order => String(order.galleryId) === galleryFilter) && <option value={galleryFilter}>Galeria #{galleryFilter}</option>}
+                            </select>
                             <select
+                                aria-label="Klasa"
                                 value={classFilter}
                                 onChange={(e) => setClassFilter(e.target.value)}
                                 className="w-full px-3 py-2 bg-zinc-950 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
@@ -397,24 +411,27 @@ export default function AdminOrdersPage() {
                                 ))}
                             </select>
                             <select
+                                aria-label="Status płatności"
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
                                 className="w-full px-3 py-2 bg-zinc-950 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
                             >
                                 <option value="all">Wszystkie statusy</option>
                                 <option value="paid">Opłacone</option>
-                                <option value="completed">Completed</option>
+                                <option value="refunded">Zwrócone</option>
                                 <option value="pending">Oczekujące</option>
                                 <option value="failed">Błąd</option>
                                 <option value="cancelled">Anulowane</option>
                             </select>
                             <select
+                                aria-label="Rodzaj zamówienia"
                                 value={typeFilter}
                                 onChange={(e) => setTypeFilter(e.target.value)}
                                 className="w-full px-3 py-2 bg-zinc-950 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
                             >
                                 <option value="all">Wszystkie typy</option>
-                                <option value="gallery_photo">Galeria</option>
+                                <option value="gallery_photo">Wszystkie zakupy z galerii</option>
+                                <option value="merchandise">Odbitki i produkty z dostawą</option>
                                 <option value="gift_card">Karta podarunkowa</option>
                             </select>
                             <button
@@ -423,6 +440,7 @@ export default function AdminOrdersPage() {
                                     setClassFilter('all');
                                     setStatusFilter('all');
                                     setTypeFilter('all');
+                                    setGalleryFilter('all');
                                 }}
                                 className="w-full px-3 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-zinc-100 transition-colors"
                             >
@@ -498,7 +516,7 @@ export default function AdminOrdersPage() {
                                                     ) : (
                                                         <>
                                                             <div className="text-white font-bold">{order.galleryName}</div>
-                                                            <div className="text-xs text-zinc-400 mt-1">{order.photoCount || 0} zdjęć dodatkowych</div>
+                                                            <div className="text-xs text-zinc-400 mt-1">{order.merchandise ? `${order.merchandise.lines.length} pozycji do realizacji` : `${order.photoCount || 0} zdjęć dodatkowych`}</div>
                                                             {order.orderItems && order.orderItems.length > 0 && (
                                                                 <div className="mt-2 space-y-1">
                                                                     {order.orderItems.slice(0, 2).map((item, index) => (
@@ -584,12 +602,12 @@ export default function AdminOrdersPage() {
             {/* Details Modal */}
             {selectedOrder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedOrder(null)}>
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+                    <div role="dialog" aria-modal="true" aria-label="Szczegóły zamówienia" className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="p-6 border-b border-zinc-800 flex justify-between items-center">
                             <h2 className="text-xl font-bold text-white">Szczegóły Zamówienia <span className="text-gold-500">{selectedOrder.id}</span></h2>
-                            <button onClick={() => setSelectedOrder(null)} className="text-zinc-400 hover:text-white"><div className="w-6 h-6 flex items-center justify-center">✕</div></button>
+                            <button aria-label="Zamknij szczegóły zamówienia" onClick={() => setSelectedOrder(null)} className="text-zinc-400 hover:text-white"><div className="w-6 h-6 flex items-center justify-center">✕</div></button>
                         </div>
-                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {selectedOrder.merchandise && selectedOrder.galleryId ? <div className="p-4"><MerchandiseOrderDetails key={selectedOrder.id} order={{id:selectedOrder.rawId,galleryId:selectedOrder.galleryId,createdAt:selectedOrder.createdAt,total:selectedOrder.amount,paymentStatus:selectedOrder.status,metadata:selectedOrder.merchandise,photos:selectedOrder.selectedPhotos}} onUpdated={metadata => { const update = (order: Order) => order.id === selectedOrder.id ? { ...order, merchandise: metadata } : order; setOrders(current => current.map(update)); setSelectedOrder(current => current ? update(current) : null); }}/></div> : <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div>
                                 <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Dane Klienta (Kupujący)</h3>
                                 <div className="space-y-3">
@@ -816,7 +834,7 @@ export default function AdminOrdersPage() {
                                     )}
                                 </div>
                             </div>
-                        </div>
+                        </div>}
                     </div>
                 </div>
             )}

@@ -1,3 +1,51 @@
+## 2026-09-14 — decyzja o wdrożeniu produkcyjnym
+
+Użytkownik odmówił przekazania połączenia bazy QA do Netlify, a następnie wyraźnie polecił wdrożyć PR75 na produkcję i zapowiedział własne testy. Odmowa nadal obowiązuje: nie przekazywać GALLERY_QA_DATABASE_URL ani nie traktować wdrożenia jako zgody na ten transfer. Wcześniejsze wpisy o zgodzie na sekret są historyczne i nie obowiązują.
+
+W tej rundzie publikacji nie zmienia się kod, model danych ani reguły biznesowe względem sprawdzonego PR75. Produkcja korzysta z dotychczasowego DATABASE_URL i konfiguracji produkcyjnej. Nie uruchamia się trybu QA ani migracji danych.
+
+## 2026-09-14 — zapis produktów i widoczności
+
+Jeden przycisk „Zapisz ustawienia sklepu” zapisuje wszystkie zmienione produkty, ich media, ceny, widoczność oraz limity i ustawienia oferty. Zmiana samego checkboxa uaktywnia zapis; cofnięcie do zapisanej wartości usuwa szkic. Nie ma osobnych przycisków zapisu każdej karty. Komunikaty wyniku pozostają przy przycisku. Nieudany zapis zachowuje formularz; potwierdzony zapis z błędem późniejszego odczytu jest wyraźnie opisany i nie pozostawia nieaktualnego szkicu do ponownego wysłania.
+
+## 2026-09-14 — uruchomienie odizolowanego odbioru
+
+Błąd wyszukiwania punktów nie odsyła klienta do mapy, której konfiguracja może być nieobecna. Dostęp do mapy pozostaje widoczny tylko przy skonfigurowanym publicznym tokenie. Stawki lokalnej oferty nie zmieniają się od edycji wspólnego cennika; w konfiguracji odbiorowej galerii 26 uzgodniono 17/25 zł.
+
+Podgląd testowej sprzedaży rozpoznaje jawne środowisko również w Functions, gdzie nie ma automatycznie buildowego CONTEXT. GALLERY_QA_CONTEXT=deploy-preview ma obowiązywać wyłącznie w gałęzi odbioru. Użytkownik nadal widzi ten sam panel oferty i tę samą listę Rezerwacje → Zamówienia. Sama poprawka konfiguracji nie oznacza zaliczonej płatności ani wysyłki.
+
+## Zatwierdzony katalog testowy — 2026-09-14
+
+Aktualny katalog i status odbioru opisuje docs/NPHOTO_LAUNCH_QA.md; snapshot zapisanej konfiguracji to docs/NPHOTO_QA_CATALOG.json. Ceny użytkownika 2,50/1,50 zł mają pierwszeństwo przed historycznymi progami propozycji marży. Zatwierdzono podłączenie tej bazy do konkretnej gałęzi preview w Netlify. Zgoda nie oznacza wykonanego zapisu ani odebranej sprzedaży: sesja hostingu wygasła, a mimo późniejszego potwierdzenia połączenia integracji Netlify jej operacje nie są jeszcze dostępne w bieżącej sesji.
+
+Po jednoznacznym zatwierdzeniu użytkownika wykonano transakcję wyłącznie na gałęzi Neon audit-admin-unification-20260914 (br-dawn-scene-aeokidlt): aktywne produkty 6–9 z pełnymi opisami i rzeczywistymi materiałami; stare 1/3/4/5 ukryte; wspólna oferta i galeria 26 mają aktualne ceny użytkownika 2,50/1,50 zł oraz dostawę 17/25 zł. Pierwszy rekord ustawień ma publiczny POS PayU 300746 w sandbox oraz callback do preview75. Produkcja została sprawdzona odczytowo: 6–9 nadal nieaktywne. Nie wykonano płatności ani nadania.
+
+## Odbiór preview — 2026-09-14
+
+Oferta fotograficzna jest dostępna przez przycisk w pierwszej sekcji sklepu i pojawia się przed listą kart podarunkowych. Etykieta przycisku pochodzi z konfiguracji publicznej oferty; przy ukrytej ofercie przycisk znika. Diagnostyka jawnie rozróżnia brak tokenu mapy od zapisanej konfiguracji.
+
+## 2026-09-14 — publikacja oferty, ceny ilościowe i sprawdzenie połączeń
+
+Wspólna oferta pokazuje rzeczywistą liczbę pozycji wybranych do sklepu. Włączone przełączniki przy samych szkicach pokazują jednoznaczny komunikat pustej oferty. Przycisk zbiorczej publikacji aktywuje wybrane, wycenione produkty z opisem, zdjęciem i zgodną dostawą oraz zapisuje oba przełączniki w jednej transakcji. Nie publikuje nieoznaczonych ani prywatnych produktów; odbitki bez ceny pozostają ukryte. Zamówienia nadal obsługuje Rezerwacje → Zamówienia. Na preview panel informuje o współdzieleniu bazy i wpływie zapisów na działającą ofertę.
+
+Format odbitki może mieć edytowalne progi ilościowe. Sztuki tego samego formatu liczą się łącznie dla różnych zdjęć; cena za sztukę jest wspólna w prezentacji, koszyku i wycenie serwerowej. Zamówienie zachowuje niezmienny snapshot zastosowanej ceny. Sekcja dostawy zawiera nieodpłatne sprawdzenie dostępu do organizacji i usług InPost, API Points, konfiguracji mapy oraz logowania OAuth PayU. Sprawdzenie dostępu nie potwierdza zakupu etykiety ani zakończonej płatności.
+
+## Uzupełnienie audytu 2026-09-14
+
+Podpisana umowa dołącza sekcję potwierdzenia niezależnie od obecności nazwy klienta; przechowywany podpisany PDF nadal ma pierwszeństwo. Dodatkowe odbitki rodzica odczytują asynchroniczny parametr uczestnika i wycenę z zapisanych ustawień. Błędny lub obcy identyfikator nie tworzy zamówienia.
+
+Dalszy audyt wykrył realne błędy wykonania: GET wyborów rodzica odwoływał się do niezdefiniowanego participant_id, POST ZIP-a do correlationId zadeklarowanego tylko w GET, a null w dniu warsztatu przerywał kalendarz. Poprawiono zakresy zmiennych i walidację dni. tests/qa/gallery-operating-regressions.cjs wykonuje te endpointy (odczyt wyborów, utworzenie/reuse ZIP-a, brak HQ, uszkodzony harmonogram); wszystkie scenariusze przeszły.
+
+## 2026-09-14 — wspólna obsługa administratora
+
+Administrator realizuje zakupy kart, zdjęć i produktów przez Rezerwacje → Zamówienia. Galeria otwiera tę samą listę z filtrem galerii. Płatność i realizacja pozostają osobnymi stanami. Tylko opłacone zamówienie pozwala przygotować pliki i nadać paczkę; realizacja przechodzi kolejno przez zamówienie u producenta, odbiór, pakowanie i wysyłkę. Koszt dostawy pochodzi ze snapshotu zamówienia.
+
+Panel zachowuje sesję przy przejściowej awarii i udostępnia ponowienie sprawdzenia. Wylogowanie zamyka sesję serwerową administratora, zachowując osobną sesję klienta. Konta administratorów są oddzielone od CRM; nie można usunąć ani zdegradować własnego konta, a usuwanie/degradacja nie może usunąć ostatniego dostępu administracyjnego.
+
+## 2026-09-14 — jedno miejsce obsługi zamówień
+
+Rezerwacje → Zamówienia obejmuje karty, stare zakupy galerii oraz odbitki i produkty z dostawą. Filtr produktów i wyszukiwanie nazwy lub przesyłki działają na wspólnej liście. Płatność warunkuje dostęp do produkcji i wysyłki; status płatności pozostaje tylko do odczytu.
+
 ## 2026-09-14 — prezentacja materiałów produktu
 
 Administrator edytuje adres MP4 i do 12 zdjęć rozkładówek na karcie produktu. Klient przełącza zdjęcia, film i przykładowe wnętrze w tym samym podglądzie w sklepie oraz galerii. Film nie montuje się przed wyborem i nie odtwarza automatycznie; rozkładówki obsługują przyciski oraz poziomy gest, zachowując przewijanie pionowe. Przykładowe realizacje nie stanowią projektu klienta.

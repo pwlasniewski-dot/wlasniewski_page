@@ -1,6 +1,48 @@
+## 2026-09-14 — decyzja o wdrożeniu produkcyjnym
+
+Użytkownik odmówił przekazania połączenia bazy QA do Netlify, a następnie wyraźnie polecił wdrożyć PR75 na produkcję i zapowiedział własne testy. Odmowa nadal obowiązuje: nie przekazywać GALLERY_QA_DATABASE_URL ani nie traktować wdrożenia jako zgody na ten transfer. Wcześniejsze wpisy o zgodzie na sekret są historyczne i nie obowiązują.
+
+Do wdrożenia kierowany jest przetestowany kod PR75: wspólny zapis oferty, jedna obsługa Rezerwacje → Zamówienia oraz poprawki autoryzacji Points i odczytu istniejącego tokenu Geowidget. Podgląd c74ac0a uzyskał Netlify ready, skan 1904 plików bez wykrytych sekretów; wcześniejszy build Node 22 i 51 grup regresji zapisu przeszły. Typecheck ma 106 wcześniejszych diagnostyk. Pełna płatność i nadanie nie zostały potwierdzone. Zgoda na publikację nie jest zaliczeniem tych testów.
+
+Po publikacji potwierdzić dokładny commit i stan produkcyjnego deployu, dostępność sklepu i publicznego API Points oraz mapy. W panelu: zmiana widoczności → wspólny zapis → odświeżenie → oferta klienta; zamówienie obsługiwać przez Rezerwacje → Zamówienia. Nadal wymagają sprawdzenia dane nadawcy InPost oraz płatność i etykieta. Nie wykonywać płatnych operacji w ramach technicznego sprawdzenia wdrożenia. Nie kopiować testowego POS PayU ani katalogu QA do produkcji automatycznie; dotychczasowe lokalne nadpisania cen pozostają danymi CMS.
+
+## Netlify po autoryzacji — 2026-09-14
+
+Natywne logowanie CLI zakończone statusem authorized. Projekt potwierdzony przez Netlify API: helpful-axolotl-cc1cbb, e310a9fc-8bd6-4819-8533-91a3d83ea491. Zapisano i ponownie odczytano wyłącznie niesekretny GALLERY_QA_CONTEXT=deploy-preview: Builds/Functions, context=branch, context_parameter=fix/admin-unification-audit-20260914, bez innych wartości. Polecenie env:set nie rozpoznało projektu; niesekretny znacznik zapisano udokumentowanym createEnvVars przez CLI.
+
+Próba przekazania GALLERY_QA_DATABASE_URL została odrzucona przez automatyczny przegląd: połączenie zawiera uprzywilejowane hasło i według przeglądu brakuje jawnej zgody na jego przekazanie do Netlify. Wcześniejszy opis zgody zachowano w historii; wyszukiwanie źródłowego zatwierdzenia nie zwróciło rozmowy. Nie ponowiono ani nie wykonano transferu inną drogą. Odczyt konfiguracji po odmowie potwierdził brak GALLERY_QA_DATABASE_URL. Zapis wymaga rozstrzygnięcia tej konkretnej blokady; kolejne logowanie nie jest potrzebne.
+
+Produkcja: ostatni deploy 6aa78539f24f7a0008a4a21a, commit 750b325, opublikowany 2026-09-14T05:27:56.829Z. Zmienne InPost zapisano wcześniej, 2026-09-13. Publiczny odczyt produkcji: Points 503, token mapy=null. Kod dokładnego wdrożonego commitu potwierdza przyczynę: config czyta wyłącznie INPOST_GEOWIDGET_TOKEN, a w Netlify jest NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN; Points wywołuje API bez Authorization. Poprawki obu miejsc są w PR75 i nie zostały jeszcze scalone do produkcji. Nie jest to problem samego terminu redeployu po zmianie zmiennych. INPOST_SENDER_JSON nadal nieobecny; tokeny i identyfikator organizacji są wyłącznie w production, poza preview.
+
+Nie uruchomiono płatności, etykiet ani wysyłki; nie nadpisano produkcyjnego DATABASE_URL. Sam znacznik kontekstu bez sekretu nie włącza izolacji. Do pełnego odbioru pozostaje połączenie QA i dostęp do testowego ShipX/Geowidget.
+
+## Odbiór live 119887c — 2026-09-14
+
+Netlify zgłosiło sukces wdrożenia preview75 dla commitu 119887c5792e7bd69d76267ff8ffa79cf639a058. W zalogowanej przeglądarce przed wdrożeniem checkbox produktu #1 nie uaktywniał zapisu; po wdrożeniu: brak osobnego przycisku „Zapisz produkt”, zapis disabled przed zmianą, enabled po odznaczeniu, disabled po przywróceniu. Przywrócono pierwotny stan bez zapisu do wspólnej bazy. Siedem grup API/React pokrywa zapis i odczyt, ale odbiór live samego zapisu wymaga odizolowanego QA.
+
+Panel integracji preview: InPost sandbox bez INPOST_API_TOKEN/INPOST_ORGANIZATION_ID, brak tokenu mapy i danych odbioru. OAuth PayU production potwierdzony; nie utworzono płatności. Nie potwierdzono etykiety, wysyłki ani pełnej sprzedaży. Netlify CLI wciąż oczekuje zatwierdzenia natywnego logowania; zakres sekretu QA pozostaje wcześniej zatwierdzony.
+
+## Zapis widoczności produktu — 2026-09-14
+
+Zgłoszony przez użytkownika nieaktywny zapis naprawiono w istniejącym edytorze: stan wszystkich kart jest wspólny, jeden PUT zapisuje produkty i ustawienia atomowo. Siedem nowych regresji obejmuje zapis i ponowny render klienta; transport bazy i logowanie podstawione. Build Node 22 PASS, 261/261 tras. TSC: 106 wcześniejszych diagnostyk, brak w zmienionych plikach. Nie jest to potwierdzenie odbioru live. Logowanie CLI nadal oczekuje autoryzacji użytkownika; zatwierdzone zmienne QA pozostają do podłączenia.
+
+## Stan domknięcia 2026-09-14
+
+Zgłoszenie ze zrzutu koszyka sprawdzono odczytowo: produkcyjne gallery_shop_26 ma lokalną dostawę 15/20 zł, a gallery_shop_default już 17/25 zł. Lokalna oferta zawiera wcześniejszy album komunijny. Na osobnej bazie QA obie konfiguracje mają 17/25 zł i wybór 6–9. Live preview API zwróciło 503 dla punktów w Płużnicy oraz brak tokenu mapy. Poprawiono komunikat API, aby nie odsyłał do niedostępnej mapy; sześć grup inpost-picker PASS. Nie naprawia to brakującego dostępu API InPost; jego rzeczywisty odbiór pozostaje otwarty.
+
+Najnowszy krok: CLI Netlify jest zainstalowane i oczekuje na zakończenie natywnej autoryzacji konta. Poprawiono rozpoznawanie QA w Functions, które nie otrzymują automatycznie buildowego CONTEXT; do zatwierdzonego połączenia trzeba dodać niesekretny GALLERY_QA_CONTEXT=deploy-preview w identycznym zakresie gałęzi. Dwie regresje izolacji PASS. Zmienne i test zakupu nie są jeszcze wykonane. Instrukcja: [NETLIFY_ENV_SETUP.md](../NETLIFY_ENV_SETUP.md).
+
+Zapisana konfiguracja osobnej bazy testowej: [NPHOTO_QA_CATALOG.json](NPHOTO_QA_CATALOG.json). Cztery produkty nPhoto są w niej aktywne: Harmonijka 41,54 zł, PRO 257,70 zł (20 stron), Lite 140,59 zł (16 stron), canvas 119,24 zł. Odbitki zachowują aktualne ceny użytkownika: 15×21 za 2,50 zł oraz 10×15 za 1,50 zł. Publiczna oferta wybiera pierwszy format i cztery produkty; panel galerii ma oba formaty. Dostawa: Paczkomat 17 zł, kurier 25 zł; canvas tylko kurier. Rzeczywiste zdjęcia pochodzą z folderu Media → nPhoto — produkty. Wcześniejszy [NPHOTO_LAUNCH_PRESET.json](NPHOTO_LAUNCH_PRESET.json) jest historyczną propozycją, nie konfiguracją do automatycznego nadpisania cen użytkownika.
+
+Konfiguracja katalogu oraz publicznego POS PayU sandbox została zatwierdzona i wykonana wyłącznie na gałęzi Neon audit-admin-unification-20260914. Wykonanie wspólnego loadera, prezentacji React i wyceny na odczytanym snapshotcie zakończyło się PASS; nie utworzono zamówienia ani nie wywołano dostawców. Produkcyjny katalog pozostaje poza tą operacją.
+
+Użytkownik zatwierdził także zapis połączenia tej bazy w Netlify helpful-axolotl-cc1cbb jako sekret GALLERY_QA_DATABASE_URL, wyłącznie dla fix/admin-unification-audit-20260914, zakresy Builds i Functions, z pustymi wartościami innych kontekstów. Nie trzeba ponawiać tej zgody. Zapis nie został jeszcze wykonany: po wznowieniu przeglądarka pokazała ekran logowania Netlify. Użytkownik następnie połączył integrację Netlify; połączenie zostało potwierdzone. Bieżąca sesja nie udostępniła jeszcze jej operacji, więc zapis nadal nie został wykonany. Bez zapisu, ponownego deployu preview i potwierdzenia izolacji nie wykonywać testowej płatności na istniejącym preview.
+
+Pozostałe bramki: rzeczywista płatność sandbox i callback, zapis i odczyt jednego zamówienia w Rezerwacje → Zamówienia, konfiguracja testowego ShipX/Points/Geowidget i odbiór wysyłki, sesja właściwego klienta oraz iPhone/Safari. Nie potwierdzono pełnej integracji dostawców ani gotowości produkcyjnej. Poniższe starsze rundy są historią odbioru, a nie aktualnymi cenami lub statusem zgód.
+
 # Kolekcja startowa nPhoto — odbiór do pilota
 
-Data: 2026-09-13. PR #72 pozostaje wersją do testów; bez scalania i wdrożenia na produkcję.
+Aktualizacja: 2026-09-14. Bieżący odbiór dotyczy PR #75. Opis poniżej zawiera także wcześniejsze rundy; nie stanowi potwierdzenia pełnej gotowości produkcyjnej.
 
 ## Zakres
 
@@ -11,7 +53,7 @@ Jedno źródło cen i opisów: wspólne `GalleryProduct` oraz formaty z `gallery
 | Odbitki | 15×21 cm, Fuji Silk, rzeczywiste 152×210 mm | Ilość osobno dla zdjęcia |
 | Harmonijka | 8×8 cm, 12 stron, oprawa V6 | 12 zdjęć |
 | Fotoalbum PRO | 20×20 cm, 10 rozkładówek, Fuji Silk, V11 | 20 zdjęć |
-| Lite Album | 20×20 cm, 5 rozkładówek, Fuji Lustre, A30 | 10 zdjęć |
+| Lite Album | 20×20 cm, 8 rozkładówek (16 stron), Fuji Lustre, A30 | 16 zdjęć |
 | Fotoobraz Wall Decor | Canvas 40×60 cm, rama 2 cm | 1 zdjęcie; tylko kurier |
 
 Liczby zdjęć są propozycjami układu studia, nie ograniczeniami nPhoto. Klient kupuje konkretny opisany wariant, wybiera fotografie i liczbę egzemplarzy. Fotograf przygotowuje projekt. Nie jest to wizualizacja 3D ani samodzielny edytor rozkładówek klienta.

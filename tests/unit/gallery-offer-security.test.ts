@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import prisma from '../../src/lib/db/prisma';
 import { NextRequest } from 'next/server';
 import { calculateAcceptedOfferTotal, canonicalizeAcceptedOfferSelection } from '../../src/lib/offers/calculateAcceptedOfferTotal';
 import { authorizeIndividualGallery } from '../../src/lib/galleries/individual-access';
@@ -133,7 +134,12 @@ test('private S3 reader accepts only the configured bucket host or an object key
   );
 });
 
-test('individual gallery guard accepts only its owner, privileged user or share password', async () => {
+test('individual gallery guard accepts only its active owner, privileged user or share password', async (t) => {
+  const activeOwner = { id: 7, email: 'owner@example.com', role: 'CLIENT', is_active: true, deleted_at: null, password_reset_required: false };
+  const originalLookup = prisma.user.findUnique;
+  const lookup = t.mock.fn(async () => activeOwner);
+  prisma.user.findUnique = lookup as unknown as typeof prisma.user.findUnique;
+  t.after(() => { prisma.user.findUnique = originalLookup; });
   process.env.JWT_SECRET = 'test-secret-at-least-32-characters-long';
   const gallery = {
     id: 42,
@@ -149,6 +155,10 @@ test('individual gallery guard accepts only its owner, privileged user or share 
     headers: { authorization: `Bearer ${ownerToken}` },
   });
   assert.equal((await authorizeIndividualGallery(ownerRequest, gallery)).reason, 'owner');
+  lookup.mock.mockImplementationOnce(async () => ({ ...activeOwner, is_active: false }));
+  assert.equal((await authorizeIndividualGallery(ownerRequest, gallery)).allowed, false);
+  lookup.mock.mockImplementationOnce(async () => ({ ...activeOwner, id: 8, email: 'other@example.com' }));
+  assert.equal((await authorizeIndividualGallery(ownerRequest, gallery)).allowed, false);
 
   const passwordRequest = new NextRequest('https://example.com/api/galleries/safe-code', {
     headers: { 'x-gallery-password': 'share-secret' },

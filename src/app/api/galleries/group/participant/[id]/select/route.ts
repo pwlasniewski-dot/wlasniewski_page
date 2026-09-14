@@ -199,7 +199,7 @@ export async function GET(
     }
 
     const paidOrders = await prisma.photoOrder.findMany({
-      where: { gallery_id: participant.gallery_id, participant_id, payment_status: 'paid' },
+      where: { gallery_id: participant.gallery_id, participant_id: participantId, payment_status: 'paid' },
       select: { photo_ids: true },
     });
     const paidExtraPhotoIds = new Set<number>();

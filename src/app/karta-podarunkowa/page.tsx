@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import GiftCard from '@/components/GiftCard';
@@ -43,6 +43,8 @@ const fallbackDescription = (theme: string) => {
 };
 
 export default function GiftCardShop() {
+    const [photoOfferLabel, setPhotoOfferLabel] = useState<string | null>(null);
+    const handleOfferAvailability = useCallback((available: boolean, label: string) => setPhotoOfferLabel(available ? label : null), []);
     const [cards, setCards] = useState<GiftCardProduct[]>([]);
     const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -104,9 +106,10 @@ export default function GiftCardShop() {
                             <span className="inline-flex items-center gap-2"><Check className="h-4 w-4" /> karta dostarczana e-mailem</span>
                             <span className="inline-flex items-center gap-2"><Check className="h-4 w-4" /> płatność online przez PayU</span>
                         </div>
-                        <a href="#wybierz-karte" className="mt-9 inline-flex rounded-full bg-stone-100 px-7 py-3.5 font-semibold text-stone-950 transition hover:bg-white">
-                            Wybierz kartę
-                        </a>
+                        <nav aria-label="Wybierz ofertę sklepu" className="mt-9 flex flex-wrap gap-3">
+                            <a href="#wybierz-karte" className="inline-flex min-h-12 items-center rounded-full bg-stone-100 px-7 py-3.5 font-semibold text-stone-950 transition hover:bg-white">Wybierz kartę</a>
+                            {photoOfferLabel && <a href="#produkty-fotograficzne" className="inline-flex min-h-12 items-center rounded-full border border-stone-300/50 px-7 py-3.5 font-semibold text-stone-100 transition hover:bg-white/10">{photoOfferLabel}</a>}
+                        </nav>
                     </div>
                     <div className="mx-auto w-full max-w-xl">
                         <GiftCard
@@ -121,6 +124,8 @@ export default function GiftCardShop() {
                     </div>
                 </div>
             </section>
+
+            <div className="mx-auto max-w-7xl px-6"><PhotoProductStorefront onAvailabilityChange={handleOfferAvailability} /></div>
 
             <section className="border-y border-white/10 bg-[#100d0b] px-6 py-16">
                 <div className="mx-auto max-w-6xl">
@@ -227,7 +232,6 @@ export default function GiftCardShop() {
                 </div>
             </section>
 
-            <div className="mx-auto max-w-7xl px-6"><PhotoProductStorefront /></div>
 
             <section className="border-t border-white/10 bg-[#100d0b] px-6 py-20">
                 <div className="mx-auto max-w-6xl">

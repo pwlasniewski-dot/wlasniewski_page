@@ -1,3 +1,53 @@
+## 2026-09-14 — decyzja o wdrożeniu produkcyjnym
+
+Użytkownik odmówił przekazania połączenia bazy QA do Netlify, a następnie wyraźnie polecił wdrożyć PR75 na produkcję i zapowiedział własne testy. Odmowa nadal obowiązuje: nie przekazywać GALLERY_QA_DATABASE_URL ani nie traktować wdrożenia jako zgody na ten transfer. Wcześniejsze wpisy o zgodzie na sekret są historyczne i nie obowiązują.
+
+W tej rundzie publikacji nie zmienia się kod, model danych ani reguły biznesowe względem sprawdzonego PR75. Produkcja korzysta z dotychczasowego DATABASE_URL i konfiguracji produkcyjnej. Nie uruchamia się trybu QA ani migracji danych.
+
+## 2026-09-14 — jeden zapis edytora oferty
+
+GalleryShopAdmin przechowuje szkice produktów razem ze stanem ustawień. Istniejący PUT sklepu obsługuje productEdits (id, data, expected) oraz opcjonalny config. Walidacja wszystkich pól i kontrola własności poprzedza atomowy zapis Serializable. Wspólny product-edit obsługuje także istniejący PATCH; brak migracji lub nowej zakładki. Produkt-only nie zapisuje ustawień, więc zachowuje dziedziczenie galerii. Porównanie pierwotnych danych wykrywa równoczesne zmiany produktu (409).
+
+## 2026-09-14 — kontekst QA podczas wykonywania funkcji
+
+Netlify przekazuje CONTEXT podczas builda, ale nie gwarantuje go w Functions. shop-qa.ts uwzględnia dodatkowy GALLERY_QA_CONTEXT, który musi być zapisany w tym samym zakresie konkretnej gałęzi co GALLERY_QA_DATABASE_URL. CONTEXT ma pierwszeństwo: production ignoruje bazę QA, branch-deploy nie staje się preview przez dodatkowy klucz. Brak obu oznaczeń nadal blokuje QA poza lokalnym development/test. Walidacja osobnego hosta (z normalizacją pooler) pozostaje aktywna. Szczegóły konfiguracji: NETLIFY_ENV_SETUP.md. Nie przenosi to sekretu do kodu ani nie potwierdza wykonanego zapisu w Netlify.
+
+## Zatwierdzony katalog testowy — 2026-09-14
+
+Aktualizacja dostępu: użytkownik zatwierdził zapis sekretu GALLERY_QA_DATABASE_URL w Netlify helpful-axolotl-cc1cbb, tylko dla fix/admin-unification-audit-20260914 w zakresach Builds i Functions; inne konteksty pozostają puste. Ta zgoda obowiązuje. Próba wznowienia pokazała ekran logowania Netlify; zapis ani redeploy nie zostały wykonane. Połączenie integracji Netlify zostało następnie potwierdzone, ale bieżąca sesja nie udostępniła jeszcze jej operacji; blokada dotyczy dostępności narzędzi, nie zgody użytkownika. Nie zmieniać mechanizmu izolacji ani produkcyjnego DATABASE_URL w celu obejścia braku dostępu.
+
+Po jednoznacznym zatwierdzeniu użytkownika wykonano transakcję wyłącznie na gałęzi Neon audit-admin-unification-20260914 (br-dawn-scene-aeokidlt): aktywne produkty 6–9 z pełnymi opisami i rzeczywistymi materiałami; stare 1/3/4/5 ukryte; wspólna oferta i galeria 26 mają aktualne ceny użytkownika 2,50/1,50 zł oraz dostawę 17/25 zł. Pierwszy rekord ustawień ma publiczny POS PayU 300746 w sandbox oraz callback do preview75. Produkcja została sprawdzona odczytowo: 6–9 nadal nieaktywne. Nie wykonano płatności ani nadania.
+
+Automatyczny przegląd ponownie odrzucił konkretną czynność: przekazanie uprzywilejowanego adresu połączenia tej bazy do Netlify, żądając osobnej zgody na ujawnienie tego połączenia i dokładny zakres gałęzi. Formularz anulowano bez zapisu. Wymagany zakres: Netlify helpful-axolotl-cc1cbb, sekret GALLERY_QA_DATABASE_URL, tylko fix/admin-unification-audit-20260914, Builds i Functions; puste wartości pozostałych kontekstów. Żaden sekret nie został zapisany w repozytorium. Preview nadal korzysta ze zwykłej bazy; nie można jeszcze wykonywać na nim testowej sprzedaży.
+
+## Odbiór preview — 2026-09-14
+
+Odbiór Netlify: flaga preview uwzględnia kontekst wdrożenia, nagłówki proxy oraz domenę przeglądarki. Jest informacją, nie mechanizmem autoryzacji. Brak tokenu Geowidget ma osobny komunikat. Istniejący storefront zgłasza dostępność i etykietę CTA z CMS do strony sklepu, bez drugiego zapytania katalogu; katalog jest bezpośrednio pod główną sekcją, przed listą kart.
+
+## 2026-09-14 — domknięcie wspólnego sklepu
+
+`shop-publication.ts` współdzieli reguły publikacji między CMS a istniejącym PUT galerii/default/shop. Jawne `publishSelected` wykonuje aktywację i zapis config w transakcji Serializable. Zwykły zapis nie zmienia aktywności produktów. `printQuantities` i `printUnitAmount` wyceniają progi; `PrintPriceTiers` przedstawia te same dane w ofercie i zakupie. Historyczna wycena kopiuje progi bez współdzielenia referencji.
+
+`inpost-points.ts` używa aktualnego autoryzowanego API Points i środowiska właściwego dla tokenu. Wyszukiwarka i weryfikacja przed płatnością korzystają z jednego adaptera. Token pozostaje na serwerze. `inpost-widget.ts` obsługuje także istniejącą nazwę NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN przez odczyt runtime, bez wbudowania wartości w bundle. Autoryzowany GET gallery-shop/integrations wykonuje wyłącznie odczyty InPost i OAuth PayU, limituje częstotliwość i zwraca jawną projekcję bez sekretów i danych organizacji.
+
+Opcjonalny GALLERY_QA_DATABASE_URL jest przeznaczony wyłącznie dla odizolowanej gałęzi preview. Produkcyjny kontekst ignoruje tę zmienną; ten sam host co DATABASE_URL jest odrzucany. W trybie QA maile są pomijane, a produkcyjne tworzenie zamówienia PayU oraz mutacje ShipX blokowane. Autoryzowany odczyt oferty zwraca preview/isolatedReview; panel jawnie informuje, czy podgląd używa zwykłej bazy, czy odizolowanej konfiguracji. Dane testowe zostały zapisane po uzyskaniu zgody; zapis zatwierdzonej zmiennej w Netlify nadal oczekuje na dostęp do hostingu.
+
+## Uzupełnienie audytu 2026-09-14
+
+Endpoint purchase-extras oczekuje params: Promise zgodnie z Next.js. Endpoint PDF wywołuje wspólny generator z includeSignatureSection=true, zachowuje prywatne przekierowanie podpisanego pliku, waliduje ID i koduje tytuł przez istniejący escapeHtml. Nie dodano alternatywnego generatora ani rejestru zamówień.
+
+Dalszy audyt wykrył realne błędy wykonania: GET wyborów rodzica odwoływał się do niezdefiniowanego participant_id, POST ZIP-a do correlationId zadeklarowanego tylko w GET, a null w dniu warsztatu przerywał kalendarz. Poprawiono zakresy zmiennych i walidację dni. tests/qa/gallery-operating-regressions.cjs wykonuje te endpointy (odczyt wyborów, utworzenie/reuse ZIP-a, brak HQ, uszkodzony harmonogram); wszystkie scenariusze przeszły.
+
+## 2026-09-14 — wspólna obsługa administratora
+
+Wspólna mapa src/lib/admin/navigation.ts służy menu i testom tras. session.ts obsługuje weryfikację oraz POST /api/auth/logout?scope=admin; brak scope nadal wylogowuje tylko klienta. Layout sprawdza sesję przy wejściu do chronionej części, API nadal autoryzuje każde żądanie. 5xx/offline nie kasują tożsamości. AbortController odrzuca spóźnione odpowiedzi.
+
+GalleryShopAdmin prowadzi do /admin/bookings/orders?gallery=ID. Istniejący mapper rozpoznaje snapshot zakupu, wspólna lista aktualizuje szczegóły po zapisie. InPost przekazuje tracking do formularza etapu, bez utożsamiania zakupu etykiety z wysłaniem paczki. Konta administratorów korzystają ze wspólnej blokady admin-accounts i ponownej weryfikacji aktora w transakcji.
+
+## 2026-09-14 — jedno miejsce obsługi zamówień
+
+Jeden punkt obsługi /admin/bookings/orders. API admin/orders rozpoznaje snapshot gallery_merchandise i zachowuje kwoty pozycji oraz dostawy. MerchandiseOrderDetails udostępnia produkcję, etapy i InPost w istniejących szczegółach. Stary adres gallery-orders przekierowuje. Bez migracji danych.
+
 ## 2026-09-14 — wspólne multimedia produktu
 
 Autoryzowany PATCH produktu zapisuje istniejące pola video_url i sample_pages. loadGalleryShop normalizuje listy i adres MP4; publicShopCatalog jawnie przekazuje te same pola. GalleryProductPreview renderuje je w adminie, sklepie i galerii, bez iframe, HTML producenta i nowych wywołań serwerowych do dostawcy.

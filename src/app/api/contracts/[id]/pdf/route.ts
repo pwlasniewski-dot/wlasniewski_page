@@ -6,6 +6,7 @@ import { isContractRecordOwner, isVerifiedAdminIdentity } from '@/lib/auth/docum
 import { getPrivateS3DownloadUrl } from '@/lib/storage/s3';
 import { revalidateActiveClient } from '@/lib/auth/active-client';
 import { isClientVisibleContractStatus } from '@/lib/contracts/status';
+import { escapeHtml } from '@/lib/security/output';
 
 export async function GET(
     request: NextRequest,
@@ -32,7 +33,10 @@ export async function GET(
         }
 
         const { id } = await params;
-        const contractId = parseInt(id);
+        const contractId = Number(id);
+        if (!Number.isSafeInteger(contractId) || contractId <= 0) {
+            return NextResponse.json({ error: 'Nieprawidłowe ID umowy' }, { status: 400 });
+        }
 
         const contract = await prisma.contract.findUnique({
             where: { id: contractId },
@@ -73,7 +77,7 @@ export async function GET(
         const isStandalonePdf = contract.pdf_url && 
             (contract.content?.startsWith('Umowa wgrana jako PDF') || !contract.content?.trim());
 
-        if (isStandalonePdf) {
+        if (isStandalonePdf && contract.pdf_url) {
             console.log(`[CONTRACT PDF API] Contract ${contractId} is standalone PDF — redirecting to original file`);
             return NextResponse.redirect(await getPrivateS3DownloadUrl(contract.pdf_url), { status: 302 });
         }
@@ -85,10 +89,7 @@ export async function GET(
 
             const modifiedContract = { ...contract, _footerNote: footerNote };
 
-            const clientName = (contract.offer?.template_data as any)?.contactName || contract.user?.name || undefined;
-            const eventDate = (contract.offer?.template_data as any)?.eventDate || undefined;
-
-            const pdfBuffer = await generateContractPDF(modifiedContract as any, clientName, eventDate);
+            const pdfBuffer = await generateContractPDF(modifiedContract, true);
             return new NextResponse(pdfBuffer as any, {
                 status: 200,
                 headers: {
@@ -104,7 +105,7 @@ export async function GET(
         }
 
         // No stored PDF: return a helpful HTML splash page
-        const contractTitle = contract.contract_number || `Umowa #${contract.id}`;
+        const contractTitle = escapeHtml(contract.contract_number || `Umowa #${contract.id}`);
 
         return new NextResponse(
             `<!DOCTYPE html>
