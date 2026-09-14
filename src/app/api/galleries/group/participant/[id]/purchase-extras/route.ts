@@ -55,7 +55,7 @@ function normalizeRequestedLines(body: any): GroupExtraPrintLine[] {
     return Array.from(aggregated.values());
   }
 
-  const photoIds = Array.isArray(body?.photo_ids)
+  const photoIds: number[] = Array.isArray(body?.photo_ids)
     ? body.photo_ids.map((id: any) => Number(id)).filter((id: number) => Number.isInteger(id) && id > 0)
     : [];
   const requestedPrintSize = String(body?.print_size || '').trim() || '10x15';
@@ -95,13 +95,15 @@ async function getGroupPrintPrices() {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  let participantIdRaw: string | undefined;
   try {
-    const participantId = parseInt(params.id, 10);
-    if (Number.isNaN(participantId)) {
+    participantIdRaw = (await params).id;
+    const participantId = Number(participantIdRaw);
+    if (!Number.isSafeInteger(participantId) || participantId <= 0) {
       await logSystem('WARN', 'BASKET', 'GROUP_EXTRA_PURCHASE_INVALID_PARTICIPANT_ID', {
-        participant_id_raw: params.id,
+        participant_id_raw: participantIdRaw,
       });
       return NextResponse.json({ error: 'Nieprawidłowe ID uczestnika' }, { status: 400 });
     }
@@ -373,7 +375,7 @@ export async function POST(
   } catch (error) {
     console.error('Extra purchase error:', error);
     await logSystem('ERROR', 'BASKET', 'GROUP_EXTRA_PURCHASE_FATAL_ERROR', {
-      participant_id_raw: params.id,
+      participant_id_raw: participantIdRaw,
       error: error instanceof Error ? error.message : String(error),
     });
     return NextResponse.json({ error: 'Nie udało się utworzyć zamówienia' }, { status: 500 });

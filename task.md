@@ -8,7 +8,10 @@
 - [x] Zabezpieczyć zarządzanie kontami administratorów przed utratą dostępu.
 - [x] Sprawdzić produkcyjne relacje, strukturę i historyczne potwierdzenia płatności wyłącznie SELECT.
 - [x] Przygotować naprawę NOT NULL na oddzielnej gałęzi Neon.
-- [ ] Końcowe testy, build i przegląd preview.
+- [x] Pierwsza runda: 326 testów jednostkowych, regresje admin/sklep, build 261/261 oraz wdrożenie preview PR #75.
+- [x] Naprawić i przetestować parametr zakupu odbitek oraz generator podpisanej umowy.
+- [x] Build po naprawie dokumentów/zakupu i przegląd zalogowanego preview wspólnych ekranów.
+- [ ] Odbiór wszystkich pozostałych formularzy, pełny typecheck oraz izolowana sprzedaż przed produkcją.
 - [ ] Osobny odbiór pełnej sprzedaży PayU/ShipX przed uruchomieniem oferty.
 
 ## 2026-09-14 — jedno miejsce obsługi zamówień

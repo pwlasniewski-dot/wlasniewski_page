@@ -1,5 +1,7 @@
 ## Uzupełnienie audytu 2026-09-14
 
+Endpoint purchase-extras oczekuje params: Promise zgodnie z Next.js. Endpoint PDF wywołuje wspólny generator z includeSignatureSection=true, zachowuje prywatne przekierowanie podpisanego pliku, waliduje ID i koduje tytuł przez istniejący escapeHtml. Nie dodano alternatywnego generatora ani rejestru zamówień.
+
 Dalszy audyt wykrył realne błędy wykonania: GET wyborów rodzica odwoływał się do niezdefiniowanego participant_id, POST ZIP-a do correlationId zadeklarowanego tylko w GET, a null w dniu warsztatu przerywał kalendarz. Poprawiono zakresy zmiennych i walidację dni. tests/qa/gallery-operating-regressions.cjs wykonuje te endpointy (odczyt wyborów, utworzenie/reuse ZIP-a, brak HQ, uszkodzony harmonogram); wszystkie scenariusze przeszły.
 
 ## 2026-09-14 — wspólna obsługa administratora

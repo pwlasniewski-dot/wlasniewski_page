@@ -1,5 +1,7 @@
 ## Uzupełnienie audytu 2026-09-14
 
+tests/qa/admin-document-purchase.cjs: sześć scenariuszy wykonujących rzeczywiste endpointy — podpis bez nazwy klienta, pierwszeństwo oryginalnego PDF, odmowa obcej umowy/szkicu, bezpieczny tytuł, asynchroniczny parametr zakupu i wycena z ustawień, odmowa obcego uczestnika. Netlify wdrożyło pierwszy commit PR #75. Po osobnym logowaniu sprawdzono w przeglądarce: jedną pozycję Zamówienia, przekierowanie starego adresu, zachowanie filtrów po odświeżeniu, kontekst galerii 26, szczegóły historycznego zakupu z 21/21 wczytanymi miniaturami, jeden kalendarz oraz blokadę samousunięcia konta. Nie zapisywano danych klientów podczas tego przeglądu.
+
 Dalszy audyt wykrył realne błędy wykonania: GET wyborów rodzica odwoływał się do niezdefiniowanego participant_id, POST ZIP-a do correlationId zadeklarowanego tylko w GET, a null w dniu warsztatu przerywał kalendarz. Poprawiono zakresy zmiennych i walidację dni. tests/qa/gallery-operating-regressions.cjs wykonuje te endpointy (odczyt wyborów, utworzenie/reuse ZIP-a, brak HQ, uszkodzony harmonogram); wszystkie scenariusze przeszły.
 
 ## 2026-09-14 — wspólna obsługa administratora

@@ -1,5 +1,7 @@
 ## Uzupełnienie audytu 2026-09-14
 
+Podpisana umowa dołącza sekcję potwierdzenia niezależnie od obecności nazwy klienta; przechowywany podpisany PDF nadal ma pierwszeństwo. Dodatkowe odbitki rodzica odczytują asynchroniczny parametr uczestnika i wycenę z zapisanych ustawień. Błędny lub obcy identyfikator nie tworzy zamówienia.
+
 Dalszy audyt wykrył realne błędy wykonania: GET wyborów rodzica odwoływał się do niezdefiniowanego participant_id, POST ZIP-a do correlationId zadeklarowanego tylko w GET, a null w dniu warsztatu przerywał kalendarz. Poprawiono zakresy zmiennych i walidację dni. tests/qa/gallery-operating-regressions.cjs wykonuje te endpointy (odczyt wyborów, utworzenie/reuse ZIP-a, brak HQ, uszkodzony harmonogram); wszystkie scenariusze przeszły.
 
 ## 2026-09-14 — wspólna obsługa administratora

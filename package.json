@@ -24,7 +24,7 @@
     "test:public-guide": "playwright test --config=playwright.public-guide.config.ts",
     "test:homepage": "playwright test --config=playwright.homepage.config.ts",
     "test:gallery-shop": "node --import tsx --test tests/unit/gallery-shop-domain.test.ts && node tests/qa/gallery-shop-rounds.cjs && node tests/qa/gallery-shop-server.cjs && node tests/qa/gallery-shipment-server.cjs && node tests/qa/inpost-picker.cjs && node tests/qa/nphoto-offer-import.cjs && node tests/qa/nphoto-offer-ui.cjs && node tests/qa/nphoto-launch-catalog.cjs && node tests/qa/gallery-public-offer.cjs && node tests/qa/gallery-storefront-ui.cjs && node tests/qa/gallery-product-media.cjs && node tests/qa/unified-merchandise-orders.cjs && node tests/qa/unified-merchandise-ui.cjs",
-    "test:admin": "node --import tsx --test tests/unit/admin-navigation.test.ts && node tests/qa/admin-session.cjs && node tests/qa/admin-accounts.cjs && node tests/qa/unified-merchandise-orders.cjs && node tests/qa/unified-merchandise-ui.cjs && node tests/qa/admin-orders-view.cjs && node tests/qa/gallery-operating-regressions.cjs"
+    "test:admin": "node --import tsx --test tests/unit/admin-navigation.test.ts && node tests/qa/admin-session.cjs && node tests/qa/admin-accounts.cjs && node tests/qa/unified-merchandise-orders.cjs && node tests/qa/unified-merchandise-ui.cjs && node tests/qa/admin-orders-view.cjs && node tests/qa/gallery-operating-regressions.cjs && node tests/qa/admin-document-purchase.cjs"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"

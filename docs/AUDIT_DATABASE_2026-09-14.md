@@ -40,3 +40,11 @@ Pełny typecheck nadal zgłasza zastane problemy m.in. w edytorze strony główn
 ## Błędy wykonania ujawnione przez typecheck
 
 Dalszy audyt wykrył realne błędy wykonania: GET wyborów rodzica odwoływał się do niezdefiniowanego participant_id, POST ZIP-a do correlationId zadeklarowanego tylko w GET, a null w dniu warsztatu przerywał kalendarz. Poprawiono zakresy zmiennych i walidację dni. tests/qa/gallery-operating-regressions.cjs wykonuje te endpointy (odczyt wyborów, utworzenie/reuse ZIP-a, brak HQ, uszkodzony harmonogram); wszystkie scenariusze przeszły.
+
+## Dodatkowe regresje dokumentów i zakupów
+
+Podpisana umowa dołącza sekcję potwierdzenia niezależnie od obecności nazwy klienta; przechowywany podpisany PDF nadal ma pierwszeństwo. Dodatkowe odbitki rodzica odczytują asynchroniczny parametr uczestnika i wycenę z zapisanych ustawień. Błędny lub obcy identyfikator nie tworzy zamówienia.
+
+tests/qa/admin-document-purchase.cjs: sześć scenariuszy wykonujących rzeczywiste endpointy — podpis bez nazwy klienta, pierwszeństwo oryginalnego PDF, odmowa obcej umowy/szkicu, bezpieczny tytuł, asynchroniczny parametr zakupu i wycena z ustawień, odmowa obcego uczestnika. Netlify wdrożyło pierwszy commit PR #75. Zalogowany preview przeszedł kontrolę jednej nawigacji Zamówienia, starego przekierowania, filtrów i kontekstu galerii, istniejących szczegółów ze zdjęciami oraz blokady samousunięcia konta. Nie wykonywano zakupów ani zmian danych klienta w tej weryfikacji.
+
+Podczas przeglądu znaleziono błędny skrót pulpitu: Zarządzaj terminami prowadził do kodów rabatowych. Poprawiono cel na wspólny kalendarz. Końcowy typecheck zgłasza 106 diagnostyk w 28 plikach (obejmuje także wygenerowane typy tras i testy). Nie oznacza to 106 potwierdzonych awarii wykonania. Pełny typecheck nadal nie przechodzi; raport i PR pozostają jawne co do niezweryfikowanych pozostałych formularzy.

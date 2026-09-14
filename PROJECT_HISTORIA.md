@@ -567,6 +567,12 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### 2026-09-14 — dalsze regresje zakupu i dokumentów
+
+Przegląd zalogowanego preview potwierdził wspólną listę, filtry, kontekst galerii, historyczne zdjęcia i ochronę kont. Ujawnił także błędny skrót pulpitu Zarządzaj terminami do kodów rabatowych; naprawiono link do istniejącego kalendarza.
+
+Endpoint purchase-extras oczekuje params: Promise zgodnie z Next.js. Endpoint PDF wywołuje wspólny generator z includeSignatureSection=true, zachowuje prywatne przekierowanie podpisanego pliku, waliduje ID i koduje tytuł przez istniejący escapeHtml. Nie dodano alternatywnego generatora ani rejestru zamówień. Dodano sześć testów wykonania obejmujących autoryzację, wycenę i źródło podpisanego dokumentu. Wszystkie przechodzą.
+
 Dalszy audyt wykrył realne błędy wykonania: GET wyborów rodzica odwoływał się do niezdefiniowanego participant_id, POST ZIP-a do correlationId zadeklarowanego tylko w GET, a null w dniu warsztatu przerywał kalendarz. Poprawiono zakresy zmiennych i walidację dni. tests/qa/gallery-operating-regressions.cjs wykonuje te endpointy (odczyt wyborów, utworzenie/reuse ZIP-a, brak HQ, uszkodzony harmonogram); wszystkie scenariusze przeszły.
 
 
