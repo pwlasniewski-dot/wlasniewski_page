@@ -17,11 +17,13 @@ export function createPortalEventReporter(options: ReporterOptions) {
     let windowStartedAt: number | undefined;
     let windowCount = 0;
     let inFlight = 0;
+    let accessRejected = false;
 
     return {
         track(observation: PortalObservation): void {
             // Diagnostics must never throw into navigation, payment, or data loading.
             try {
+                if (accessRejected) return;
                 const now = (options.now || Date.now)();
                 if (windowStartedAt === undefined || now - windowStartedAt >= 60_000) {
                     windowStartedAt = now;
@@ -57,6 +59,10 @@ export function createPortalEventReporter(options: ReporterOptions) {
                         credentials: 'omit',
                         keepalive: true,
                         signal: controller.signal,
+                    }).then(response => {
+                        // A new authenticated page/session creates a new reporter.
+                        // Never flood a denied endpoint while the client keeps navigating.
+                        if (response.status === 401 || response.status === 403) accessRejected = true;
                     }).catch(() => undefined).finally(() => {
                         clearTimeout(timeout);
                         inFlight -= 1;

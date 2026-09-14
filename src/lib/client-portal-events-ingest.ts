@@ -1,6 +1,8 @@
 import { parsePortalClientEvent, PORTAL_EVENT_MAX_BYTES, type PortalClientEvent } from './client-portal-events';
 
 type Dependencies = {
+    /** Exact public origins supplied by server configuration, never request forwarding headers. */
+    trustedOrigins?: readonly string[];
     authenticate: () => Promise<number | null>;
     rateLimit: (clientId: number) => Promise<boolean>;
     store: (clientId: number, event: PortalClientEvent) => Promise<void>;
@@ -35,7 +37,14 @@ export async function ingestPortalEvent(request: Request, dependencies: Dependen
     try {
         // Only our same-origin authenticated browser. Never accept a target client ID in the body.
         const origin = request.headers.get('origin');
-        if (!origin || origin !== new URL(request.url).origin || request.headers.get('sec-fetch-site') === 'cross-site') return 403;
+        const fetchSite = request.headers.get('sec-fetch-site');
+        if (!origin || origin === 'null' || (fetchSite && fetchSite !== 'same-origin')) return 403;
+        let parsedOrigin: URL;
+        try { parsedOrigin = new URL(origin); } catch { return 403; }
+        if (!['https:', 'http:'].includes(parsedOrigin.protocol) || parsedOrigin.origin !== origin) return 403;
+        // A reverse proxy may reconstruct request.url with an internal hostname/protocol.
+        // Keep the exact Origin check, additionally allowing configured public origins.
+        if (origin !== new URL(request.url).origin && !dependencies.trustedOrigins?.includes(origin)) return 403;
         if (request.headers.get('content-type')?.split(';')[0].trim() !== 'application/json') return 415;
         const clientId = await dependencies.authenticate();
         if (!clientId) return 401;

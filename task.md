@@ -1,3 +1,12 @@
+## 2026-09-14 — poprawka zdarzeń panelu i wyboru odbitek po wdrożeniu
+
+- [x] Odczytać przyczyny 403 w kodzie i rozbieżne formaty/ceny dostawy w bazie.
+- [x] Przygotować ograniczoną poprawkę origin i zatrzymanie reportera po odmowie dostępu.
+- [x] Dodać regresje wykonywane przed każdym buildem oraz snapshot korekty konfiguracji.
+- [ ] Potwierdzić build preview i test:portal-events.
+- [ ] Wykonać i odczytać kontrolowaną korektę formatów/dostawy galerii 26.
+- [ ] Wdrożyć hotfix produkcyjny i potwierdzić dokładny commit w Netlify.
+
 ## 2026-09-14 — decyzja o wdrożeniu produkcyjnym
 
 Użytkownik odmówił przekazania połączenia bazy QA do Netlify, a następnie wyraźnie polecił wdrożyć PR75 na produkcję i zapowiedział własne testy. Odmowa nadal obowiązuje: nie przekazywać GALLERY_QA_DATABASE_URL ani nie traktować wdrożenia jako zgody na ten transfer. Wcześniejsze wpisy o zgodzie na sekret są historyczne i nie obowiązują.

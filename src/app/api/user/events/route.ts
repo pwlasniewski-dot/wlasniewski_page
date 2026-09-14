@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSiteUrl } from '@/lib/site-url';
 import { extractToken, verifyToken } from '@/lib/auth/jwt';
 import { revalidateActiveClient } from '@/lib/auth/active-client';
 import { consumeAnalyticsRateLimit } from '@/lib/analytics/ingestGuard';
@@ -10,6 +11,8 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
     const status = await ingestPortalEvent(request, {
+        trustedOrigins: [getSiteUrl(), process.env.DEPLOY_PRIME_URL, process.env.DEPLOY_URL]
+            .flatMap(value => { try { return value ? [new URL(value).origin] : []; } catch { return []; } }),
         authenticate: async () => {
             const token = extractToken(request.headers.get('authorization')) || request.cookies.get('client_token')?.value;
             const decoded = token ? await verifyToken(token) : null;

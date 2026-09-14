@@ -1,0 +1,80 @@
+{
+  "purpose": "Repair mismatched public/gallery print IDs and approved shipping rates; no customer or order data.",
+  "settingKey": "gallery_shop_26",
+  "before": {
+    "version": 1,
+    "enabled": true,
+    "title": "Zamów zdjęcia i produkty",
+    "introduction": "",
+    "buttonLabel": "Przejdź do zakupu zdjęć",
+    "formats": [
+      {
+        "id": "format-1789309501532",
+        "label": "10x15",
+        "widthMm": 100,
+        "heightMm": 150,
+        "unitAmount": 150,
+        "active": true,
+        "paper": "mat"
+      },
+      {
+        "id": "format-1789309520184",
+        "label": "15x21",
+        "widthMm": 150,
+        "heightMm": 210,
+        "unitAmount": 250,
+        "active": true,
+        "paper": "mat"
+      }
+    ],
+    "productRules": {},
+    "delivery": {
+      "locker": {
+        "enabled": true,
+        "amount": 1500
+      },
+      "courier": {
+        "enabled": true,
+        "amount": 2000
+      }
+    }
+  },
+  "after": {
+    "version": 1,
+    "enabled": true,
+    "title": "Zamów zdjęcia i produkty",
+    "introduction": "",
+    "buttonLabel": "Przejdź do zakupu zdjęć",
+    "formats": [
+      {
+        "id": "nphoto-15x21-silk",
+        "label": "15×21 cm",
+        "widthMm": 152,
+        "heightMm": 210,
+        "paper": "Fuji Silk",
+        "unitAmount": 250,
+        "active": true
+      },
+      {
+        "id": "format-1789376111663",
+        "label": "10x15",
+        "widthMm": 150,
+        "heightMm": 100,
+        "unitAmount": 150,
+        "active": true,
+        "paper": "Fuji Silk"
+      }
+    ],
+    "productRules": {},
+    "delivery": {
+      "locker": {
+        "enabled": true,
+        "amount": 1700
+      },
+      "courier": {
+        "enabled": true,
+        "amount": 2500
+      }
+    }
+  }
+}

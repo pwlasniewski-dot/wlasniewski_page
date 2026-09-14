@@ -62,3 +62,23 @@ test('three independent journeys preserve visit and step evidence without claimi
     }
     assert.equal(writes.length, 27);
 });
+
+test('configured public origin survives proxy URL rewriting without trusting forwarded hosts', async () => {
+    const { writes, dependencies } = setup();
+    const proxied = (origin: string, extra: Record<string, string> = {}) => new Request('http://localhost:3000/api/user/events', {
+        method: 'POST', headers: { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json', ...extra },
+        body: JSON.stringify(event),
+    });
+    const configured = { ...dependencies, trustedOrigins: ['https://wlasniewski.pl'] };
+    assert.equal(await ingestPortalEvent(proxied('https://wlasniewski.pl'), dependencies), 403);
+    assert.equal(await ingestPortalEvent(proxied('https://wlasniewski.pl'), configured), 204);
+    assert.equal(writes.length, 1);
+    for (const origin of ['https://attacker.test', 'https://wlasniewski.pl.attacker.test', 'https://wlasniewski.pl/private', 'https://wlasniewski.pl/', 'null', '', 'not a URL']) {
+        assert.equal(await ingestPortalEvent(proxied(origin, { host: 'attacker.test', 'x-forwarded-host': 'attacker.test', 'x-forwarded-proto': 'https' }), configured), 403, origin);
+    }
+    for (const fetchSite of ['cross-site', 'same-site', 'none']) {
+        assert.equal(await ingestPortalEvent(proxied('https://wlasniewski.pl', { 'sec-fetch-site': fetchSite }), configured), 403);
+    }
+    assert.equal(await ingestPortalEvent(proxied('https://wlasniewski.pl'), { ...configured, authenticate: async () => null }), 401);
+    assert.equal(writes.length, 1);
+});
