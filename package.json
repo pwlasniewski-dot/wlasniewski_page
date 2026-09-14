@@ -23,7 +23,7 @@
     "test:preparation-guide": "playwright test --config=playwright.preparation.config.ts",
     "test:public-guide": "playwright test --config=playwright.public-guide.config.ts",
     "test:homepage": "playwright test --config=playwright.homepage.config.ts",
-    "test:gallery-shop": "node --import tsx --test tests/unit/gallery-shop-domain.test.ts && node tests/qa/gallery-shop-rounds.cjs && node tests/qa/gallery-shop-server.cjs && node tests/qa/gallery-shipment-server.cjs && node tests/qa/inpost-picker.cjs && node tests/qa/nphoto-offer-import.cjs && node tests/qa/nphoto-offer-ui.cjs && node tests/qa/nphoto-launch-catalog.cjs && node tests/qa/gallery-public-offer.cjs && node tests/qa/gallery-storefront-ui.cjs"
+    "test:gallery-shop": "node --import tsx --test tests/unit/gallery-shop-domain.test.ts && node tests/qa/gallery-shop-rounds.cjs && node tests/qa/gallery-shop-server.cjs && node tests/qa/gallery-shipment-server.cjs && node tests/qa/inpost-picker.cjs && node tests/qa/nphoto-offer-import.cjs && node tests/qa/nphoto-offer-ui.cjs && node tests/qa/nphoto-launch-catalog.cjs && node tests/qa/gallery-public-offer.cjs && node tests/qa/gallery-storefront-ui.cjs && node tests/qa/gallery-product-media.cjs"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"

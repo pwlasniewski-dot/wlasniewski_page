@@ -1,3 +1,7 @@
+## 2026-09-14 — wspólne multimedia produktu
+
+Autoryzowany PATCH produktu zapisuje istniejące pola video_url i sample_pages. loadGalleryShop normalizuje listy i adres MP4; publicShopCatalog jawnie przekazuje te same pola. GalleryProductPreview renderuje je w adminie, sklepie i galerii, bez iframe, HTML producenta i nowych wywołań serwerowych do dostawcy.
+
 ## 2026-09-09 — Mobilne oglądanie zdjęć
 
 PhotoLightbox (istniejący YARL + Zoom/Counter) wspólny dla galerii; preload=1 i kontrolowane źródła. PortfolioContactGate + event visibility sterują nakładkami. Home streamuje sekcje pod Suspense po CMS hero, ceny pozostają request-time; struktura CMS/ustawienia cache z istniejącym revalidatePath.
@@ -424,3 +428,5 @@ System jest oceniony jako **100% Ready for Production**. Wszystkie krytyczne bł
 
 *Opracowane przez: Senior Architect Antigravity*
 *Ostatnia aktualizacja: 2026-02-19*
+
+Media: tworzenie folderu używa pola tekstowego w panelu zamiast systemowego prompt; folder zostaje utrwalony po dodaniu plików.

@@ -473,11 +473,15 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
         toast.success('Zapisano opisy ALT');
     };
 
+    const [newFolderName, setNewFolderName] = useState('');
+    const [creatingFolder, setCreatingFolder] = useState(false);
     const handleCreateFolder = () => {
-        const name = prompt("Podaj nazwę nowego folderu:");
+        const name = newFolderName;
         if (name && name.trim()) {
             const cleanName = name.trim();
             setCurrentFolder(cleanName);
+            setCreatingFolder(false);
+            setNewFolderName('');
 
             // If folder doesn't exist in list, add it visually so we can drop to it
             if (!folders.some(f => f.name === cleanName)) {
@@ -520,10 +524,15 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                 <div className="hidden sm:flex sm:w-16 md:w-64 bg-zinc-950 border-r border-zinc-800 flex-col transition-all duration-300">
                     <div className="p-4 border-b border-zinc-800 flex justify-center md:justify-between items-center">
                         <span className="font-medium text-zinc-400 hidden md:block">Foldery</span>
-                        <button onClick={handleCreateFolder} className="p-1 hover:bg-zinc-800 rounded" title="Nowy folder">
+                        <button onClick={() => setCreatingFolder(true)} className="p-1 hover:bg-zinc-800 rounded" title="Nowy folder">
                             <FolderPlus className="w-5 h-5 text-gold-500" />
                         </button>
                     </div>
+                    {creatingFolder && <div className="space-y-2 border-b border-zinc-800 p-3">
+                        <label className="block text-xs text-zinc-300">Nazwa nowego folderu<input autoFocus maxLength={100} value={newFolderName} onChange={e => setNewFolderName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleCreateFolder(); } if (e.key === 'Escape') setCreatingFolder(false); }} className="mt-1 w-full rounded border border-zinc-600 bg-zinc-900 p-2 text-white" /></label>
+                        <button type="button" disabled={!newFolderName.trim()} onClick={handleCreateFolder} className="min-h-11 rounded bg-gold-500 px-3 text-sm text-black disabled:opacity-40">Utwórz folder</button>
+                        <button type="button" onClick={() => setCreatingFolder(false)} className="min-h-11 px-3 text-sm text-zinc-300">Anuluj</button>
+                    </div>}
                     <div className="flex-1 overflow-y-auto p-2 space-y-1">
                         <button
                             onClick={() => setCurrentFolder('')}

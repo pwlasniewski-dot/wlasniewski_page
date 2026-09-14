@@ -61,7 +61,7 @@ export function publicShopCatalog(config: ShopConfig, activeSharedProducts: Shop
         const product = activeSharedProducts.find(p => p.id === id && p.price > 0 && (!p.deliveryMethods || p.deliveryMethods.some(method => config.delivery[method].enabled)));
         // Do not expose supplier IDs, URLs, timestamps or internal catalogue fields.
         return product ? [{ id: product.id, title: product.title, description: product.description,
-            price: product.price, image_url: product.image_url, preview_images: product.preview_images || [],
+            price: product.price, image_url: product.image_url, preview_images: product.preview_images || [], video_url: product.video_url || null, sample_pages: product.sample_pages || [],
             product_type: product.product_type, minPhotos: product.minPhotos, maxPhotos: product.maxPhotos,
             ...(product.deliveryMethods ? { deliveryMethods: [...product.deliveryMethods] } : {}) }] : [];
     });

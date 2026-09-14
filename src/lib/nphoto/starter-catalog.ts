@@ -7,22 +7,24 @@
 export const NPHOTO_MEDIA_SOURCE = 'https://nphoto.com/pl/strefa-klienta/zdjecia-do-pobrania';
 export type NphotoStarter = {
  key:string; title:string; category:string; description:string; source:string;
- minPhotos:number; maxPhotos:number; image:string; previewImages?:readonly string[];
+ minPhotos:number; maxPhotos:number; image:string; previewImages?:readonly string[]; videoUrl?:string;
  printFormatIds?:readonly string[]; deliveryMethods?:Array<'locker'|'courier'>;
 };
 export const nphotoLaunchKeys = ['odbitki-15x21','harmonijka','fotoalbum-pro','lite-album','fotoobraz'] as const;
 export const nphotoStarters:readonly NphotoStarter[] = [
  { key:'harmonijka', title:'Harmonijka nPhoto 8×8 cm', category:'accordion',
   description:'Mały, rozkładany album w aksamitnej oprawie V6. Wariant oferty: 8×8 cm, 12 stron. Pierwsze wybrane zdjęcie rozpoczyna projekt. Projekt przygotowuje fotograf.',
+  videoUrl:'https://info.nphoto.com/hubfs/Patryk/Video%20Produktowe%20strefa%20klienta/harmonijka.mp4',
   source:'https://nphoto.com/pl/harmonijka', minPhotos:12, maxPhotos:12,
   image:'https://nphoto.com/sites/default/files/styles/max_1920_1080/public/2023-06/HARMONIJKA%20V6.jpg?itok=AtolNYO_' },
  { key:'fotoalbum-pro', title:'Fotoalbum PRO nPhoto 20×20 cm', category:'album',
   description:'Fotoalbum otwierany na płasko, ze sztywnymi rozkładówkami. Wariant oferty: 20×20 cm, 10 rozkładówek, papier Fuji Silk, aksamitna oprawa V11. Wybierz zdjęcia do projektu przygotowywanego przez fotografa.',
+  videoUrl:'https://info.nphoto.com/hubfs/nPhoto%20Videos/albumy.mp4',
   source:'https://nphoto.com/pl/fotoalbumy/fotoalbum-pro', minPhotos:20, maxPhotos:20,
   image:'https://nphoto.com/sites/default/files/styles/max_1920_1080/public/2023-06/FOTOALBUM%20PRO%20V11.jpg?itok=Kdm_g_2R' },
  { key:'lite-album', title:'Lite Album nPhoto 20×20 cm', category:'album',
-  description:'Lekki album otwierany na płasko. Wariant startowy oferty: 20×20 cm, 5 rozkładówek (10 stron), papier Fuji Lustre, szara tkanina A30. Projekt przygotowuje fotograf z wybranych zdjęć. Zdjęcie prezentuje przykładowe realizacje; zawartość albumu zostanie przygotowana z Twoich fotografii.',
-  source:'https://nphoto.com/pl/fotoalbumy/lite-album', minPhotos:10, maxPhotos:10,
+  description:'Lekki album otwierany na płasko. Wariant startowy oferty: 20×20 cm, 8 rozkładówek (16 stron), papier Fuji Lustre, szara tkanina A30. Projekt przygotowuje fotograf z wybranych zdjęć. Zdjęcie prezentuje przykładowe realizacje; zawartość albumu zostanie przygotowana z Twoich fotografii.',
+  source:'https://nphoto.com/pl/fotoalbumy/lite-album', minPhotos:16, maxPhotos:16,
   image:'https://nphoto.com/sites/default/files/styles/galeria_thumb_w830/public/2021-02/Lite%20Album%20Classic_1.jpg?itok=LbU7nPBm',
   previewImages:['https://nphoto.com/sites/default/files/styles/galeria_thumb_w830/public/2021-02/Lite%20Album%20Classic_1.jpg?itok=LbU7nPBm','https://nphoto.com/sites/default/files/styles/galeria_thumb_w830/public/2021-02/Lite%20Albumy%20rozkladowka.jpg?itok=OygozR5c'] },
  { key:'fotoobraz', title:'Fotoobraz nPhoto Wall Decor 40×60 cm', category:'wall-decor',
