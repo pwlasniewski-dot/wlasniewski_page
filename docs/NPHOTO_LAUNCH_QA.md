@@ -1,3 +1,11 @@
+## 2026-09-14 — decyzja o wdrożeniu produkcyjnym
+
+Użytkownik odmówił przekazania połączenia bazy QA do Netlify, a następnie wyraźnie polecił wdrożyć PR75 na produkcję i zapowiedział własne testy. Odmowa nadal obowiązuje: nie przekazywać GALLERY_QA_DATABASE_URL ani nie traktować wdrożenia jako zgody na ten transfer. Wcześniejsze wpisy o zgodzie na sekret są historyczne i nie obowiązują.
+
+Do wdrożenia kierowany jest przetestowany kod PR75: wspólny zapis oferty, jedna obsługa Rezerwacje → Zamówienia oraz poprawki autoryzacji Points i odczytu istniejącego tokenu Geowidget. Podgląd c74ac0a uzyskał Netlify ready, skan 1904 plików bez wykrytych sekretów; wcześniejszy build Node 22 i 51 grup regresji zapisu przeszły. Typecheck ma 106 wcześniejszych diagnostyk. Pełna płatność i nadanie nie zostały potwierdzone. Zgoda na publikację nie jest zaliczeniem tych testów.
+
+Po publikacji potwierdzić dokładny commit i stan produkcyjnego deployu, dostępność sklepu i publicznego API Points oraz mapy. W panelu: zmiana widoczności → wspólny zapis → odświeżenie → oferta klienta; zamówienie obsługiwać przez Rezerwacje → Zamówienia. Nadal wymagają sprawdzenia dane nadawcy InPost oraz płatność i etykieta. Nie wykonywać płatnych operacji w ramach technicznego sprawdzenia wdrożenia. Nie kopiować testowego POS PayU ani katalogu QA do produkcji automatycznie; dotychczasowe lokalne nadpisania cen pozostają danymi CMS.
+
 ## Netlify po autoryzacji — 2026-09-14
 
 Natywne logowanie CLI zakończone statusem authorized. Projekt potwierdzony przez Netlify API: helpful-axolotl-cc1cbb, e310a9fc-8bd6-4819-8533-91a3d83ea491. Zapisano i ponownie odczytano wyłącznie niesekretny GALLERY_QA_CONTEXT=deploy-preview: Builds/Functions, context=branch, context_parameter=fix/admin-unification-audit-20260914, bez innych wartości. Polecenie env:set nie rozpoznało projektu; niesekretny znacznik zapisano udokumentowanym createEnvVars przez CLI.

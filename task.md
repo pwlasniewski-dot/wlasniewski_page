@@ -1,3 +1,13 @@
+## 2026-09-14 — decyzja o wdrożeniu produkcyjnym
+
+Użytkownik odmówił przekazania połączenia bazy QA do Netlify, a następnie wyraźnie polecił wdrożyć PR75 na produkcję i zapowiedział własne testy. Odmowa nadal obowiązuje: nie przekazywać GALLERY_QA_DATABASE_URL ani nie traktować wdrożenia jako zgody na ten transfer. Wcześniejsze wpisy o zgodzie na sekret są historyczne i nie obowiązują.
+
+- [x] Potwierdzić zgodę na produkcyjne wdrożenie i odmowę transferu sekretu QA.
+- [x] Potwierdzić brak konfliktu z main oraz poprawny deploy preview c74ac0a.
+- [ ] Scalić PR75 i potwierdzić publikację właściwego commitu w Netlify.
+- [ ] Sprawdzić publiczny sklep, Points i konfigurację mapy po wdrożeniu.
+- [ ] Odbiór właściciela: zapis widoczności, zakup, płatność i obsługa wysyłki.
+
 ## 2026-09-14 — Netlify po logowaniu
 
 - [x] Potwierdzić autoryzację CLI oraz tożsamość projektu.

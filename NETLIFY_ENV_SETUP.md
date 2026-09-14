@@ -1,3 +1,9 @@
+## 2026-09-14 — decyzja o wdrożeniu produkcyjnym
+
+Użytkownik odmówił przekazania połączenia bazy QA do Netlify, a następnie wyraźnie polecił wdrożyć PR75 na produkcję i zapowiedział własne testy. Odmowa nadal obowiązuje: nie przekazywać GALLERY_QA_DATABASE_URL ani nie traktować wdrożenia jako zgody na ten transfer. Wcześniejsze wpisy o zgodzie na sekret są historyczne i nie obowiązują.
+
+Poniższa instrukcja podłączenia QA pozostaje opisem technicznym, którego obecnie nie wolno wykonywać. Produkcyjne wdrożenie używa istniejących sekretów produkcyjnych; nie wymaga dodatkowego połączenia bazy QA.
+
 # Konfiguracja zmiennych środowiskowych w Netlify
 
 Stan 2026-09-14: CLI jest zalogowane. GALLERY_QA_CONTEXT zapisano i odczytano w opisanym niżej zakresie. Transfer GALLERY_QA_DATABASE_URL został odrzucony przez automatyczny przegląd za brak jawnej zgody na ujawnienie połączenia z hasłem; klucz nadal nie istnieje. Nie ponawiano transferu inną drogą. Nie trzeba ponownie logować CLI. Szczegóły i różnica nazw tokenu mapy na produkcji: docs/NPHOTO_LAUNCH_QA.md.

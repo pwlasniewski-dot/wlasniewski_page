@@ -567,6 +567,10 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### 2026-09-14 — zgoda na wdrożenie PR75 do produkcji
+
+Użytkownik polecił opublikować poprawki i zadeklarował testowanie produkcji. Odmowa przekazania sekretu QA nadal obowiązuje; wcześniejsza zgoda na transfer została cofnięta. Podgląd c74ac0a: Netlify ready, bez wykrytych sekretów, brak konfliktów z main 750b325. Publikacja zachowuje istniejącą bazę i jej konfigurację; nie wykonuje migracji, płatności ani nadania. Pełny odbiór sprzedaży pozostaje otwarty. Środowisko wykonawcze tej sesji jest niedostępne; wdrożenie wykonujemy przez połączone GitHub/Netlify, na wcześniej sprawdzonym kodzie. Stan publikacji zostanie potwierdzony w PR.
+
 ### 2026-09-14 — autoryzacja Netlify i potwierdzenie przyczyny InPost na produkcji
 
 CLI authorized; GALLERY_QA_CONTEXT zapisany wyłącznie dla gałęzi QA (Builds/Functions). Automatyczny przegląd ponownie odrzucił transfer połączenia z hasłem; odczyt potwierdził brak sekretu QA. Nie ponawiano inną drogą. Produkcja 750b325 ma starszy kod mapy (inna nazwa zmiennej) i Points (bez Authorization), mimo wcześniejszego zapisu zmiennych Netlify. Poprawki pozostają w PR75. Nie wykonano transakcji ani produkcyjnego deployu.

@@ -1,3 +1,9 @@
+## 2026-09-14 — decyzja o wdrożeniu produkcyjnym
+
+Użytkownik odmówił przekazania połączenia bazy QA do Netlify, a następnie wyraźnie polecił wdrożyć PR75 na produkcję i zapowiedział własne testy. Odmowa nadal obowiązuje: nie przekazywać GALLERY_QA_DATABASE_URL ani nie traktować wdrożenia jako zgody na ten transfer. Wcześniejsze wpisy o zgodzie na sekret są historyczne i nie obowiązują.
+
+W tej rundzie publikacji nie zmienia się kod, model danych ani reguły biznesowe względem sprawdzonego PR75. Produkcja korzysta z dotychczasowego DATABASE_URL i konfiguracji produkcyjnej. Nie uruchamia się trybu QA ani migracji danych.
+
 ## 2026-09-14 — zapis produktów i widoczności
 
 Jeden przycisk „Zapisz ustawienia sklepu” zapisuje wszystkie zmienione produkty, ich media, ceny, widoczność oraz limity i ustawienia oferty. Zmiana samego checkboxa uaktywnia zapis; cofnięcie do zapisanej wartości usuwa szkic. Nie ma osobnych przycisków zapisu każdej karty. Komunikaty wyniku pozostają przy przycisku. Nieudany zapis zachowuje formularz; potwierdzony zapis z błędem późniejszego odczytu jest wyraźnie opisany i nie pozostawia nieaktualnego szkicu do ponownego wysłania.

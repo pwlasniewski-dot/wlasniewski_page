@@ -1,3 +1,9 @@
+## 2026-09-14 — decyzja o wdrożeniu produkcyjnym
+
+Użytkownik odmówił przekazania połączenia bazy QA do Netlify, a następnie wyraźnie polecił wdrożyć PR75 na produkcję i zapowiedział własne testy. Odmowa nadal obowiązuje: nie przekazywać GALLERY_QA_DATABASE_URL ani nie traktować wdrożenia jako zgody na ten transfer. Wcześniejsze wpisy o zgodzie na sekret są historyczne i nie obowiązują.
+
+W tej rundzie publikacji nie zmienia się kod, model danych ani reguły biznesowe względem sprawdzonego PR75. Produkcja korzysta z dotychczasowego DATABASE_URL i konfiguracji produkcyjnej. Nie uruchamia się trybu QA ani migracji danych.
+
 ## 2026-09-14 — jeden zapis edytora oferty
 
 GalleryShopAdmin przechowuje szkice produktów razem ze stanem ustawień. Istniejący PUT sklepu obsługuje productEdits (id, data, expected) oraz opcjonalny config. Walidacja wszystkich pól i kontrola własności poprzedza atomowy zapis Serializable. Wspólny product-edit obsługuje także istniejący PATCH; brak migracji lub nowej zakładki. Produkt-only nie zapisuje ustawień, więc zachowuje dziedziczenie galerii. Porównanie pierwotnych danych wykrywa równoczesne zmiany produktu (409).
