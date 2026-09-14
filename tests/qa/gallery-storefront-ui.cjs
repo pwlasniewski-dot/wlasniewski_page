@@ -210,6 +210,35 @@ async function clickLink(link) { link.addEventListener('click', event => event.p
     assert.ok(document.body.textContent.includes('Brak wspólnego sposobu dostawy')); assert.ok(button(/Zamawiam i płacę/).disabled);
     assert.ok(requests.every(request => request.method === 'GET'));
   });
+  await check('Storefront: production gallery repair restores public print intent, cart prices and 17/25 delivery', async () => {
+    const snapshot = require('../../docs/fixes/gallery-26-shop-2026-09-14.json');
+    await fresh('/galeria/own-gallery-code?shopFormat=nphoto-15x21-silk');
+    clientCatalog = { ...clone(snapshot.before), galleryId: 26, products: [] };
+    await mount(Client, { endpoint: '/api/galleries/26/shop', photos });
+    assert.ok(document.body.textContent.includes('Wybrany produkt nie jest dostępny w tej galerii.'));
+    for (const scenario of [
+      { formatId: 'nphoto-15x21-silk', count: 1, total: '19,50' },
+      { formatId: 'format-1789376111663', count: 1, total: '18,50' },
+      { formatId: 'nphoto-15x21-silk', count: 2, total: '22,00' },
+    ]) {
+      await fresh('/galeria/own-gallery-code?shopFormat=' + scenario.formatId);
+      clientCatalog = { ...clone(snapshot.after), galleryId: 26, products: [] };
+      await mount(Client, { endpoint: '/api/galleries/26/shop', photos });
+      assert.ok(!document.body.textContent.includes('Wybrany produkt nie jest dostępny w tej galerii.'));
+      assert.equal(field('Format dla zaznaczonych').value, scenario.formatId);
+      for (let id = 1; id <= scenario.count; id++) await click(field('Zaznacz zdjęcie ' + id));
+      await click(button('Dodaj zaznaczone do koszyka'));
+      const cart = JSON.parse(sessionStorage.getItem('gallery-shop:/api/galleries/26/shop'));
+      assert.equal(cart.length, scenario.count);
+      assert.ok(cart.every(line => line.formatId === scenario.formatId));
+      await click(button('Dostawa i podsumowanie'));
+      const delivery = field('Sposób dostawy');
+      assert.ok(delivery.textContent.includes('17,00'));
+      assert.ok(delivery.textContent.includes('25,00'));
+      assert.ok(button(new RegExp('Zamawiam i płacę ' + scenario.total)));
+      assert.ok(requests.every(request => request.method === 'GET'));
+    }
+  });
   console.log(`${h.log.length} grup testów storefront: PASS`);
   await reset();
 })().catch(error => { console.error(error); process.exitCode = 1; });

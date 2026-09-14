@@ -567,6 +567,14 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### 2026-09-14 — hotfix po produkcyjnym odbiorze sklepu
+
+Zrzuty produkcji pokazały POST /api/user/events 403 oraz niedostępny wybór nphoto-15x21-silk w galerii 26. Odczyt bazy potwierdził lokalne identyfikatory formatu i stawki 15/20 zł przy wspólnej ofercie 17/25 zł. Przygotowano ograniczoną korektę formatów i dostawy tej galerii z kontrolą poprzedniej wartości; ceny odbitek 2,50/1,50 zł pozostają te same. Snapshot przed/po: docs/fixes/gallery-26-shop-2026-09-14.json. Historyczne zamówienia nie są modyfikowane.
+
+Kontrola Origin uwzględnia dokładne publiczne adresy pochodzące z konfiguracji serwera, gdy reverse proxy zmienia request.url. Nie ufa Host/x-forwarded-host ani adresowi przesłanemu w treści. Nadal wymaga poprawnego Origin, JSON, aktywnego klienta i limitu zdarzeń; cross-site i same-site odrzuca. Reporter zatrzymuje kolejne zdarzenia po 401/403 do nowej sesji zamiast powtarzać błędy podczas nawigacji. Nie zmienia uprawnień koszyka, galerii ani płatności.
+
+test:portal-events wykonuje dotychczasowe i nowe testy ingest/reporter/QA oraz rzeczywisty POST route z adresem wewnętrznym i konfiguracją publiczną. Transport, autoryzacja i magazyn są podstawione; prawdziwy guard, walidacja i obsługa odpowiedzi są wykonywane. Test stanowi etap npm run build, więc Netlify sprawdzi go przed publikacją. Aktualne środowisko terminala/przeglądarki jest niedostępne; nie deklarujemy nowego testu interaktywnego. Wynik builda i korekty bazy będzie zapisany w PR. Nie przekazujemy sekretu QA.
+
 ### 2026-09-14 — zgoda na wdrożenie PR75 do produkcji
 
 Użytkownik polecił opublikować poprawki i zadeklarował testowanie produkcji. Odmowa przekazania sekretu QA nadal obowiązuje; wcześniejsza zgoda na transfer została cofnięta. Podgląd c74ac0a: Netlify ready, bez wykrytych sekretów, brak konfliktów z main 750b325. Publikacja zachowuje istniejącą bazę i jej konfigurację; nie wykonuje migracji, płatności ani nadania. Pełny odbiór sprzedaży pozostaje otwarty. Środowisko wykonawcze tej sesji jest niedostępne; wdrożenie wykonujemy przez połączone GitHub/Netlify, na wcześniej sprawdzonym kodzie. Stan publikacji zostanie potwierdzony w PR.

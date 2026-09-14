@@ -133,3 +133,20 @@ test('response diagnostics contain status and valid correlation only, never serv
     assert.deepEqual(portalResponseDiagnostics(new Response(null, { status: 500, headers: { 'X-Correlation-ID': CORRELATION_ID } }), { caseCode: 'ABCDEF12', error: 'PRIVATE_ERROR' }), { httpStatus: 500, correlationId: CORRELATION_ID });
     assert.deepEqual(portalResponseDiagnostics(new Response(null, { status: 500, headers: { 'X-Correlation-ID': 'PRIVATE_TOKEN' } }), { caseCode: CORRELATION_ID }), { httpStatus: 500, correlationId: CORRELATION_ID });
 });
+
+test('authentication/origin denial stops later events until a new authenticated reporter is created', async () => {
+    for (const status of [401, 403]) {
+        let calls = 0;
+        const fetcher: typeof fetch = async () => { calls++; return new Response(null, { status }); };
+        const reporter = createPortalEventReporter({ token: 'session-one', createSessionId: () => SESSION_ID, fetcher });
+        reporter.track({ event: 'portal_opened', section: 'overview' });
+        await setImmediate();
+        for (let index = 0; index < 20; index++) reporter.track({ event: 'tab_opened', section: 'sessions' });
+        await setImmediate();
+        assert.equal(calls, 1, String(status));
+        const freshReporter = createPortalEventReporter({ token: 'session-two', createSessionId: () => SESSION_ID, fetcher });
+        freshReporter.track({ event: 'portal_opened', section: 'overview' });
+        await setImmediate();
+        assert.equal(calls, 2);
+    }
+});

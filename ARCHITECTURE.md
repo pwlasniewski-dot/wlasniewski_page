@@ -1,3 +1,11 @@
+## 2026-09-14 — poprawka zdarzeń panelu i wyboru odbitek po wdrożeniu
+
+Zrzuty produkcji pokazały POST /api/user/events 403 oraz niedostępny wybór nphoto-15x21-silk w galerii 26. Odczyt bazy potwierdził lokalne identyfikatory formatu i stawki 15/20 zł przy wspólnej ofercie 17/25 zł. Przygotowano ograniczoną korektę formatów i dostawy tej galerii z kontrolą poprzedniej wartości; ceny odbitek 2,50/1,50 zł pozostają te same. Snapshot przed/po: docs/fixes/gallery-26-shop-2026-09-14.json. Historyczne zamówienia nie są modyfikowane.
+
+Kontrola Origin uwzględnia dokładne publiczne adresy pochodzące z konfiguracji serwera, gdy reverse proxy zmienia request.url. Nie ufa Host/x-forwarded-host ani adresowi przesłanemu w treści. Nadal wymaga poprawnego Origin, JSON, aktywnego klienta i limitu zdarzeń; cross-site i same-site odrzuca. Reporter zatrzymuje kolejne zdarzenia po 401/403 do nowej sesji zamiast powtarzać błędy podczas nawigacji. Nie zmienia uprawnień koszyka, galerii ani płatności.
+
+test:portal-events wykonuje dotychczasowe i nowe testy ingest/reporter/QA oraz rzeczywisty POST route z adresem wewnętrznym i konfiguracją publiczną. Transport, autoryzacja i magazyn są podstawione; prawdziwy guard, walidacja i obsługa odpowiedzi są wykonywane. Test stanowi etap npm run build, więc Netlify sprawdzi go przed publikacją. Aktualne środowisko terminala/przeglądarki jest niedostępne; nie deklarujemy nowego testu interaktywnego. Wynik builda i korekty bazy będzie zapisany w PR. Nie przekazujemy sekretu QA.
+
 ## 2026-09-14 — decyzja o wdrożeniu produkcyjnym
 
 Użytkownik odmówił przekazania połączenia bazy QA do Netlify, a następnie wyraźnie polecił wdrożyć PR75 na produkcję i zapowiedział własne testy. Odmowa nadal obowiązuje: nie przekazywać GALLERY_QA_DATABASE_URL ani nie traktować wdrożenia jako zgody na ten transfer. Wcześniejsze wpisy o zgodzie na sekret są historyczne i nie obowiązują.
