@@ -1,0 +1,133 @@
+{
+  "status": "Proponowane ustawienia do zatwierdzenia po teście na osobnej bazie. Plik nie jest wykonywany automatycznie.",
+  "config": {
+    "buttonLabel": "Przejdź do zakupu zdjęć",
+    "delivery": {
+      "courier": {
+        "amount": 2500,
+        "enabled": true
+      },
+      "locker": {
+        "amount": 1700,
+        "enabled": true
+      }
+    },
+    "enabled": true,
+    "formats": [
+      {
+        "active": true,
+        "heightMm": 210,
+        "id": "nphoto-15x21-silk",
+        "label": "15×21 cm",
+        "paper": "Fuji Silk",
+        "priceTiers": [
+          {
+            "minQuantity": 3,
+            "unitAmount": 247
+          },
+          {
+            "minQuantity": 6,
+            "unitAmount": 157
+          },
+          {
+            "minQuantity": 100,
+            "unitAmount": 140
+          }
+        ],
+        "unitAmount": 317,
+        "widthMm": 152
+      }
+    ],
+    "introduction": "Wybierz odbitki na papierze Fuji Silk lub pamiątkę nPhoto. Zaznacz zdjęcia, dobierz produkt i sprawdź pełną cenę z dostawą w jednym koszyku. Projekt albumu przygotowuje fotograf.",
+    "productRules": {
+      "6": {
+        "maxPhotos": 12,
+        "minPhotos": 12
+      },
+      "7": {
+        "maxPhotos": 20,
+        "minPhotos": 20
+      },
+      "8": {
+        "maxPhotos": 16,
+        "minPhotos": 16
+      },
+      "9": {
+        "deliveryMethods": [
+          "courier"
+        ],
+        "maxPhotos": 1,
+        "minPhotos": 1
+      }
+    },
+    "publicOffer": {
+      "buttonLabel": "Wybierz zdjęcia",
+      "emptyMessage": "Twoje galerie pojawią się tutaj, gdy fotograf je udostępni. Do zamówienia potrzebujesz zdjęć z własnej sesji.",
+      "enabled": true,
+      "formatIds": [
+        "nphoto-15x21-silk"
+      ],
+      "introduction": "Fotografie, do których chce się wracać. Odbitki, harmonijka, albumy PRO i Lite oraz obraz na płótnie — wybierz formę, a potem zdjęcia ze swojej galerii. Każda karta pokazuje konkretny wariant, cenę i materiały producenta.",
+      "layout": "cards",
+      "printImageAlt": "Odbitki fotograficzne",
+      "printImageUrl": "https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com/1789366998116-2c47d133-6e6e-429f-abb5-e412dde21f8d.webp",
+      "productIds": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "title": "Twoje fotografie. Pięknie oprawione."
+    },
+    "title": "Twoje zdjęcia w pięknej oprawie",
+    "version": 1
+  },
+  "products": [
+    {
+      "id": 6,
+      "title": "Harmonijka nPhoto 8×8 cm",
+      "price": 4154,
+      "is_active": true,
+      "description": "Mała pamiątka, którą możesz mieć zawsze blisko. Harmonijka nPhoto rozkłada się w opowieść z Twoich zdjęć i sprawdza się także jako prezent dla bliskich.\n\nW cenie: format 8×8 cm, 12 stron, aksamitna oprawa V6 — Ciemny szmaragd. Wybierz 12 fotografii i ustaw ich kolejność; pierwsza rozpocznie projekt. Układ przygotuje fotograf.\n\nZdjęcia i film pokazują przykładowe realizacje producenta. Twój produkt powstanie z fotografii wybranych w galerii. Cena dotyczy jednej harmonijki; dostawę wybierzesz w koszyku.",
+      "image_url": "https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com/1789367002004-daf37ec8-74fb-4f64-b1dc-862d6bceed1a.webp",
+      "preview_images": [],
+      "video_url": "https://info.nphoto.com/hubfs/Patryk/Video%20Produktowe%20strefa%20klienta/harmonijka.mp4",
+      "sample_pages": []
+    },
+    {
+      "id": 7,
+      "title": "Fotoalbum PRO nPhoto 20×20 cm",
+      "price": 25770,
+      "is_active": true,
+      "description": "Twoja historia na sztywnych rozkładówkach, otwieranych na płasko. Fotoalbum PRO pozwala oglądać zdjęcia na całej szerokości otwartej książki.\n\nW cenie: format 20×20 cm, 10 rozkładówek (20 stron), papier Fuji Silk i aksamitna oprawa V11 — Pudrowy róż. Wybierz 20 fotografii i uporządkuj je w swojej opowieści. Fotograf przygotuje układ albumu.\n\nZdjęcia i film producenta prezentują konstrukcję oraz przykładowe realizacje. Projekt Twojego albumu powstaje z wybranych zdjęć; fotografie modeli nie są częścią zamówienia. Cena dotyczy jednego albumu; dostawa jest doliczana w koszyku.",
+      "image_url": "https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com/1789367005618-7853e16c-b89a-43c5-a80f-555678387b2f.webp",
+      "preview_images": [],
+      "video_url": "https://info.nphoto.com/hubfs/nPhoto%20Videos/albumy.mp4",
+      "sample_pages": []
+    },
+    {
+      "id": 8,
+      "title": "Lite Album nPhoto 20×20 cm",
+      "price": 14059,
+      "is_active": true,
+      "description": "Lekki album na wspomnienia z rodzinnej sesji, wakacji lub ważnego dnia. Otwiera się na płasko i mieści Twoje ulubione fotografie w poręcznym formacie.\n\nW cenie: format 20×20 cm, 8 rozkładówek (16 stron), papier Fuji Lustre i szara tkanina A30 — Delikatny popiel. Wybierz 16 zdjęć, ustaw kolejność i wskaż zdjęcie główne. Układ przygotowuje fotograf.\n\nZdjęcia produktu i wnętrza prezentują przykładowe realizacje nPhoto. Twój album otrzyma projekt z fotografii wybranych w galerii. Cena dotyczy jednego albumu; dostawę wybierzesz w koszyku.",
+      "image_url": "https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com/1789367008532-aa17cbc3-8711-42b4-97a1-23f7fee49eac.webp",
+      "preview_images": [],
+      "video_url": null,
+      "sample_pages": [
+        "https://nphoto.com/sites/default/files/styles/galeria_thumb_w830/public/2021-02/Lite%20Albumy%20rozkladowka.jpg?itok=OygozR5c"
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Fotoobraz nPhoto Wall Decor 40×60 cm",
+      "price": 11924,
+      "is_active": true,
+      "description": "Jedna fotografia, która staje się częścią Twojego domu. Fotoobraz Wall Decor Canvas to zdjęcie wydrukowane na płótnie i naciągnięte na sosnową ramę.\n\nW cenie: format 40×60 cm, rama o grubości 2 cm i zadrukowane krawędzie. Wybierz jedną fotografię. Fotograf przygotuje kadr do formatu obrazu, uwzględniając boki płótna.\n\nZdjęcia i film pokazują przykładowe fotoobrazy nPhoto; Twój egzemplarz powstanie z wybranego zdjęcia. Ze względu na gabaryt ten wariant wysyłamy kurierem: 25 zł. Cena produktu nie obejmuje dostawy.",
+      "image_url": "https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com/1789367011507-3da55563-3224-4bb5-9ae2-734e016535af.webp",
+      "preview_images": [],
+      "video_url": "https://info.nphoto.com/hubfs/Video%20produktowe%20-%20KOLEKCJA%20SZKOLNA/Canvas%201_pl.mp4",
+      "sample_pages": []
+    }
+  ]
+}

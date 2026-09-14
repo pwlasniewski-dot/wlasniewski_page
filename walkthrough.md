@@ -1,3 +1,13 @@
+Wyniki domknięcia: test:gallery-shop PASS (także realny React z progami po zmianie ilości i publikacja); test:admin PASS; jednostkowe 328 + osobny test izolacji PASS. Transport dostawców i baza w testach są podstawione. Build końcowy i preview sprawdzane osobno.
+
+## 2026-09-14 — odbiór widoczności, cen i integracji
+
+Potwierdzono SELECT i przeglądem strony preview: oba przełączniki były włączone, ale wszystkie cztery wybrane produkty pozostały szkicami; odbitki miały 0 zł i były nieaktywne. Dwa wcześniejsze aktywne produkty nie należały do publicznego wyboru. Stąd pusty katalog i mylący status w nagłówku. Naprawę komunikatu oraz atomową publikację sprawdza tests/qa/shop-launch-readiness.cjs.
+
+Odbiór po wdrożeniu preview: otworzyć wspólną ofertę, sprawdzić komunikat pustego katalogu i przycisk aktywacji. Nie klikać publikacji w preview połączonym z produkcyjną bazą bez uzgodnionego uruchomienia oferty. Nowe progi sprawdzić na 2, 3, 5, 6 i 100 odbitkach, także z różnych zdjęć. Sprawdzić panel połączeń oraz wybór punktu przed płatnością.
+
+Automatyczna kontrola odrzuciła otwarcie edytora produkcyjnego DATABASE_URL oraz osobną transakcję konfigurującą testową bazę i publiczny POS sandbox PayU. Nie wykonano tych zapisów. Nie wykonano rzeczywistej płatności, utworzenia etykiety ani zamówienia w nPhoto. Docelowe ustawienia są zapisane do przeglądu w docs/NPHOTO_LAUNCH_PRESET.json; nie wykonują się automatycznie.
+
 ## Uzupełnienie audytu 2026-09-14
 
 tests/qa/admin-document-purchase.cjs: sześć scenariuszy wykonujących rzeczywiste endpointy — podpis bez nazwy klienta, pierwszeństwo oryginalnego PDF, odmowa obcej umowy/szkicu, bezpieczny tytuł, asynchroniczny parametr zakupu i wycena z ustawień, odmowa obcego uczestnika. Netlify wdrożyło pierwszy commit PR #75. Po osobnym logowaniu sprawdzono w przeglądarce: jedną pozycję Zamówienia, przekierowanie starego adresu, zachowanie filtrów po odświeżeniu, kontekst galerii 26, szczegóły historycznego zakupu z 21/21 wczytanymi miniaturami, jeden kalendarz oraz blokadę samousunięcia konta. Nie zapisywano danych klientów podczas tego przeglądu.

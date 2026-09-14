@@ -2,6 +2,7 @@ import prisma from '@/lib/db/prisma';
 import { headers } from "next/headers";
 import { PAYU_ORDER_VALIDITY_SECONDS } from '@/lib/paymentPolicy';
 import { resolvePayUNotifyUrl } from '@/lib/payments/payuNotification';
+import { isShopQa } from '@/lib/shop-qa';
 
 interface PayUSettings {
     merchantPosId: string;
@@ -43,15 +44,31 @@ async function getAccessToken(settings: PayUSettings): Promise<string> {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: body.toString(),
+        signal: AbortSignal.timeout(15000),
+        redirect: 'error',
+        cache: 'no-store',
     });
 
     if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`PayU Auth Failed: ${response.status} ${errorText}`);
+        throw new Error(`PayU Auth Failed: HTTP ${response.status}`);
     }
 
     const data = await response.json();
+    if (typeof data.access_token !== 'string' || !data.access_token) throw new Error('PayU returned no access token');
     return data.access_token;
+}
+
+/** Non-billable check: authenticates the configured POS without creating an order. */
+export async function checkPayUConnection() {
+ const settings = await getPayUSettings();
+ if (!settings) return {connected:false, environment:null, message:'Uzupełnij dane punktu płatności w istniejących ustawieniach PayU.'};
+ if (!['secure','sandbox'].includes(settings.environment)) return {connected:false, environment:null, message:'Wybierz poprawne środowisko PayU.'};
+ try {
+  await getAccessToken(settings);
+  return {connected:true, environment:settings.environment === 'secure' ? 'production' : 'sandbox', message:'PayU potwierdził dostęp do punktu płatności. Test nie obciąża konta.'};
+ } catch {
+  return {connected:false, environment:settings.environment === 'secure' ? 'production' : 'sandbox', message:'PayU nie potwierdził połączenia. Sprawdź dane punktu płatności i spróbuj ponownie.'};
+ }
 }
 
 /**
@@ -92,6 +109,7 @@ export interface OrderRequest {
 export async function createPayUOrder(orderData: OrderRequest, clientIp: string) {
     const settings = await getPayUSettings();
     if (!settings) throw new Error("PayU settings not configured");
+    if (isShopQa() && settings.environment !== 'sandbox') throw new Error('Review checkout requires PayU sandbox.');
 
     const token = await getAccessToken(settings);
 

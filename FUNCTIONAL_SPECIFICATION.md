@@ -1,3 +1,9 @@
+## 2026-09-14 — publikacja oferty, ceny ilościowe i sprawdzenie połączeń
+
+Wspólna oferta pokazuje rzeczywistą liczbę pozycji wybranych do sklepu. Włączone przełączniki przy samych szkicach pokazują jednoznaczny komunikat pustej oferty. Przycisk zbiorczej publikacji aktywuje wybrane, wycenione produkty z opisem, zdjęciem i zgodną dostawą oraz zapisuje oba przełączniki w jednej transakcji. Nie publikuje nieoznaczonych ani prywatnych produktów; odbitki bez ceny pozostają ukryte. Zamówienia nadal obsługuje Rezerwacje → Zamówienia. Na preview panel informuje o współdzieleniu bazy i wpływie zapisów na działającą ofertę.
+
+Format odbitki może mieć edytowalne progi ilościowe. Sztuki tego samego formatu liczą się łącznie dla różnych zdjęć; cena za sztukę jest wspólna w prezentacji, koszyku i wycenie serwerowej. Zamówienie zachowuje niezmienny snapshot zastosowanej ceny. Sekcja dostawy zawiera nieodpłatne sprawdzenie dostępu do organizacji i usług InPost, API Points, konfiguracji mapy oraz logowania OAuth PayU. Sprawdzenie dostępu nie potwierdza zakupu etykiety ani zakończonej płatności.
+
 ## Uzupełnienie audytu 2026-09-14
 
 Podpisana umowa dołącza sekcję potwierdzenia niezależnie od obecności nazwy klienta; przechowywany podpisany PDF nadal ma pierwszeństwo. Dodatkowe odbitki rodzica odczytują asynchroniczny parametr uczestnika i wycenę z zapisanych ustawień. Błędny lub obcy identyfikator nie tworzy zamówienia.

@@ -1,7 +1,8 @@
 import { PrismaClient } from '@prisma/client';
+import { shopDatabaseUrl } from '@/lib/shop-qa';
 
 const prismaClientSingleton = () => {
-    const databaseUrl = process.env.DATABASE_URL;
+    const databaseUrl = shopDatabaseUrl();
 
     return new PrismaClient({
         log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],

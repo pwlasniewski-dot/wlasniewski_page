@@ -1,7 +1,8 @@
 /** Shared private-gallery merchandise contract. Amounts are integer grosze. */
 import { validatePublicOffer, type PublicShopOffer } from './public-offer';
 import { availableShopDelivery } from './shop-delivery';
-export type PrintFormat = { id: string; label: string; widthMm: number; heightMm: number; unitAmount: number; active: boolean; paper: string };
+export type PrintPriceTier = { minQuantity: number; unitAmount: number };
+export type PrintFormat = { id: string; label: string; widthMm: number; heightMm: number; unitAmount: number; active: boolean; paper: string; priceTiers?: PrintPriceTier[] };
 export type ProductShopRule = {minPhotos: number; maxPhotos: number; deliveryMethods?: ('locker' | 'courier')[]};
 export type ShopProduct = { id: number; title: string; description: string | null; price: number; image_url: string | null; preview_images?: string[]; video_url?: string | null; sample_pages?: string[]; product_type: string | null; minPhotos: number; maxPhotos: number; deliveryMethods?: ('locker' | 'courier')[]; nphoto_product_id?: string | null; nphoto_url?: string | null };
 export type ShopConfig = { version: 1; enabled: boolean; title: string; introduction: string; buttonLabel: string; formats: PrintFormat[]; productRules: Record<string, ProductShopRule>; delivery: {locker: {enabled: boolean; amount: number}; courier: {enabled: boolean; amount: number}}; publicOffer?: PublicShopOffer };
@@ -23,6 +24,15 @@ export function validateShopConfig(input: unknown): ShopConfig {
  check(Array.isArray(c.formats) && c.formats.length <= 100, 'Nieprawidłowe formaty.');
  const ids = new Set<string>();
  for (const f of c.formats) {check(f && typeof f.id === 'string' && /^[a-zA-Z0-9_-]{1,60}$/.test(f.id) && !ids.has(f.id), 'Format musi mieć unikalny identyfikator.'); ids.add(f.id); check(typeof f.label === 'string' && f.label.trim() && f.label.length <= 160 && typeof f.paper === 'string' && f.paper.length <= 100 && typeof f.active === 'boolean', 'Uzupełnij nazwę formatu i papier.'); check(integer(f.widthMm,1,2000) && integer(f.heightMm,1,2000) && integer(f.unitAmount,f.active ? 1 : 0,10000000), 'Nieprawidłowy rozmiar lub cena formatu.');}
+ for (const f of c.formats) {
+  if (f.priceTiers === undefined) continue;
+  check(Array.isArray(f.priceTiers) && f.priceTiers.length <= 10, 'Format może mieć najwyżej 10 progów cenowych.');
+  let previousQuantity = 1; let previousAmount = f.unitAmount;
+  for (const tier of f.priceTiers) {
+   check(tier && integer(tier.minQuantity,previousQuantity+1,49500) && integer(tier.unitAmount,1,previousAmount), 'Progi ilości muszą rosnąć, a ceny za sztukę być dodatnie i nie rosnąć.');
+   previousQuantity = tier.minQuantity; previousAmount = tier.unitAmount;
+  }
+ }
  check(c.productRules && typeof c.productRules === 'object' && !Array.isArray(c.productRules), 'Nieprawidłowe reguły produktów.');
  for (const [id, r] of Object.entries(c.productRules)) {
   check(/^\d+$/.test(id) && r && integer(r.minPhotos,1,500) && integer(r.maxPhotos,r.minPhotos,500), 'Nieprawidłowa liczba zdjęć produktu.');
@@ -34,10 +44,22 @@ export function validateShopConfig(input: unknown): ShopConfig {
  return JSON.parse(JSON.stringify(c));
 }
 export function readShopConfig(raw: string | null | undefined): ShopConfig {try {return validateShopConfig(JSON.parse(raw || ''));} catch {return defaultShopConfig();}}
+/** The same format is priced by its total quantity across all selected photographs. */
+export function printUnitAmount(format: PrintFormat | undefined, quantity: number): number {
+ if (!format) return 0;
+ return (format.priceTiers || []).reduce((amount, tier) => quantity >= tier.minQuantity ? tier.unitAmount : amount, format.unitAmount);
+}
+export function printQuantities(lines: ShopLine[]): Record<string, number> {
+ return lines.reduce<Record<string, number>>((totals, line) => {
+  if (line?.kind === 'print' && integer(line.quantity,1,99)) totals[line.formatId] = (totals[line.formatId] || 0) + line.quantity;
+  return totals;
+ }, Object.create(null));
+}
 export function priceShopCart(catalog: ShopCatalog, input: unknown, deliveryInput: unknown, allowedPhotoIds: number[]) {
  check(catalog.enabled, 'Sklep jest obecnie niedostępny.');
  check(Array.isArray(input) && input.length > 0 && input.length <= 500, 'Koszyk musi zawierać od 1 do 500 pozycji.');
  const allowed = new Set(allowedPhotoIds); const ids = new Set<string>();
+ const quantities = printQuantities(input);
  const photo = (id: number) => check(integer(id,1,Number.MAX_SAFE_INTEGER) && allowed.has(id), 'Zdjęcie nie jest dostępne w tej galerii.');
  const lines: PricedShopLine[] = input.map((line: ShopLine) => {
   check(line && typeof line.id === 'string' && line.id.length > 0 && line.id.length <= 128 && !ids.has(line.id), 'Nieprawidłowa pozycja koszyka.'); ids.add(line.id);
@@ -46,7 +68,8 @@ export function priceShopCart(catalog: ShopCatalog, input: unknown, deliveryInpu
    photo(line.photoId); const format = catalog.formats.find(f=>f.id===line.formatId && f.active); check(format, 'Wybrany format nie jest dostępny.');
    check(line.confirmed === true, 'Zatwierdź podgląd odbitki.'); const c = line.crop;
    check(c && c.mode === 'fit' && Number.isFinite(c.x) && c.x >= 0 && c.x <= 100 && Number.isFinite(c.y) && c.y >= 0 && c.y <= 100 && Number.isFinite(c.zoom) && c.zoom >= 1 && c.zoom <= 3, 'Nieprawidłowy kadr.');
-   return {id:line.id,kind:'print',photoId:line.photoId,formatId:format.id,quantity:line.quantity,crop:{...c},confirmed:true,title:format.label,unitAmount:format.unitAmount,lineTotal:format.unitAmount*line.quantity,format:{...format}};
+   const unitAmount = printUnitAmount(format, quantities[format.id]);
+   return {id:line.id,kind:'print',photoId:line.photoId,formatId:format.id,quantity:line.quantity,crop:{...c},confirmed:true,title:format.label,unitAmount,lineTotal:unitAmount*line.quantity,format:JSON.parse(JSON.stringify(format))};
   }
   check(line.kind === 'product', 'Nieznany rodzaj pozycji.');
   const product = catalog.products.find(p=>p.id===line.productId); check(product, 'Produkt nie jest dostępny.');

@@ -4,6 +4,8 @@ Panel przy opłaconym zamówieniu obsługuje rzeczywiste wywołania ShipX: utwor
 
 ## Konfiguracja serwera
 
+- `INPOST_POINTS_TOKEN`: opcjonalny osobny token Points; domyślnie adapter używa INPOST_API_TOKEN z uprawnieniem API Points.
+- `INPOST_GEOWIDGET_TOKEN`: publiczny token mapy ograniczony do domen; wspierana również istniejąca nazwa NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN. Token ShipX nigdy nie jest zamiennikiem tokenu mapy.
 - `INPOST_API_TOKEN`: token odpowiedniego środowiska, wyłącznie po stronie serwera.
 - `INPOST_ORGANIZATION_ID`: ID organizacji ShipX.
 - `INPOST_ENVIRONMENT`: `sandbox` (domyślnie) lub `production`.
@@ -40,3 +42,9 @@ Przed uruchomieniem produkcji wykonać zatwierdzoną próbę sandbox: autoryzacj
 - [Dispatch Order — odbiór kuriera](https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/18153482)
 - [Proces integracji](https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/47415642)
 - [FAQ i środowisko sandbox](https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/53706753)
+
+## Sprawdzenie bez opłat — 2026-09-14
+
+Wspólna oferta → Dostawa → Sprawdź połączenia wykonuje autoryzowany GET organizacji i odczytuje jej listę usług, odpytuje API Points oraz loguje testowo OAuth PayU bez tworzenia zamówienia. Zapisany token mapy jest oznaczony jako skonfigurowany; jego ograniczenia domenowe wymagają osobnego sprawdzenia mapy w koszyku. Ready nie oznacza zakończonego testu etykiety.
+
+Wyszukiwanie i sprawdzenie punktu używają obecnych adresów api.inpost.pl/v1/points oraz sandbox-api-gateway-pl.easypack24.net/v1/points. Autoryzacja jest wyłącznie serwerowa, przekierowania odrzucane, odpowiedź dla klienta ograniczona do danych punktu. Błędny, zamknięty lub niedostępny punkt blokuje rozpoczęcie płatności. Oficjalne źródła: [API Points](https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/18153470), [Organizacja i usługi](https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/18153487/Organization), [sandbox PayU](https://developers.payu.com/europe/docs/testing/sandbox/).

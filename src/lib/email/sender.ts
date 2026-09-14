@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import prisma from '@/lib/db/prisma';
 import { logSystem } from '@/lib/logger';
 import { brandColors, baseStyles } from '@/lib/email-templates';
+import { isShopQa } from '@/lib/shop-qa';
 
 // Get SMTP configuration from database or environment variables
 export async function getSMTPConfig() {
@@ -95,6 +96,7 @@ interface EmailData {
 }
 
 export async function sendEmail(emailData: EmailData) {
+    if (isShopQa()) return { success: true, messageId: 'isolated-review-not-sent' };
     try {
         const { to, subject, template, data, html, attachments, replyTo, bcc } = emailData;
         const config = await getSMTPConfig();

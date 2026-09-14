@@ -567,6 +567,13 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### 2026-09-14 — widoczność nPhoto, wspólny cennik i diagnostyka dostawy
+
+Naprawiono mylący status aktywnej oferty liczący stare produkty spoza publicznego wyboru. Preview informuje o współdzielonej bazie przed zapisem. Dodano jawną atomową publikację przygotowanych produktów w istniejącym CMS, progi cen odbitek liczone łącznie po formacie, aktualny adapter API Points oraz odczyt istniejącej nazwy tokenu Geowidget. Sprawdzenie połączenia z kontem/usługami InPost i OAuth PayU znajduje się w sekcji dostawy, bez nowej zakładki. Ceny i pełniejsze opisy pięciu pozycji są przygotowane w NPHOTO_LAUNCH_PRESET.json, bez automatycznego zapisu danych.
+
+Automatyczna kontrola zatrzymała odczyt edytora sekretu bazy produkcyjnej i transakcję przygotowania osobnej bazy testowej z publicznymi danymi sandbox PayU. Nie obchodzono blokady; docelowe dane nie zostały zapisane i nie wykonano realnej sprzedaży ani nadania. Wymaga to osobnego zatwierdzenia konkretnego zakresu testu. Weryfikacja lokalna: pełny zestaw admina i sklepu PASS, 328 wcześniejszych testów jednostkowych plus nowy test izolacji bazy PASS. Build Node 22: 261/261 tras; ostatnie doprecyzowanie ochrony bazy QA jest objęte końcowym powtórzeniem builda. Pełny typecheck zachowuje 106 wcześniejszych diagnostyk, bez nowych w zakresie tej zmiany. Wdrożenie preview jest w przygotowaniu.
+
+
 ### 2026-09-14 — dalsze regresje zakupu i dokumentów
 
 Przegląd zalogowanego preview potwierdził wspólną listę, filtry, kontekst galerii, historyczne zdjęcia i ochronę kont. Ujawnił także błędny skrót pulpitu Zarządzaj terminami do kodów rabatowych; naprawiono link do istniejącego kalendarza.

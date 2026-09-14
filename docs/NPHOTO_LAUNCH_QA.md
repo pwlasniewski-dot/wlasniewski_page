@@ -1,6 +1,12 @@
+## Stan domknięcia 2026-09-14
+
+Oferta zawiera cztery produkty fizyczne i odbitki 15×21. Realne obrazy znajdują się w Mediach w folderze nPhoto — produkty. Docelowa konfiguracja i pełniejsze opisy: [NPHOTO_LAUNCH_PRESET.json](NPHOTO_LAUNCH_PRESET.json). Ceny detaliczne: Harmonijka 41,54 zł, PRO 257,70 zł (20 stron), Lite 140,59 zł (16 stron), canvas 119,24 zł; odbitki 3,17 zł (1–2 szt.), 2,47 zł (3–5), 1,57 zł (6–99), 1,40 zł (100+). Dostawa 17/25 zł; canvas tylko kurier. Kwoty obliczono według ustalonej marży 35%; nie stanowią gwarancji przyszłych kosztów dostawcy.
+
+Nie zatwierdzono jeszcze testu realnej płatności, etykiety ani pełnego uruchomienia katalogu. Automatyczny przegląd odrzucił zapis przygotowujący izolowaną bazę testową i publiczny punkt sandbox PayU. Ten zapis nie został wykonany. Przycisk publikacji jest świadomą operacją administratora, nie automatycznym włączeniem niezweryfikowanego sklepu.
+
 # Kolekcja startowa nPhoto — odbiór do pilota
 
-Data: 2026-09-13. PR #72 pozostaje wersją do testów; bez scalania i wdrożenia na produkcję.
+Aktualizacja: 2026-09-14. Bieżący odbiór dotyczy PR #75. Opis poniżej zawiera także wcześniejsze rundy; nie stanowi potwierdzenia pełnej gotowości produkcyjnej.
 
 ## Zakres
 
@@ -11,7 +17,7 @@ Jedno źródło cen i opisów: wspólne `GalleryProduct` oraz formaty z `gallery
 | Odbitki | 15×21 cm, Fuji Silk, rzeczywiste 152×210 mm | Ilość osobno dla zdjęcia |
 | Harmonijka | 8×8 cm, 12 stron, oprawa V6 | 12 zdjęć |
 | Fotoalbum PRO | 20×20 cm, 10 rozkładówek, Fuji Silk, V11 | 20 zdjęć |
-| Lite Album | 20×20 cm, 5 rozkładówek, Fuji Lustre, A30 | 10 zdjęć |
+| Lite Album | 20×20 cm, 8 rozkładówek (16 stron), Fuji Lustre, A30 | 16 zdjęć |
 | Fotoobraz Wall Decor | Canvas 40×60 cm, rama 2 cm | 1 zdjęcie; tylko kurier |
 
 Liczby zdjęć są propozycjami układu studia, nie ograniczeniami nPhoto. Klient kupuje konkretny opisany wariant, wybiera fotografie i liczbę egzemplarzy. Fotograf przygotowuje projekt. Nie jest to wizualizacja 3D ani samodzielny edytor rozkładówek klienta.

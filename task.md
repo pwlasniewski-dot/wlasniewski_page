@@ -1,3 +1,14 @@
+## 2026-09-14 — domknięcie sklepu i dostawy
+
+- [x] Zdiagnozować pusty katalog mimo włączonych przełączników.
+- [x] Dodać czytelną informację o pustej ofercie i atomową publikację przygotowanych produktów w istniejącym CMS.
+- [x] Wspólne progi cen odbitek: admin, sklep, koszyk, wycena, historyczny snapshot.
+- [x] Aktualne autoryzowane API Points i zgodność z nazwą istniejącego tokenu mapy.
+- [x] Sprawdzenie połączeń InPost/PayU bez zamówień i opłat w istniejącej sekcji dostawy.
+- [x] Przygotować konkretne opisy, realne media, ceny i dostawę 17/25 zł do przeglądu.
+- [ ] Dokończyć izolowany zapis konfiguracji i test realnego sandbox PayU/ShipX — wymaga zgody po automatycznym odrzuceniu transakcji.
+- [ ] Uruchomić katalog na produkcji po odbiorze procesu.
+
 - [x] Naprawić i przetestować błędy odczytu wyborów rodzica, ZIP-a i kalendarza warsztatów.
 
 ## 2026-09-14 — audyt i unifikacja admina

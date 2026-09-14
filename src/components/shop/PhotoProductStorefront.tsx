@@ -5,6 +5,7 @@ import { GalleryProductPreviewDialog } from '@/components/galleries/GalleryProdu
 import { parseShopIntent, replaceShopIntent, shopAccountHref, shopGalleryHref, trackShopIntent, type ShopIntent } from '@/lib/galleries/shop-intent';
 import type { PublicShopCatalog } from '@/lib/galleries/public-offer';
 import type { ShopProduct } from '@/lib/galleries/merchandise';
+import PrintPriceTiers from '@/components/galleries/PrintPriceTiers';
 
 type ClientGallery = { id: number; access_code: string; client_name: string; photo_count: number; created_at: string };
 type Props = { mode?: 'public' | 'account'; token?: string; className?: string; onAction?: (action: 'offer_open' | 'gallery_open') => void };
@@ -105,7 +106,7 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
     {!formats.length && !products.length ? <p className="rounded-2xl border border-dashed border-stone-700 p-8 text-center text-stone-400">{catalog.offer.emptyMessage}</p> : <div className={`grid gap-5 sm:grid-cols-2 ${catalog.offer.layout === 'editorial' ? 'xl:grid-cols-2' : 'xl:grid-cols-3'}`}>
       {formats.map(format => <article id={`format-${format.id}`} key={`print-${format.id}`} className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-stone-700 bg-[#141413]">
         <ProductImage src={catalog.offer.printImageUrl} alt={catalog.offer.printImageAlt || format.label} />
-        <div className="flex flex-1 flex-col p-5 sm:p-6"><h3 className="text-xl font-medium leading-snug">{format.label}</h3><p className="mt-3 text-sm leading-6 text-stone-400">{format.paper} · {format.widthMm} × {format.heightMm} mm</p><p className="mb-6 mt-auto pt-6 text-2xl font-medium tracking-tight">{money(format.unitAmount)} <span className="text-sm font-normal text-stone-400">/ szt.</span></p>{renderAction({ kind: 'print', formatId: format.id })}</div>
+        <div className="flex flex-1 flex-col p-5 sm:p-6"><h3 className="text-xl font-medium leading-snug">{format.label}</h3><p className="mt-3 text-sm leading-6 text-stone-400">{format.paper} · {format.widthMm} × {format.heightMm} mm</p><p className="mb-6 mt-auto pt-6 text-2xl font-medium tracking-tight">{money(format.unitAmount)} <span className="text-sm font-normal text-stone-400">/ szt.</span></p><div className="mb-5"><PrintPriceTiers format={format} dark /></div>{renderAction({ kind: 'print', formatId: format.id })}</div>
       </article>)}
       {products.map(product => <article id={`produkt-${product.id}`} key={product.id} className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-stone-700 bg-[#141413]">
         <button type="button" aria-label={`Zobacz produkt: ${product.title}`} className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-stone-700" onClick={() => setPreview(product)}><ProductImage src={product.image_url} alt={product.title} /></button>

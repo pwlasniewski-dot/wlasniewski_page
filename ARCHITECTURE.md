@@ -1,3 +1,11 @@
+## 2026-09-14 — domknięcie wspólnego sklepu
+
+`shop-publication.ts` współdzieli reguły publikacji między CMS a istniejącym PUT galerii/default/shop. Jawne `publishSelected` wykonuje aktywację i zapis config w transakcji Serializable. Zwykły zapis nie zmienia aktywności produktów. `printQuantities` i `printUnitAmount` wyceniają progi; `PrintPriceTiers` przedstawia te same dane w ofercie i zakupie. Historyczna wycena kopiuje progi bez współdzielenia referencji.
+
+`inpost-points.ts` używa aktualnego autoryzowanego API Points i środowiska właściwego dla tokenu. Wyszukiwarka i weryfikacja przed płatnością korzystają z jednego adaptera. Token pozostaje na serwerze. `inpost-widget.ts` obsługuje także istniejącą nazwę NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN przez odczyt runtime, bez wbudowania wartości w bundle. Autoryzowany GET gallery-shop/integrations wykonuje wyłącznie odczyty InPost i OAuth PayU, limituje częstotliwość i zwraca jawną projekcję bez sekretów i danych organizacji.
+
+Opcjonalny GALLERY_QA_DATABASE_URL jest przeznaczony wyłącznie dla odizolowanej gałęzi preview. Produkcyjny kontekst ignoruje tę zmienną; ten sam host co DATABASE_URL jest odrzucany. W trybie QA maile są pomijane, a produkcyjne tworzenie zamówienia PayU oraz mutacje ShipX blokowane. Autoryzowany odczyt oferty zwraca preview/isolatedReview; panel jawnie informuje, czy podgląd używa zwykłej bazy, czy odizolowanej konfiguracji. Zmienna nie została zapisana w Netlify. Przygotowanie danych testowych zostało zatrzymane przez automatyczną kontrolę zgody.
+
 ## Uzupełnienie audytu 2026-09-14
 
 Endpoint purchase-extras oczekuje params: Promise zgodnie z Next.js. Endpoint PDF wywołuje wspólny generator z includeSignatureSection=true, zachowuje prywatne przekierowanie podpisanego pliku, waliduje ID i koduje tytuł przez istniejący escapeHtml. Nie dodano alternatywnego generatora ani rejestru zamówień.
