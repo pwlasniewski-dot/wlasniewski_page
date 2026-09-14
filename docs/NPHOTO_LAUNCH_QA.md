@@ -1,3 +1,13 @@
+## Netlify po autoryzacji — 2026-09-14
+
+Natywne logowanie CLI zakończone statusem authorized. Projekt potwierdzony przez Netlify API: helpful-axolotl-cc1cbb, e310a9fc-8bd6-4819-8533-91a3d83ea491. Zapisano i ponownie odczytano wyłącznie niesekretny GALLERY_QA_CONTEXT=deploy-preview: Builds/Functions, context=branch, context_parameter=fix/admin-unification-audit-20260914, bez innych wartości. Polecenie env:set nie rozpoznało projektu; niesekretny znacznik zapisano udokumentowanym createEnvVars przez CLI.
+
+Próba przekazania GALLERY_QA_DATABASE_URL została odrzucona przez automatyczny przegląd: połączenie zawiera uprzywilejowane hasło i według przeglądu brakuje jawnej zgody na jego przekazanie do Netlify. Wcześniejszy opis zgody zachowano w historii; wyszukiwanie źródłowego zatwierdzenia nie zwróciło rozmowy. Nie ponowiono ani nie wykonano transferu inną drogą. Odczyt konfiguracji po odmowie potwierdził brak GALLERY_QA_DATABASE_URL. Zapis wymaga rozstrzygnięcia tej konkretnej blokady; kolejne logowanie nie jest potrzebne.
+
+Produkcja: ostatni deploy 6aa78539f24f7a0008a4a21a, commit 750b325, opublikowany 2026-09-14T05:27:56.829Z. Zmienne InPost zapisano wcześniej, 2026-09-13. Publiczny odczyt produkcji: Points 503, token mapy=null. Kod dokładnego wdrożonego commitu potwierdza przyczynę: config czyta wyłącznie INPOST_GEOWIDGET_TOKEN, a w Netlify jest NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN; Points wywołuje API bez Authorization. Poprawki obu miejsc są w PR75 i nie zostały jeszcze scalone do produkcji. Nie jest to problem samego terminu redeployu po zmianie zmiennych. INPOST_SENDER_JSON nadal nieobecny; tokeny i identyfikator organizacji są wyłącznie w production, poza preview.
+
+Nie uruchomiono płatności, etykiet ani wysyłki; nie nadpisano produkcyjnego DATABASE_URL. Sam znacznik kontekstu bez sekretu nie włącza izolacji. Do pełnego odbioru pozostaje połączenie QA i dostęp do testowego ShipX/Geowidget.
+
 ## Odbiór live 119887c — 2026-09-14
 
 Netlify zgłosiło sukces wdrożenia preview75 dla commitu 119887c5792e7bd69d76267ff8ffa79cf639a058. W zalogowanej przeglądarce przed wdrożeniem checkbox produktu #1 nie uaktywniał zapisu; po wdrożeniu: brak osobnego przycisku „Zapisz produkt”, zapis disabled przed zmianą, enabled po odznaczeniu, disabled po przywróceniu. Przywrócono pierwotny stan bez zapisu do wspólnej bazy. Siedem grup API/React pokrywa zapis i odczyt, ale odbiór live samego zapisu wymaga odizolowanego QA.

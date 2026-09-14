@@ -567,6 +567,10 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### 2026-09-14 — autoryzacja Netlify i potwierdzenie przyczyny InPost na produkcji
+
+CLI authorized; GALLERY_QA_CONTEXT zapisany wyłącznie dla gałęzi QA (Builds/Functions). Automatyczny przegląd ponownie odrzucił transfer połączenia z hasłem; odczyt potwierdził brak sekretu QA. Nie ponawiano inną drogą. Produkcja 750b325 ma starszy kod mapy (inna nazwa zmiennej) i Points (bez Authorization), mimo wcześniejszego zapisu zmiennych Netlify. Poprawki pozostają w PR75. Nie wykonano transakcji ani produkcyjnego deployu.
+
 ### 2026-09-14 — odbiór checkboxa po wdrożeniu preview
 
 Commit 119887c: Netlify success; zalogowana przeglądarka potwierdziła jeden przycisk i cykl disabled → enabled po odznaczeniu → disabled po cofnięciu. Bez zapisu do wspólnej bazy. Panel połączeń potwierdził brak konfiguracji InPost w preview i działający OAuth PayU production. CLI nadal wymaga dokończenia logowania, QA i transakcje pozostają otwarte.

@@ -1,5 +1,7 @@
 # Konfiguracja zmiennych środowiskowych w Netlify
 
+Stan 2026-09-14: CLI jest zalogowane. GALLERY_QA_CONTEXT zapisano i odczytano w opisanym niżej zakresie. Transfer GALLERY_QA_DATABASE_URL został odrzucony przez automatyczny przegląd za brak jawnej zgody na ujawnienie połączenia z hasłem; klucz nadal nie istnieje. Nie ponawiano transferu inną drogą. Nie trzeba ponownie logować CLI. Szczegóły i różnica nazw tokenu mapy na produkcji: docs/NPHOTO_LAUNCH_QA.md.
+
 ## Izolowany odbiór sklepu — PR75
 
 Dla gałęzi `fix/admin-unification-audit-20260914` w projekcie `helpful-axolotl-cc1cbb` ustaw dwa klucze w zakresach **Builds i Functions**:

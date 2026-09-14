@@ -1,3 +1,12 @@
+## 2026-09-14 — Netlify po logowaniu
+
+- [x] Potwierdzić autoryzację CLI oraz tożsamość projektu.
+- [x] Zapisać i odczytać niesekretny znacznik QA tylko we właściwej gałęzi (Builds/Functions).
+- [x] Zdiagnozować produkcję na podstawie odpowiedzi HTTP, metadanych Netlify i dokładnego kodu wdrożenia: stara nazwa tokenu mapy i brak Authorization w Points.
+- [ ] Rozstrzygnąć odrzucenie transferu GALLERY_QA_DATABASE_URL przez automatyczny przegląd; nie ponawiano operacji innym sposobem.
+- [ ] Po zapisaniu sekretu wdrożyć preview i potwierdzić izolację oraz PayU sandbox.
+- [ ] Pełny odbiór zamówienia i testowego InPost; produkcja nadal nie została wdrożona w tym odbiorze.
+
 ## 2026-09-14 — zapis widoczności produktów
 
 - [x] Usunąć rozdzielenie zapisu produktu i ustawień; jeden zapis wszystkich szkiców.
