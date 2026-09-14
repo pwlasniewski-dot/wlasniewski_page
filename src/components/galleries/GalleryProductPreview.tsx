@@ -19,7 +19,7 @@ const control = 'min-h-11 rounded-xl border border-stone-300 bg-white px-4 py-2.
 const money = (value: number) => new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value / 100);
 
 /** The same presentation is used in the authoring preview and the client shop. */
-export default function GalleryProductPreview({ product, onChoose }: { product: GalleryProductPresentation; onChoose?: () => void }) {
+export default function GalleryProductPreview({ product, onChoose, compact = false }: { product: GalleryProductPresentation; onChoose?: () => void; compact?: boolean }) {
   const [mode, setMode] = useState<'photos' | 'video' | 'pages'>('photos');
   const [videoFailed, setVideoFailed] = useState(false);
   const [page, setPage] = useState(0);
@@ -35,7 +35,7 @@ export default function GalleryProductPreview({ product, onChoose }: { product: 
     : null;
 
   return <article className="overflow-hidden rounded-3xl border border-stone-200 bg-[#faf9f6] text-stone-900 [color-scheme:light]">
-    <div className="grid min-w-0 lg:grid-cols-[1.1fr_1fr]">
+    <div className={`grid min-w-0 ${compact ? '' : 'lg:grid-cols-[1.1fr_1fr]'}`}>
       <div className="min-w-0 bg-[#eeece7] p-4 sm:p-7">
         {(product.video_url || pages.length > 0) && <div className="mb-4 flex flex-wrap gap-2" aria-label="Materiały produktu">
           <button type="button" className={control} aria-pressed={mode === 'photos'} onClick={() => setMode('photos')}>Zdjęcia</button>
@@ -70,7 +70,8 @@ export default function GalleryProductPreview({ product, onChoose }: { product: 
   </article>;
 }
 
-export function GalleryProductPreviewDialog({ product, onClose, onChoose }: { product: GalleryProductPresentation; onClose: () => void; onChoose?: () => void }) {
+export function GalleryProductPreviewDialog({ product, onClose, onChoose, adminPreview = false }: { product: GalleryProductPresentation; onClose: () => void; onChoose?: () => void; adminPreview?: boolean }) {
+  const [mobilePreview, setMobilePreview] = useState(false);
   const dialog = useRef<HTMLDivElement>(null);
   const close = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
@@ -98,7 +99,8 @@ export function GalleryProductPreviewDialog({ product, onClose, onChoose }: { pr
   return createPortal(<div className="fixed inset-0 z-[230] overflow-y-auto overscroll-contain bg-stone-950/70 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-sm sm:p-8" onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="mx-auto max-w-6xl rounded-3xl bg-[#faf9f6] p-3 text-stone-900 shadow-2xl sm:p-5">
       <header className="mb-3 flex items-center justify-between gap-3 px-2"><h2 id={titleId} className="text-sm font-medium">Szczegóły produktu</h2><button ref={close} type="button" className={control} onClick={onClose}>Zamknij szczegóły</button></header>
-      <GalleryProductPreview product={product} onChoose={onChoose} />
+      {adminPreview && <div className="mb-4 flex flex-wrap gap-2" aria-label="Szerokość podglądu"><button type="button" className={control} aria-pressed={!mobilePreview} onClick={() => setMobilePreview(false)}>Komputer</button><button type="button" className={control} aria-pressed={mobilePreview} onClick={() => setMobilePreview(true)}>Telefon · 390 px</button></div>}
+      <div className={mobilePreview ? 'mx-auto w-full max-w-[390px]' : ''}><GalleryProductPreview product={product} onChoose={onChoose} compact={mobilePreview} /></div>
     </div>
   </div>, document.body);
 }

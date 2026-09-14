@@ -9,3 +9,5 @@
 Na produkcji zweryfikowano zapis zdjęć Lite i Canvas; wdrożenie kodu pozostaje do potwierdzenia.
 
 Media: tworzenie folderu używa pola tekstowego w panelu zamiast systemowego prompt; folder zostaje utrwalony po dodaniu plików.
+
+Admin udostępnia też kontrolę podglądu o szerokości 390 px; przełącznik jest niedostępny w interfejsie klienta.
