@@ -59,7 +59,7 @@ export async function POST(request:NextRequest) {
      }
      const product=await tx.galleryProduct.create({data:{
       gallery_id:null,title:starter.title,description:starter.description,price:0,is_active:false,
-      image_url:includeMedia?starter.image:null,preview_images:includeMedia?[...(starter.previewImages??[starter.image])]:[],
+      video_url:includeMedia?starter.videoUrl??null:null,image_url:includeMedia?starter.image:null,preview_images:includeMedia?[...(starter.previewImages??[starter.image])]:[],
       nphoto_url:starter.source,product_type:starter.category,
      }});
      config.productRules[String(product.id)]={minPhotos:starter.minPhotos,maxPhotos:starter.maxPhotos,...(starter.deliveryMethods?{deliveryMethods:[...starter.deliveryMethods]}:{})};

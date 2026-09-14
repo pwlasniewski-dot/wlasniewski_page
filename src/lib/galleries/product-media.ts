@@ -11,3 +11,7 @@ export function isProductImageUrl(value: unknown): value is string {
 export function readProductImages(value: unknown): string[] {
   return Array.isArray(value) ? [...new Set(value.filter(isProductImageUrl))].slice(0, 12) : [];
 }
+
+export function isProductVideoUrl(value: unknown): value is string {
+  return isProductImageUrl(value) && value.startsWith('https://') && /\.mp4(?:[?#]|$)/i.test(value);
+}

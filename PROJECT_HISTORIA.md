@@ -1,3 +1,7 @@
+## 2026-09-14 — multimedia oferty produktów
+
+Wspólny podgląd admina, sklepu i prywatnej galerii obsługuje film MP4 uruchamiany na życzenie oraz przeglądanie przykładowych rozkładówek. Wykorzystuje istniejące pola GalleryProduct.video_url i sample_pages, bez migracji i bez zmiany cen. Chroniony zapis waliduje adresy, odczyt zachowuje zgodność ze starszymi produktami. Testy obejmują zapis/odczyt oraz render i nawigację. Publikacja i dalsze konfigurowanie katalogu wymagają osobnej weryfikacji produkcyjnej.
+
 ## 2026-09-09 — Mobilne oglądanie zdjęć
 
 Naprawa zgłoszonych mobilnych sliderów, swipe i pływających nakładek; usunięcie blokującego loadera. Właściciel rozszerzył zakres o home oraz opóźnienie serwera. Szczegóły i odbiór: docs/MOBILE_PHOTO_EXPERIENCE_2026-09-09.md.
@@ -1853,3 +1857,5 @@ Business Insights
    - Rozszerzono `Offer` o pole `client_selection` (JSON) do zapisu wyboru pakietu przez klienta.
 
 **Status:** ✅ **DONE**
+
+Media: tworzenie folderu używa pola tekstowego w panelu zamiast systemowego prompt; folder zostaje utrwalony po dodaniu plików.

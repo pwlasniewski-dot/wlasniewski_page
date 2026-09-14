@@ -1,3 +1,7 @@
+## 2026-09-14 — prezentacja materiałów produktu
+
+Administrator edytuje adres MP4 i do 12 zdjęć rozkładówek na karcie produktu. Klient przełącza zdjęcia, film i przykładowe wnętrze w tym samym podglądzie w sklepie oraz galerii. Film nie montuje się przed wyborem i nie odtwarza automatycznie; rozkładówki obsługują przyciski oraz poziomy gest, zachowując przewijanie pionowe. Przykładowe realizacje nie stanowią projektu klienta.
+
 ## 2026-09-09 — Mobilne oglądanie zdjęć
 
 Mobilny podgląd zdjęć bez taśmy miniatur, ze wspólnymi gestami i akcjami klienta; tekst poza zdjęciem w hero mobile. Kontakt/FB pojawiają się po zdjęciach, znikają w podglądzie. Treści i CTA nadal z CMS.
@@ -1209,3 +1213,5 @@ Niniejsza specyfikacja techniczna odzwierciedla stan faktyczny systemu na dzień
 *Dokumentacja sporządzona przez system Antigravity dla Przemysława Właśniewskiego.*
 
 ```
+
+Media: tworzenie folderu używa pola tekstowego w panelu zamiast systemowego prompt; folder zostaje utrwalony po dodaniu plików.

@@ -9,6 +9,8 @@ export type GalleryProductPresentation = {
   price: number;
   image_url?: string | null;
   preview_images?: string[];
+  video_url?: string | null;
+  sample_pages?: string[];
   minPhotos?: number;
   maxPhotos?: number;
 };
@@ -18,6 +20,12 @@ const money = (value: number) => new Intl.NumberFormat('pl-PL', { style: 'curren
 
 /** The same presentation is used in the authoring preview and the client shop. */
 export default function GalleryProductPreview({ product, onChoose }: { product: GalleryProductPresentation; onChoose?: () => void }) {
+  const [mode, setMode] = useState<'photos' | 'video' | 'pages'>('photos');
+  const [videoFailed, setVideoFailed] = useState(false);
+  const [page, setPage] = useState(0);
+  const touchStart = useRef<{x:number;y:number} | null>(null);
+  const pages = product.sample_pages || [];
+  useEffect(() => { setMode('photos'); setSelected(0); setPage(0); setVideoFailed(false); }, [product.title, product.video_url]);
   const images = [...new Set([product.image_url, ...(product.preview_images || [])].filter((url): url is string => !!url))];
   const [selected, setSelected] = useState(0);
   const [failedImage, setFailedImage] = useState<string | null>(null);
@@ -29,12 +37,28 @@ export default function GalleryProductPreview({ product, onChoose }: { product: 
   return <article className="overflow-hidden rounded-3xl border border-stone-200 bg-[#faf9f6] text-stone-900 [color-scheme:light]">
     <div className="grid min-w-0 lg:grid-cols-[1.1fr_1fr]">
       <div className="min-w-0 bg-[#eeece7] p-4 sm:p-7">
+        {(product.video_url || pages.length > 0) && <div className="mb-4 flex flex-wrap gap-2" aria-label="Materiały produktu">
+          <button type="button" className={control} aria-pressed={mode === 'photos'} onClick={() => setMode('photos')}>Zdjęcia</button>
+          {product.video_url && <button type="button" className={control} aria-pressed={mode === 'video'} onClick={() => setMode('video')}>Obejrzyj film</button>}
+          {pages.length > 0 && <button type="button" className={control} aria-pressed={mode === 'pages'} onClick={() => setMode('pages')}>Zajrzyj do środka</button>}
+        </div>}
+        {mode === 'video' && product.video_url ? <div className="flex aspect-[5/4] items-center justify-center overflow-hidden rounded-2xl bg-stone-950">
+          {videoFailed ? <p role="status" className="p-6 text-sm text-white">Film jest chwilowo niedostępny. Możesz nadal obejrzeć zdjęcia produktu.</p> : <video key={product.video_url} src={product.video_url} controls playsInline preload="none" poster={product.image_url || undefined} aria-label={`Film prezentujący ${product.title}`} className="max-h-full w-full" onError={() => setVideoFailed(true)} />}
+        </div> : mode === 'pages' && pages.length ? <div>
+          <div className="flex aspect-[5/4] items-center justify-center rounded-2xl bg-white p-3" style={{touchAction:'pan-y pinch-zoom'}} onTouchStart={event => { if (event.touches.length !== 1) { touchStart.current = null; return; } const t = event.touches[0]; touchStart.current = {x:t.clientX,y:t.clientY}; }} onTouchEnd={event => { const t = event.changedTouches[0]; const start = touchStart.current; touchStart.current = null; if (!start) return; const dx = t.clientX - start.x; if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(t.clientY - start.y)) setPage(current => Math.max(0, Math.min(pages.length - 1, current + (dx < 0 ? 1 : -1)))); }}>
+            <img key={pages[page]} src={pages[page]} alt={`${product.title} — przykładowa rozkładówka ${page + 1}`} className="h-full w-full object-contain" />
+          </div>
+          <div className="mt-4 flex items-center justify-between gap-2"><button type="button" className={control} disabled={page === 0} onClick={() => setPage(page - 1)}>Poprzednia</button><span aria-live="polite" className="text-sm">{page + 1} / {pages.length}</span><button type="button" className={control} disabled={page === pages.length - 1} onClick={() => setPage(page + 1)}>Następna</button></div>
+          <p className="mt-3 text-xs leading-relaxed text-stone-600">Przykładowa realizacja. Twój projekt powstanie z fotografii wybranych w galerii.</p>
+        </div> : <>
+
         <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-white/70 p-4 sm:aspect-[5/4] sm:p-6">
           {activeImage && failedImage !== activeImage
             ? <img src={activeImage} alt={`${product.title || 'Produkt'} — ujęcie ${Math.min(selected + 1, images.length)}`} className="h-full w-full object-contain" onError={() => setFailedImage(activeImage)} />
             : <div className="px-6 text-center text-sm leading-relaxed text-stone-500"><svg className="mx-auto mb-4 h-14 w-14" viewBox="0 0 48 48" fill="none" stroke="currentColor" aria-hidden="true"><rect x="8" y="6" width="32" height="36" rx="3" /><path d="M15 6v36M22 17h11M22 23h8M22 32h11" /></svg>{activeImage ? 'Zdjęcie produktu jest chwilowo niedostępne.' : 'Zdjęcia produktu zostaną dodane do oferty.'}</div>}
         </div>
         {images.length > 1 && <div className="mt-4 flex gap-2 overflow-x-auto pb-2" aria-label="Zdjęcia produktu">{images.map((url, index) => <button type="button" key={url} aria-label={`Pokaż ujęcie produktu ${index + 1}`} aria-pressed={activeImage === url} onClick={() => setSelected(index)} className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-white p-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-700 ${activeImage === url ? 'border-stone-800' : 'border-transparent'}`}><img src={url} alt="" loading="lazy" className="h-full w-full object-contain" /></button>)}</div>}
+        </>}
       </div>
       <div className="flex min-w-0 flex-col p-5 sm:p-8">
         <h3 className="break-words font-serif text-3xl font-medium leading-tight tracking-tight sm:text-4xl">{product.title || 'Nazwa Twojego produktu'}</h3>
@@ -60,7 +84,7 @@ export function GalleryProductPreviewDialog({ product, onClose, onChoose }: { pr
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onCloseRef.current(); }
       if (event.key === 'Tab') {
-        const focusable = dialog.current?.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), [tabindex="0"]');
+        const focusable = dialog.current?.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), video[controls], [tabindex="0"]');
         if (!focusable?.length) return;
         const first = focusable[0]; const last = focusable[focusable.length - 1];
         if (event.shiftKey && (document.activeElement === first || !dialog.current?.contains(document.activeElement))) { event.preventDefault(); last.focus(); }

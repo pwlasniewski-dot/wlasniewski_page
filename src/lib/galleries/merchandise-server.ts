@@ -1,5 +1,5 @@
 import { verifyParcelPoint } from '@/lib/shipping/inpost-point';
-import { readProductImages } from './product-media';
+import { readProductImages, isProductVideoUrl } from './product-media';
 import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
@@ -22,10 +22,10 @@ export async function loadGalleryShop(galleryId: number | null) {
   const rule = config.productRules[String(p.id)] || globalRule || {minPhotos:1,maxPhotos:50};
   // A local photo-count override cannot relax a shared product's shipping constraints.
   const deliveryMethods = globalRule?.deliveryMethods ? globalRule.deliveryMethods.filter(method => !rule.deliveryMethods || rule.deliveryMethods.includes(method)) : rule.deliveryMethods;
-  return {id:p.id,title:p.title,description:p.description,price:p.price,image_url:p.image_url,preview_images:readProductImages(p.preview_images),product_type:p.product_type,nphoto_product_id:p.nphoto_product_id,nphoto_url:p.nphoto_url,...rule,...(deliveryMethods ? {deliveryMethods} : {})};
+  return {id:p.id,title:p.title,description:p.description,price:p.price,image_url:p.image_url,preview_images:readProductImages(p.preview_images),video_url:isProductVideoUrl(p.video_url)?p.video_url:null,sample_pages:readProductImages(p.sample_pages),product_type:p.product_type,nphoto_product_id:p.nphoto_product_id,nphoto_url:p.nphoto_url,...rule,...(deliveryMethods ? {deliveryMethods} : {})};
  }).filter(product => !product.deliveryMethods || product.deliveryMethods.some(method => config.delivery[method].enabled))};
  catalog.enabled = config.enabled && (catalog.formats.length > 0 || catalog.products.length > 0);
- const editableProducts = products.map(p => ({...p, preview_images:readProductImages(p.preview_images)}));
+ const editableProducts = products.map(p => ({...p, preview_images:readProductImages(p.preview_images),video_url:p.video_url,sample_pages:readProductImages(p.sample_pages)}));
  return {config,catalog,inherited,products:editableProducts.filter(p=>p.gallery_id===galleryId),sharedProducts:galleryId===null?[]:editableProducts.filter(p=>p.gallery_id===null)};
 }
 export async function authorizeShop(request: NextRequest, scope: {accessCode:string} | {participantId:number}) {

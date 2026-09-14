@@ -99,10 +99,17 @@ const props = { onImported: async () => { imports++; }, onDirtyChange: value => 
   await check('nPhoto UI: admin zapisuje i ponownie pokazuje listę zdjęć produktu', async () => {
     await reset(); await mount(Admin, { galleryId: 12 });
     await set(field('Dodatkowe zdjęcia produktu #77 (adres w każdym wierszu)'), 'https://nphoto.com/new.jpg\nhttps://nphoto.com/c.jpg');
+    await set(field('Film produktu #77 (MP4)'), 'https://example.com/album.mp4');
+    await set(field('Przykładowe rozkładówki produktu #77 (adres w każdym wierszu)'), 'https://example.com/spread.jpg');
     await click(button('Zapisz produkt #77'));
+    assert.equal(product.video_url, 'https://example.com/album.mp4');
+    assert.deepEqual(product.sample_pages, ['https://example.com/spread.jpg']);
     assert.deepEqual(product.preview_images, ['https://nphoto.com/new.jpg', 'https://nphoto.com/c.jpg']);
     await reset(); await mount(Admin, { galleryId: 12 });
     await click(button('Podgląd klienta produktu #77'));
+    await click(button('Obejrzyj film')); assert.equal(document.querySelector('video').getAttribute('src'), 'https://example.com/album.mp4');
+    await click(button('Zajrzyj do środka')); assert.ok(document.querySelector('article img').src.endsWith('/spread.jpg'));
+    await click(button('Zdjęcia'));
     await click(field('Pokaż ujęcie produktu 2'));
     assert.equal(document.querySelector('[aria-labelledby][role="dialog"] article img').getAttribute('src'), 'https://nphoto.com/new.jpg');
     await click(button('Zamknij szczegóły'));

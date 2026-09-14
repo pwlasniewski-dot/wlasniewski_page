@@ -30,7 +30,7 @@ function clear(){settings.clear();products=[];failAtProduct=0;conflict=false;adm
  await check('launch contains five requested families, correct Lite name, canvas media and courier-only rule',async()=>{
   assert.deepEqual(nphotoLaunchKeys,['odbitki-15x21','harmonijka','fotoalbum-pro','lite-album','fotoobraz']);
   const lite=nphotoStarters.find(p=>p.key==='lite-album'),canvas=nphotoStarters.find(p=>p.key==='fotoobraz');
-  assert.match(lite.title,/Lite Album/);assert.match(lite.description,/5 rozkładówek/);assert.match(lite.description,/A30/);assert.equal(lite.minPhotos,10);
+  assert.match(lite.title,/Lite Album/);assert.match(lite.description,/8 rozkładówek/);assert.match(lite.description,/A30/);assert.equal(lite.minPhotos,16);
   assert.match(canvas.image,/canvas/);assert.ok(!/akryl/i.test(canvas.image));assert.deepEqual(canvas.deliveryMethods,['courier']);assert.equal(canvas.maxPhotos,1);
   assert.ok(nphotoStarters.every(item=>!/(?:\d+ wybranych zdjęć|Wybierz \d+ zdjęć)/.test(item.description)),'dynamic photo limits must not become stale in descriptions');
  });

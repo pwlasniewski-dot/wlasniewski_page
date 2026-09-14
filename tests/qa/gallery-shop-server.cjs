@@ -64,9 +64,11 @@ await check('product media save reread preserves galleries and rejects invalid U
  assert.equal((await patch({preview_images:['javascript:alert(1)']})).status,400);
  assert.equal((await patch({preview_images:['https://user:secret@example.com/image.jpg']})).status,400);
  assert.equal((await patch({preview_images:Array(13).fill(images[0])})).status,400);
- assert.equal((await patch({preview_images:images,image_url:images[0]})).status,200);
+ assert.equal((await patch({video_url:'javascript:alert(1)'})).status,400);
+ assert.equal((await patch({sample_pages:['javascript:alert(1)']})).status,400);
+ assert.equal((await patch({preview_images:images,image_url:images[0],video_url:'https://example.com/video.mp4',sample_pages:images})).status,200);
  let product=(await loadGalleryShop(44)).catalog.products.find(p=>p.id===101);
- assert.deepEqual(product.preview_images,images);assert.equal(product.description,'25×25 cm · 20 stron');assert.equal(product.price,12500);
+ assert.equal(product.video_url,'https://example.com/video.mp4');assert.deepEqual(product.sample_pages,images);assert.deepEqual(product.preview_images,images);assert.equal(product.description,'25×25 cm · 20 stron');assert.equal(product.price,12500);
  assert.equal((await patch({})).status,200);assert.deepEqual((await loadGalleryShop(44)).catalog.products.find(p=>p.id===101).preview_images,images);
  assert.equal((await patch({price:0})).status,400);
  assert.equal((await patch({price:0,is_active:false})).status,200);assert.equal((await loadGalleryShop(44)).catalog.products.some(p=>p.id===101),false);

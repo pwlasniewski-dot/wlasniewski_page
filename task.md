@@ -1,3 +1,11 @@
+## 2026-09-14 — multimedia nPhoto
+
+- [x] Podpiąć brakujące zdjęcia Lite i Canvas na produkcji i sprawdzić po odświeżeniu.
+- [x] Dodać edycję filmu i rozkładówek oraz wspólny odczyt.
+- [x] Testy domeny, API i React obejmujące zapis i ponowny render.
+- [ ] Wdrożyć i sprawdzić prezentację w przeglądarce.
+- [ ] Dokończyć import do Mediów, koszty wariantów i uruchomienie katalogu.
+
 ## 2026-09-09 — Mobilne oglądanie zdjęć
 
 W toku: mobilne hero/portfolio, wspólny lightbox, FB po zdjęciach i streaming home. Następne bramki: niezależny QA, build, podgląd wdrożenia i kontrola. Bez migracji DB i nowych płatnych usług.
