@@ -1,3 +1,7 @@
+## Odbiór preview — 2026-09-14
+
+Odbiór live commitu 78cd694: Netlify Complete. W przeglądarce potwierdzono odbitki 15×21 za 2,50 zł i realne zdjęcie; cztery produkty nPhoto nadal są szkicami. Użytkownik ustawił też 10×15 za 1,50 zł (format nie należy do wyboru publicznego). Tych cen nie nadpisano. Nieodpłatny test OAuth PayU: dostęp produkcyjny potwierdzony. Preview: brak INPOST_API_TOKEN i INPOST_ORGANIZATION_ID oraz tokenu mapy. Nie potwierdza to stanu InPost w kontekście production. Dalsza poprawka przenosi sekcję zdjęć przed karty, dodaje odnośnik z etykietą CMS oraz naprawia rozpoznawanie preview za proxy i komunikat braku mapy. Regresje: 16 grup storefront i 6 grup readiness PASS.
+
 Wyniki domknięcia: test:gallery-shop PASS (także realny React z progami po zmianie ilości i publikacja); test:admin PASS; jednostkowe 328 + osobny test izolacji PASS. Transport dostawców i baza w testach są podstawione. Build końcowy i preview sprawdzane osobno.
 
 ## 2026-09-14 — odbiór widoczności, cen i integracji

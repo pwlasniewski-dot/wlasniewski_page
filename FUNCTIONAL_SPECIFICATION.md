@@ -1,3 +1,7 @@
+## Odbiór preview — 2026-09-14
+
+Oferta fotograficzna jest dostępna przez przycisk w pierwszej sekcji sklepu i pojawia się przed listą kart podarunkowych. Etykieta przycisku pochodzi z konfiguracji publicznej oferty; przy ukrytej ofercie przycisk znika. Diagnostyka jawnie rozróżnia brak tokenu mapy od zapisanej konfiguracji.
+
 ## 2026-09-14 — publikacja oferty, ceny ilościowe i sprawdzenie połączeń
 
 Wspólna oferta pokazuje rzeczywistą liczbę pozycji wybranych do sklepu. Włączone przełączniki przy samych szkicach pokazują jednoznaczny komunikat pustej oferty. Przycisk zbiorczej publikacji aktywuje wybrane, wycenione produkty z opisem, zdjęciem i zgodną dostawą oraz zapisuje oba przełączniki w jednej transakcji. Nie publikuje nieoznaczonych ani prywatnych produktów; odbitki bez ceny pozostają ukryte. Zamówienia nadal obsługuje Rezerwacje → Zamówienia. Na preview panel informuje o współdzieleniu bazy i wpływie zapisów na działającą ofertę.

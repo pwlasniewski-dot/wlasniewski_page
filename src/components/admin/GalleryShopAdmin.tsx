@@ -52,7 +52,8 @@ export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId
     const load = useCallback(async (signal?: AbortSignal) => {
         const data = await request(base, { signal });
         if (signal?.aborted) return;
-        setPreviewMode(data.preview ? data.isolatedReview ? 'isolated' : 'shared' : null);
+        const preview = data.preview || /^deploy-preview-\d+--.*\.netlify\.app$/.test(window.location.hostname);
+        setPreviewMode(preview ? data.isolatedReview ? 'isolated' : 'shared' : null);
         setConfig(data.config); setInherited(data.inherited === true); setSharedProducts(data.sharedProducts || []); setProducts(data.products || []); setAlbums(data.nphotoAlbums || []); setDirty(false); setProductDrafts({}); setImportDirty(false);
     }, [base, request]);
     useEffect(() => { const controller = new AbortController(); setLoading(true); setConfig(null); setError(''); setNotice(''); load(controller.signal).catch(e => { if (!controller.signal.aborted) setError(e.message); }).finally(() => { if (!controller.signal.aborted) setLoading(false); }); return () => controller.abort(); }, [load]);

@@ -1,3 +1,9 @@
+## Odbiór preview — 2026-09-14
+
+- [x] Odbiór przeglądarkowy PR75: aktywne odbitki 15×21 za 2,50 zł, dostęp OAuth PayU, ujawnione braki InPost w preview.
+- [x] Ułatwić znalezienie oferty przed kartami i zachować nowe ceny wpisane przez użytkownika.
+- [x] Naprawić komunikaty wspólnej bazy za proxy Netlify i braku tokenu mapy; regresje PASS.
+
 ## 2026-09-14 — domknięcie sklepu i dostawy
 
 - [x] Zdiagnozować pusty katalog mimo włączonych przełączników.

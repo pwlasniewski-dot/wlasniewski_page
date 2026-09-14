@@ -66,7 +66,8 @@ async function clickLink(link) { link.addEventListener('click', event => event.p
       assert.ok(cardsSection.textContent.includes('Karta rodzinna')); assert.ok(cardsSection.textContent.includes('675 zł')); assert.ok(cardsSection.textContent.includes('Istniejący opis karty z API'));
       assert.ok(!cardsSection.textContent.includes('PRIVATE-CODE'));
       const howTo = [...document.querySelectorAll('h2')].find(node => node.textContent === 'Jak kupić kartę').closest('section');
-      assert.ok(cardsSection.compareDocumentPosition(photoSection) & Node.DOCUMENT_POSITION_FOLLOWING);
+      assert.ok(photoSection.compareDocumentPosition(cardsSection) & Node.DOCUMENT_POSITION_FOLLOWING);
+      assert.equal(document.querySelector('nav[aria-label="Wybierz ofertę sklepu"] a[href="#produkty-fotograficzne"]').textContent, publicCatalog.offer.buttonLabel);
       assert.ok(photoSection.compareDocumentPosition(howTo) & Node.DOCUMENT_POSITION_FOLLOWING);
       const schema = JSON.parse(photoSection.querySelector('script').textContent);
       assert.ok(schema.itemListElement.every(item => item.item.url.startsWith('https://wlasniewski.pl/karta-podarunkowa#') && item.item.offers.url === item.item.url));
@@ -112,7 +113,7 @@ async function clickLink(link) { link.addEventListener('click', event => event.p
     await fresh();
     const saved = validateShopConfig({ ...clone(config), publicOffer: { ...clone(config.publicOffer), title: 'Oferta po zapisie w CMS', buttonLabel: 'Przejdź do moich zdjęć' } });
     publicCatalog = publicShopCatalog(JSON.parse(JSON.stringify(saved)), [{ ...products[0], title: 'Harmonijka rodzinna', price: 15900 }, ...products.slice(1)]);
-    await mount(Storefront, {});
+    let available=false; await mount(Storefront, {onAvailabilityChange: value => {available=value;}}); assert.equal(available,true);
     assert.equal(document.querySelector('h2').textContent, 'Oferta po zapisie w CMS');
     assert.ok(document.body.textContent.includes('Harmonijka rodzinna')); assert.ok(document.body.textContent.includes('159,00'));
     const links = [...document.querySelectorAll('a[data-analytics]')]; assert.equal(links.length, 5);
@@ -127,7 +128,7 @@ async function clickLink(link) { link.addEventListener('click', event => event.p
     await click(button('Zamknij szczegóły'));
   });
   await check('Storefront: unpublished, zero-price and incompatible-delivery offers never invite purchase', async () => {
-    await fresh(); publicCatalog = null; await mount(Storefront, {}); assert.equal(document.querySelector('section'), null);
+    await fresh(); publicCatalog = null; let available=true; await mount(Storefront, {onAvailabilityChange: value => {available=value;}}); assert.equal(available,false); assert.equal(document.querySelector('section'), null);
     await fresh(); publicCatalog.products[0].price = 0; publicCatalog.formats[0].unitAmount = 0; publicCatalog.delivery.courier.enabled = false;
     await mount(Storefront, {});
     assert.equal(document.querySelector('#produkt-11'), null); assert.equal(document.querySelector('#format-nphoto-15x21-silk'), null); assert.equal(document.querySelector('#produkt-14'), null);

@@ -5,9 +5,9 @@ const {NextRequest,NextResponse}=require('next/server');
 let allowed=true,providerDenied=false,transactionFails=false,transport=[];
 let products=[{id:6,gallery_id:null,title:'Harmonijka',description:'8×8 cm, 12 stron',price:4154,is_active:false,image_url:'https://nphoto.com/accordion.jpg'},{id:7,gallery_id:null,title:'Album',description:'20 stron',price:25770,is_active:false,image_url:'https://nphoto.com/album.jpg'},{id:99,gallery_id:1,title:'Prywatny',description:'Nie publikuj',price:900,is_active:false,image_url:'https://nphoto.com/private.jpg'}];
 const settings=new Map();
-const db={setting:{findFirst:async()=>({payu_merchant_pos_id:'test-pos',payu_client_id:'test-pos',payu_client_secret:'oauth-test-secret',payu_md5_key:'md5-test-secret',payu_environment:'sandbox'}),upsert:async({where,create,update})=>{if(transactionFails)throw Error('write failed');const row=settings.has(where.setting_key)?update:create;settings.set(where.setting_key,row.setting_value);return row;}},galleryProduct:{findMany:async({where})=>products.filter(p=>p.gallery_id===where.gallery_id&&where.id.in.includes(p.id)),updateMany:async({where,data})=>{const selected=products.filter(p=>p.gallery_id===where.gallery_id&&where.id.in.includes(p.id)&&p.is_active===where.is_active);selected.forEach(p=>Object.assign(p,data));return {count:selected.length};}},clientGallery:{findUnique:async()=>({id:1})},$transaction:async(fn,options)=>{assert.equal(options.isolationLevel,'Serializable');const previous=structuredClone(products);try{return await fn(db);}catch(e){products=previous;throw e;}}};
+const db={nphotoAlbum:{findMany:async()=>[]},setting:{findFirst:async()=>({payu_merchant_pos_id:'test-pos',payu_client_id:'test-pos',payu_client_secret:'oauth-test-secret',payu_md5_key:'md5-test-secret',payu_environment:'sandbox'}),upsert:async({where,create,update})=>{if(transactionFails)throw Error('write failed');const row=settings.has(where.setting_key)?update:create;settings.set(where.setting_key,row.setting_value);return row;}},galleryProduct:{findMany:async({where})=>products.filter(p=>p.gallery_id===where.gallery_id&&where.id.in.includes(p.id)),updateMany:async({where,data})=>{const selected=products.filter(p=>p.gallery_id===where.gallery_id&&where.id.in.includes(p.id)&&p.is_active===where.is_active);selected.forEach(p=>Object.assign(p,data));return {count:selected.length};}},clientGallery:{findUnique:async()=>({id:1})},$transaction:async(fn,options)=>{assert.equal(options.isolationLevel,'Serializable');const previous=structuredClone(products);try{return await fn(db);}catch(e){products=previous;throw e;}}};
 const original=Module._load;
-Module._load=function(name,...args){if(name==='@/lib/db/prisma')return {__esModule:true,default:db};if(name==='@/lib/auth/middleware')return {withAuth:async(req,fn)=>allowed?fn():NextResponse.json({error:'Unauthorized'},{status:401})};return original.call(this,name,...args);};
+Module._load=function(name,...args){if(name==='@/lib/galleries/merchandise-server')return {...original.call(this,name,...args),loadGalleryShop:async()=>({config,products,sharedProducts:[]})};if(name==='@/lib/db/prisma')return {__esModule:true,default:db};if(name==='@/lib/auth/middleware')return {withAuth:async(req,fn)=>allowed?fn():NextResponse.json({error:'Unauthorized'},{status:401})};return original.call(this,name,...args);};
 const integrations=require('../../src/app/api/admin/gallery-shop/integrations/route.ts');
 const shop=require('../../src/app/api/admin/galleries/[id]/shop/route.ts');
 const {defaultShopConfig}=require('../../src/lib/galleries/merchandise.ts');
@@ -18,6 +18,13 @@ const config={...defaultShopConfig(),enabled:true,delivery:{locker:{enabled:true
 const req=(path='/api/admin/gallery-shop/integrations')=>new NextRequest(`https://shop.example.test${path}`,{headers:{'x-forwarded-for':'192.0.2.99'}});
 const publish=(id='default')=>shop.PUT(new NextRequest('https://shop.example.test/api/admin/galleries/default/shop',{method:'PUT',body:JSON.stringify({config,publishSelected:true})}),{params:Promise.resolve({id})});
 (async()=>{
+ await check('preview warning survives rewritten Netlify request URLs',async()=>{
+  const read=headers=>shop.GET(new NextRequest('https://internal.example.test/api/admin/galleries/default/shop',{headers}),{params:Promise.resolve({id:'default'})});
+  assert.equal((await (await read({})).json()).preview,false);
+  assert.equal((await (await read({'x-forwarded-host':'deploy-preview-75--helpful-axolotl-cc1cbb.netlify.app'})).json()).preview,true);
+  process.env.CONTEXT='deploy-preview';assert.equal((await (await read({})).json()).preview,true);delete process.env.CONTEXT;
+ });
+
  await check('publication explains empty active shop and offers explicit grouped activation',async()=>{
   let published=0;await mount(PublicSettings,{value:config.publicOffer,formats:config.formats,products,shopEnabled:true,delivery:config.delivery,productRules:{},disabled:false,onChange:()=>{},onPublish:()=>published++});
   assert.ok(document.querySelector('[role=alert]').textContent.includes('nie pokazuje jeszcze żadnego produktu'));
@@ -49,5 +56,11 @@ const publish=(id='default')=>shop.PUT(new NextRequest('https://shop.example.tes
   delete process.env.GALLERY_QA_DATABASE_URL;delete process.env.CONTEXT;
  });
  for(const key of ['INPOST_API_TOKEN','INPOST_ORGANIZATION_ID','INPOST_ENVIRONMENT','NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN'])delete process.env[key];
- console.log('Shop launch readiness: 4 groups PASS (provider transport and database mocked).');
+ await check('missing Geowidget token is never presented as configured',async()=>{
+  const originalFetch=global.fetch;
+  global.fetch=async()=>Response.json({success:true,checkedAt:new Date().toISOString(),inpost:{connected:false,environment:'sandbox',missing:[],locker:false,courier:false,courierService:'inpost_courier_c2c',pickupConfigured:false,pointsConnected:false,mapConfigured:false,message:'Brak konfiguracji'},payment:{connected:false,environment:null,message:'Brak konfiguracji'}});
+  await mount(require('../../src/components/admin/ShopIntegrationCheck.tsx').default,{});await click(button('Sprawdź połączenia'));
+  assert.match(document.body.textContent,/Brak tokenu mapy w tym środowisku/);assert.doesNotMatch(document.body.textContent,/Token jest zapisany/);await reset();global.fetch=originalFetch;
+ });
+ console.log('Shop launch readiness: 6 groups PASS (provider transport and database mocked).');
 })().catch(e=>{console.error(e);process.exitCode=1});

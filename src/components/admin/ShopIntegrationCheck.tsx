@@ -19,7 +19,7 @@ export default function ShopIntegrationCheck() {
   ['Paczkomaty',result.inpost.locker,'Usługa inpost_locker_standard na Twoim koncie.'],
   ['Kurier',result.inpost.courier,`Usługa ${result.inpost.courierService} na Twoim koncie.`],
   ['Wyszukiwanie punktów',result.inpost.pointsConnected,'Połączenie z API Points używanym przed płatnością.'],
-  ['Mapa Paczkomatów',result.inpost.mapConfigured,'Token jest zapisany. Działanie mapy na domenie sprawdź w koszyku.'],
+  ['Mapa Paczkomatów',result.inpost.mapConfigured,result.inpost.mapConfigured ? 'Token jest zapisany. Działanie mapy na domenie sprawdź w koszyku.' : 'Brak tokenu mapy w tym środowisku. Skonfiguruj token Geowidget dla domeny sklepu.'],
   ['Odbiór przez kuriera',result.inpost.pickupConfigured,'Wymaga pełnych danych nadawcy i adresu odbioru.'],
   ['Płatności PayU',result.payment.connected,result.payment.message],
  ] as const : [];

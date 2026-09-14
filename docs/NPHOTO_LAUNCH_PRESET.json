@@ -1,5 +1,5 @@
 {
-  "status": "Proponowane ustawienia do zatwierdzenia po teście na osobnej bazie. Plik nie jest wykonywany automatycznie.",
+  "status": "Wcześniejsza propozycja cen z marżą 35%, niewykonywana automatycznie. Użytkownik później ustawił 15×21: 2,50 zł oraz 10×15: 1,50 zł. Przed zastosowaniem należy zachować jego bieżące formaty i ceny; poniższe progi są propozycją, nie zgodą na nadpisanie.",
   "config": {
     "buttonLabel": "Przejdź do zakupu zdjęć",
     "delivery": {

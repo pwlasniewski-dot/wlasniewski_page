@@ -1,3 +1,7 @@
+## Odbiór preview — 2026-09-14
+
+Odbiór Netlify: flaga preview uwzględnia kontekst wdrożenia, nagłówki proxy oraz domenę przeglądarki. Jest informacją, nie mechanizmem autoryzacji. Brak tokenu Geowidget ma osobny komunikat. Istniejący storefront zgłasza dostępność i etykietę CTA z CMS do strony sklepu, bez drugiego zapytania katalogu; katalog jest bezpośrednio pod główną sekcją, przed listą kart.
+
 ## 2026-09-14 — domknięcie wspólnego sklepu
 
 `shop-publication.ts` współdzieli reguły publikacji między CMS a istniejącym PUT galerii/default/shop. Jawne `publishSelected` wykonuje aktywację i zapis config w transakcji Serializable. Zwykły zapis nie zmienia aktywności produktów. `printQuantities` i `printUnitAmount` wyceniają progi; `PrintPriceTiers` przedstawia te same dane w ofercie i zakupie. Historyczna wycena kopiuje progi bez współdzielenia referencji.

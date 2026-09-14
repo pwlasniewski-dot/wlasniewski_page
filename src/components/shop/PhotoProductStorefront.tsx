@@ -8,7 +8,7 @@ import type { ShopProduct } from '@/lib/galleries/merchandise';
 import PrintPriceTiers from '@/components/galleries/PrintPriceTiers';
 
 type ClientGallery = { id: number; access_code: string; client_name: string; photo_count: number; created_at: string };
-type Props = { mode?: 'public' | 'account'; token?: string; className?: string; onAction?: (action: 'offer_open' | 'gallery_open') => void };
+type Props = { mode?: 'public' | 'account'; token?: string; className?: string; onAvailabilityChange?: (available: boolean, label: string) => void; onAction?: (action: 'offer_open' | 'gallery_open') => void };
 const money = (value: number) => new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value / 100);
 const action = 'inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#d8c7a7] bg-[#d8c7a7] px-5 py-3 text-center text-sm font-semibold text-stone-950 transition-colors hover:bg-[#ecddc3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d8c7a7]';
 const secondary = 'min-h-11 rounded-xl border border-stone-600 px-4 py-2 text-sm text-stone-200 transition-colors hover:border-stone-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-300';
@@ -30,7 +30,7 @@ function ProductImage({ src, alt }: { src?: string | null; alt: string }) {
 }
 
 /** One presentation of the shared catalog, with the existing gallery as the only checkout. */
-export default function PhotoProductStorefront({ mode = 'public', token, className = '', onAction }: Props) {
+export default function PhotoProductStorefront({ mode = 'public', token, className = '', onAction, onAvailabilityChange }: Props) {
   const headingId = useId();
   const [catalog, setCatalog] = useState<PublicShopCatalog | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -56,6 +56,11 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
     }).catch(() => { if (active) { setCatalog(null); setLoadError(true); setLoaded(true); } });
     return () => { active = false; controller.abort(); };
   }, [attempt]);
+
+  useEffect(() => {
+    const available = !!catalog?.offer.enabled && (catalog.formats.some(format => format.active && format.unitAmount > 0) || catalog.products.some(product => product.price > 0 && (!product.deliveryMethods || product.deliveryMethods.some(method => catalog.delivery[method].enabled))));
+    onAvailabilityChange?.(available, catalog?.offer.buttonLabel || '');
+  }, [catalog, onAvailabilityChange]);
 
   useEffect(() => { if (mode === 'account') setIntent(parseShopIntent(window.location.search)); }, [mode]);
   useEffect(() => { if (mode === 'account' && intent) setExpanded(true); }, [mode, intentKey]);
@@ -96,7 +101,7 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
     ? <a className={action} href={shopAccountHref(selection)} data-analytics={`shop-offer-${selection.kind}`} onClick={() => trackShopIntent('offer_selected', selection)}>{catalog.offer.buttonLabel}<span aria-hidden="true">→</span></a>
     : <button type="button" className={action} onClick={() => choose(selection)}>{catalog.offer.buttonLabel}<span aria-hidden="true">→</span></button>;
 
-  const content = <section id="produkty-fotograficzne" aria-labelledby={headingId} className={`scroll-mt-8 border-t border-stone-700/60 text-stone-100 ${mode === 'public' ? `py-12 sm:py-16 ${className}` : 'px-4 py-7 sm:px-6'}`}>
+  const content = <section id="produkty-fotograficzne" aria-labelledby={headingId} className={`scroll-mt-28 border-t border-stone-700/60 text-stone-100 ${mode === 'public' ? `py-12 sm:py-16 ${className}` : 'px-4 py-7 sm:px-6'}`}>
     {mode === 'public' && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(storefrontStructuredData(catalog)).replace(/</g, '\\u003c') }} />}
     <header className="mb-8 max-w-3xl sm:mb-10"><h2 id={headingId} className="font-serif text-3xl font-normal leading-tight tracking-tight sm:text-5xl">{catalog.offer.title}</h2>{catalog.offer.introduction && <p className="mt-5 whitespace-pre-line text-base leading-7 text-stone-400">{catalog.offer.introduction}</p>}</header>
     {intent && mode === 'account' && <div ref={chooser} tabIndex={-1} className="mb-8 scroll-mt-8 rounded-2xl border border-[#d8c7a7]/50 bg-[#d8c7a7]/5 p-5 sm:p-7" aria-label="Wybór galerii do produktu">
