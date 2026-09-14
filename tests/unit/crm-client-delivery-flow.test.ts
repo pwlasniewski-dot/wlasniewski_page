@@ -682,7 +682,7 @@ test('AdminIncident migration, indexed schema, API actions and Polish panel are 
     const migration = source('prisma/migrations/20260823120000_add_admin_incidents/migration.sql');
     const api = source('src/app/api/admin/incidents/route.ts');
     const panel = source('src/app/admin/incidents/page.tsx');
-    const sidebar = source('src/components/admin/Sidebar.tsx');
+    const sidebar = source('src/lib/admin/navigation.ts');
 
     assert.match(schema, /model AdminIncident/);
     assert.match(schema, /enum AdminIncidentSeverity/);
@@ -838,7 +838,7 @@ test('admin incident fallback shares the local alert limiter and logout clears t
     assert.ok(incidents.indexOf('process.env.ADMIN_EMAIL') < incidents.indexOf('process.env.ADMIN_NOTIFICATION_EMAIL'));
     assert.ok(incidents.indexOf('process.env.ADMIN_NOTIFICATION_EMAIL') < incidents.indexOf('await getAdminEmail()'));
     assert.ok(incidents.indexOf('await getAdminEmail()') < incidents.indexOf('process.env.SMTP_FROM'));
-    assert.match(logout, /cookies\.set\('client_token', ''/);
+    assert.match(logout, /cookies\.set\(scope === 'admin' \? 'admin_token' : 'client_token', ''/);
     assert.match(logout, /maxAge: 0/);
     assert.match(logout, /path: '\/'/);
     assert.match(auth, /fetch\('\/api\/auth\/logout', \{ method: 'POST'/);

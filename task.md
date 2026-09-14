@@ -1,3 +1,22 @@
+- [x] Naprawić i przetestować błędy odczytu wyborów rodzica, ZIP-a i kalendarza warsztatów.
+
+## 2026-09-14 — audyt i unifikacja admina
+
+- [x] Zapisać stałą zasadę unifikacji w AGENTS.md.
+- [x] Usunąć drugi widok zamówień w galerii i zachować filtr we wspólnej liście.
+- [x] Naprawić wspólną sesję, menu, odświeżanie i stan realizacji.
+- [x] Zabezpieczyć zarządzanie kontami administratorów przed utratą dostępu.
+- [x] Sprawdzić produkcyjne relacje, strukturę i historyczne potwierdzenia płatności wyłącznie SELECT.
+- [x] Przygotować naprawę NOT NULL na oddzielnej gałęzi Neon.
+- [ ] Końcowe testy, build i przegląd preview.
+- [ ] Osobny odbiór pełnej sprzedaży PayU/ShipX przed uruchomieniem oferty.
+
+## 2026-09-14 — jedno miejsce obsługi zamówień
+
+- [x] Scalić obsługę zamówień z istniejącą listą i usunąć osobny wpis menu.
+- [x] Dodać testy mapowania starego/nowego formatu i obsługi realizacji.
+- [ ] Sprawdzić build oraz preview w przeglądarce przed produkcją.
+
 ## 2026-09-14 — multimedia nPhoto
 
 - [x] Podpiąć brakujące zdjęcia Lite i Canvas na produkcji i sprawdzić po odświeżeniu.

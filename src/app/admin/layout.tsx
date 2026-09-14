@@ -6,6 +6,7 @@ import Sidebar from '@/components/admin/Sidebar';
 import AdminDownloadDiagnostics from '@/components/admin/AdminDownloadDiagnostics';
 import { Toaster } from 'react-hot-toast';
 import { Menu } from 'lucide-react';
+import { checkAdminSession, clearAdminIdentity, publicAdminPaths } from '@/lib/admin/session';
 
 export default function AdminLayout({
     children,
@@ -14,50 +15,34 @@ export default function AdminLayout({
 }) {
     const router = useRouter();
     const pathname = usePathname();
-    const [authorized, setAuthorized] = useState(false);
+    const isPublic = publicAdminPaths.has(pathname);
+    const [session, setSession] = useState<'checking' | 'authorized' | 'unavailable'>('checking');
+    const [retry, setRetry] = useState(0);
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
-        let cancelled = false;
+        if (isPublic) { setSession('checking'); return; }
+        const controller = new AbortController();
+        setSession('checking');
+        checkAdminSession(controller.signal).then(result => {
+            if (controller.signal.aborted) return;
+            if (result === 'invalid') {
+                clearAdminIdentity();
+                router.replace('/admin/login');
+            } else setSession(result);
+        }).catch(() => {
+            if (!controller.signal.aborted) setSession('unavailable');
+        });
+        return () => controller.abort();
+    }, [isPublic, router, retry]);
 
-        // Pages that don't require authentication
-        const publicPages = [
-            '/admin/login',
-            '/admin/forgot-password',
-            '/admin/reset-password'
-        ];
-
-        // Skip auth check for public pages
-        if (publicPages.some(page => pathname?.startsWith(page))) {
-            setAuthorized(true);
-            return;
-        }
-
-        const token = localStorage.getItem('admin_token');
-        if (!token) {
-            router.replace('/admin/login');
-        } else {
-            fetch('/api/auth/me', {
-                headers: { Authorization: `Bearer ${token}` },
-                cache: 'no-store'
-            })
-                .then((response) => {
-                    if (!response.ok) throw new Error('Invalid admin session');
-                    if (!cancelled) setAuthorized(true);
-                })
-                .catch(() => {
-                    localStorage.removeItem('admin_token');
-                    if (!cancelled) router.replace('/admin/login');
-                });
-        }
-
-        return () => {
-            cancelled = true;
-        };
-    }, [pathname, router]);
-
-    if (!authorized) {
-        return null; // Or a loading spinner
+    if (!isPublic && session !== 'authorized') {
+        return <div className="flex min-h-screen items-center justify-center bg-zinc-950 p-6 text-zinc-200">
+            <div className="max-w-md text-center" role={session === 'unavailable' ? 'alert' : 'status'}>
+                <p>{session === 'unavailable' ? 'Nie można teraz sprawdzić sesji. Sprawdź połączenie i spróbuj ponownie.' : 'Sprawdzanie sesji administratora…'}</p>
+                {session === 'unavailable' && <button type="button" onClick={() => setRetry(value => value + 1)} className="mt-5 min-h-11 rounded-xl bg-gold-400 px-5 py-3 font-semibold text-zinc-950">Spróbuj ponownie</button>}
+            </div>
+        </div>;
     }
 
     // Pages that get simple layout (no sidebar)
@@ -73,8 +58,8 @@ export default function AdminLayout({
     const isEditingOffer = pathname?.match(/^\/admin\/offers\/\d+$/);
     const isEditingContract = pathname?.match(/^\/admin\/offers\/\d+\/contract/);
 
-    if (noSidebarPages.some(page => pathname?.startsWith(page)) || isEditingOffer || isEditingContract) {
-        return <div className="min-h-screen bg-zinc-950">{children}</div>;
+    if (noSidebarPages.includes(pathname) || isEditingOffer || isEditingContract) {
+        return <div className="min-h-screen bg-zinc-950"><Toaster position="top-right" />{children}</div>;
     }
 
     return (

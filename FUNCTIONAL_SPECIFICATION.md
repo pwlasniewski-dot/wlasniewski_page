@@ -1,3 +1,17 @@
+## Uzupełnienie audytu 2026-09-14
+
+Dalszy audyt wykrył realne błędy wykonania: GET wyborów rodzica odwoływał się do niezdefiniowanego participant_id, POST ZIP-a do correlationId zadeklarowanego tylko w GET, a null w dniu warsztatu przerywał kalendarz. Poprawiono zakresy zmiennych i walidację dni. tests/qa/gallery-operating-regressions.cjs wykonuje te endpointy (odczyt wyborów, utworzenie/reuse ZIP-a, brak HQ, uszkodzony harmonogram); wszystkie scenariusze przeszły.
+
+## 2026-09-14 — wspólna obsługa administratora
+
+Administrator realizuje zakupy kart, zdjęć i produktów przez Rezerwacje → Zamówienia. Galeria otwiera tę samą listę z filtrem galerii. Płatność i realizacja pozostają osobnymi stanami. Tylko opłacone zamówienie pozwala przygotować pliki i nadać paczkę; realizacja przechodzi kolejno przez zamówienie u producenta, odbiór, pakowanie i wysyłkę. Koszt dostawy pochodzi ze snapshotu zamówienia.
+
+Panel zachowuje sesję przy przejściowej awarii i udostępnia ponowienie sprawdzenia. Wylogowanie zamyka sesję serwerową administratora, zachowując osobną sesję klienta. Konta administratorów są oddzielone od CRM; nie można usunąć ani zdegradować własnego konta, a usuwanie/degradacja nie może usunąć ostatniego dostępu administracyjnego.
+
+## 2026-09-14 — jedno miejsce obsługi zamówień
+
+Rezerwacje → Zamówienia obejmuje karty, stare zakupy galerii oraz odbitki i produkty z dostawą. Filtr produktów i wyszukiwanie nazwy lub przesyłki działają na wspólnej liście. Płatność warunkuje dostęp do produkcji i wysyłki; status płatności pozostaje tylko do odczytu.
+
 ## 2026-09-14 — prezentacja materiałów produktu
 
 Administrator edytuje adres MP4 i do 12 zdjęć rozkładówek na karcie produktu. Klient przełącza zdjęcia, film i przykładowe wnętrze w tym samym podglądzie w sklepie oraz galerii. Film nie montuje się przed wyborem i nie odtwarza automatycznie; rozkładówki obsługują przyciski oraz poziomy gest, zachowując przewijanie pionowe. Przykładowe realizacje nie stanowią projektu klienta.

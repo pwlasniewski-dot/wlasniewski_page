@@ -176,7 +176,7 @@ test('full booking has one hour picker, early deposit disclosure and consented a
     assert.match(source, /end_day_offset: slot\.endDayOffset \?\? 0/);
     assert.doesNotMatch(source, /data\.fullDayAvailable === true/);
     assert.doesNotMatch(source, /fullDayAvailable === true/);
-    assert.match(checkoutApi, /pg_advisory_xact_lock/);
+    assert.match(checkoutApi, /await acquireAdvisoryTransactionLock\(tx,/);
     assert.match(checkoutApi, /const bookingDateISO = String\(md\.date \|\| ''\);/);
     assert.doesNotMatch(checkoutApi, /String\(md\.date \|\| ''\)\.slice\(0, 10\)/);
 });

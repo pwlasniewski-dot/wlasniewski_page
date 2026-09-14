@@ -2,62 +2,40 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 import bcrypt from 'bcryptjs';
+import { AdminAccountError, adminAccountId, adminAccountInput, lockAdminAccounts, protectAdminAccount } from '@/lib/admin/accounts';
 
-// PUT update user (password, role, name)
+function failure(error: unknown) {
+    return NextResponse.json({ error: error instanceof AdminAccountError ? error.message : 'Nie udało się zmienić konta.' }, { status: error instanceof AdminAccountError ? error.status : 500 });
+}
+
 export async function PUT(request: NextRequest) {
-    return withAuth(request, async (req) => {
+    return withAuth(request, async req => {
         try {
-            const { searchParams } = new URL(request.url);
-            const id = searchParams.get('id');
-
-            if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
-
-            const body = await req.json();
-            const { password, name, role } = body;
-
-            const updateData: any = {};
-            if (name) updateData.name = name;
-            if (role) updateData.role = role;
-            if (password) {
-                updateData.password_hash = await bcrypt.hash(password, 10);
-            }
-
-            const user = await prisma.adminUser.update({
-                where: { id: Number(id) },
-                data: updateData,
-                select: {
-                    id: true,
-                    email: true,
-                    name: true,
-                    role: true,
-                }
+            const id = adminAccountId(request.nextUrl.searchParams.get('id'));
+            const { name, role, password } = adminAccountInput(await req.json().catch(() => null), false);
+            const passwordHash = password ? await bcrypt.hash(password, 10) : undefined;
+            const user = await prisma.$transaction(async tx => {
+                await lockAdminAccounts(tx, req.user!.id);
+                const target = await tx.adminUser.findUnique({ where: { id }, select: { role: true } });
+                if (!target) throw new AdminAccountError('Nie znaleziono konta.', 404);
+                await protectAdminAccount(tx, req.user!.id, id, role || target.role);
+                return tx.adminUser.update({ where: { id }, data: { name, role, password_hash: passwordHash }, select: { id: true, email: true, name: true, role: true } });
             });
-
             return NextResponse.json({ success: true, user });
-        } catch (error) {
-            return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
-        }
+        } catch (error) { return failure(error); }
     });
 }
 
-// DELETE user
 export async function DELETE(request: NextRequest) {
-    return withAuth(request, async (req) => {
+    return withAuth(request, async req => {
         try {
-            const { searchParams } = new URL(request.url);
-            const id = searchParams.get('id');
-
-            if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
-
-            // Prevent deleting the last admin or self (optional check, but good practice)
-            // For now just delete
-            await prisma.adminUser.delete({
-                where: { id: Number(id) }
+            const id = adminAccountId(request.nextUrl.searchParams.get('id'));
+            await prisma.$transaction(async tx => {
+                await lockAdminAccounts(tx, req.user!.id);
+                await protectAdminAccount(tx, req.user!.id, id);
+                await tx.adminUser.delete({ where: { id } });
             });
-
             return NextResponse.json({ success: true });
-        } catch (error) {
-            return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
-        }
+        } catch (error) { return failure(error); }
     });
 }

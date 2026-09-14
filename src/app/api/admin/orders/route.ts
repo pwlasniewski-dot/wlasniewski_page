@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import {readShopMetadata, type ShopMetadata} from '@/lib/galleries/merchandise';
 import { requireAuth } from '@/lib/auth/middleware';
 
 type UnifiedOrder = {
     type: 'gift_card' | 'gallery_photo';
+    merchandise?: ShopMetadata;
     rawId: number;
     id: string;
     customerEmail: string;
@@ -284,6 +286,19 @@ export async function GET(request: NextRequest) {
         }));
 
         const photoOrdersMapped: UnifiedOrder[] = photoOrders.map((order) => {
+            const merchandise = readShopMetadata(order.product_ids);
+            if (merchandise) return {
+                type: 'gallery_photo', rawId: order.id, id: `GL-${order.id}`,
+                customerEmail: merchandise.delivery.email, customerName: merchandise.delivery.recipientName,
+                amount: order.total_amount, currency: 'PLN', status: order.payment_status,
+                createdAt: order.created_at, paymentMethod: 'payu', paymentRef: order.payment_id || undefined,
+                galleryId: order.gallery.id, galleryName: order.gallery.client_name,
+                merchandise,
+                photoIds: parsePhotoIds(order.photo_ids),
+                selectedPhotos: parsePhotoIds(order.photo_ids).flatMap(id => { const photo = photosById.get(id); return photo ? [photo] : []; }),
+                orderItems: merchandise.lines.map(line => ({kind: line.kind === 'print' ? 'extra_photo' : 'product', title: line.title, quantity: line.quantity, unitAmount: line.unitAmount, totalAmount: line.lineTotal, sizeLabel: line.kind === 'print' ? line.format?.label : undefined})),
+                sizeSummary: [...new Set(merchandise.lines.flatMap(line => line.kind === 'print' && line.format ? [line.format.label] : []))],
+            } satisfies UnifiedOrder;
             const parsedPhotoIds = parsePhotoIds(order.photo_ids);
             const parsedProductIds = parseProductIds(order.product_ids || null);
             const groupExtraMetadata = parseGroupExtraPrintMetadata(order.product_ids || null);

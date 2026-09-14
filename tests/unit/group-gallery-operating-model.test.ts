@@ -19,7 +19,7 @@ test('group digital downloads are independent from print selections and paid ord
 test('group archive build is shared by content and claimed atomically', () => {
     const route = source('src/app/api/galleries/group/[galleryId]/download-all/route.ts');
     assert.match(route, /createGalleryArchiveContentFingerprint\(target\)/);
-    assert.match(route, /pg_advisory_xact_lock/);
+    assert.match(route, /await acquireExtendedAdvisoryTransactionLock\(transaction,/);
     assert.match(route, /DOWNLOAD_ARCHIVE_REUSED/);
     assert.match(route, /DOWNLOAD_ARCHIVE_LINK_ISSUED/);
 });

@@ -2,6 +2,7 @@ const h=require('./gallery-shop-dom.cjs');
 const {assert,act,mount,reset,flush,button,field,click,set,check}=h;
 const Client=require('../../src/components/galleries/GalleryShoppingPanel.tsx').default;
 const Admin=require('../../src/components/admin/GalleryShopAdmin.tsx').default;
+const Details=require('../../src/components/admin/MerchandiseOrderDetails.tsx').default;
 let config={version:1,enabled:true,title:'Twoje wspomnienia',introduction:'Wydrukuj fotografie',buttonLabel:'Zamów odbitki i produkty',formats:[{id:'p10',label:'10×15',widthMm:100,heightMm:150,unitAmount:350,active:true,paper:'mat'},{id:'p20',label:'20×30',widthMm:200,heightMm:300,unitAmount:1600,active:true,paper:'mat'}],productRules:{10:{minPhotos:2,maxPhotos:4}},delivery:{locker:{enabled:true,amount:1500},courier:{enabled:true,amount:2000}}};
 let products=[{id:10,title:'Album',description:'Album fotograficzny',price:9900,image_url:null,product_type:'album',is_active:true}];
 let orders=[],requests=[],postAttempts=0;
@@ -13,7 +14,7 @@ if(url.includes('/admin/')){
  if(url.endsWith('/shop')&&method==='GET')return reply({success:true,config,products,orders,nphotoAlbums:[{id:100,title:'Album'}]});
  if(url.endsWith('/shop')&&method==='PUT'){config=clone(body.config);return reply({success:true,config})}
  if(url.includes('/products/')){let p=products.find(p=>p.id===Number(url.split('/').pop()));Object.assign(p,body);return reply({success:true,product:p})}
- if(url.includes('/orders/')){let o=orders.find(o=>o.id===Number(url.split('/').pop()));o.metadata.fulfillment={status:body.status,trackingNumber:body.trackingNumber};return reply({success:true})}
+ if(url.includes('/orders/')){let o=orders.find(o=>o.id===Number(url.split('/').pop()));o.metadata.fulfillment={status:body.status,trackingNumber:body.trackingNumber};return reply({success:true,metadata:o.metadata})}
 }else{
  if(method==='GET'&&url.includes('/orders/'))return reply({success:true,order:orders.find(o=>o.id===Number(url.split('/').pop()))});
  if(method==='GET')return reply({success:true,catalog:catalog()});
@@ -31,7 +32,8 @@ async function select(ids){for(const id of ids)await click(field(`Zaznacz zdjęc
 async function batch(ids,fmt='p10',qty=1){await click(button('Galeria'));await select(ids);await set(field('Format dla zaznaczonych'),fmt);await set(field('Ilość na każde zdjęcie'),qty);await click(button('Dodaj zaznaczone do koszyka'))}
 async function addProduct(){await click(button('Produkty'));await click(button('Wybierz produkt: Album'));await select([1,2]);await click(button(/^Dodaj produkt do koszyka/))}
 async function submit(){await click(button('Dostawa i podsumowanie'));await set(field('Imię i nazwisko'),'Anna Testowa');await set(field('E-mail'),'anna@example.com');await set(field('Telefon'),'501222333');await set(field('Kod Paczkomatu'),'TOR01M');await click(button(/^Zamawiam i płacę/))}
-async function adminOrder(id){orders.find(o=>o.id===id).payment_status='paid';await admin();await click(button(/^Zamówienia \(/));assert.ok(document.body.textContent.includes(`Zamówienie #${id}`));await set(field(`Etap zamówienia #${id}`),'ordered');await click(button(`Zapisz etap zamówienia #${id}`));assert.equal(orders.find(o=>o.id===id).metadata.fulfillment.status,'ordered')}
+async function adminOrder(id){const order=orders.find(o=>o.id===id);order.payment_status='paid';await admin();assert.equal([...document.querySelectorAll('a')].find(a=>a.textContent==='Zamówienia tej galerii').getAttribute('href'),'/admin/bookings/orders?gallery=12');assert.ok(!document.querySelector('[aria-label="Etap realizacji"]'));await reset();await mount(Details,{order:{id:order.id,galleryId:12,createdAt:order.created_at,total:order.total_amount,paymentStatus:order.payment_status,metadata:order.metadata}});await set(document.querySelector('select'),'ordered');await click(button('Zapisz etap realizacji'));assert.equal(orders.find(o=>o.id===id).metadata.fulfillment.status,'ordered')}
+
 (async()=>{
  await check('Runda 1: admin cena 4,25 PLN -> zapis/odczyt -> klient',async()=>{await admin();await set(field('Format 1 cena (zł)'),4.25);await click(button('Zapisz ustawienia sklepu'));assert.equal(config.formats[0].unitAmount,425,JSON.stringify({requests,text:document.body.textContent}));await client();assert.ok(field('Format dla zaznaczonych').textContent.includes('4,25'))});
  await check('Runda 1: 4 zdjęcia x2, produkt, powrót, 2 zdjęcia inny format',async()=>{await batch([1,2,3,4],'p10',2);assert.equal(lines().length,4);await addProduct();assert.equal(lines().length,5);await batch([5,6],'p20',1);assert.equal(lines().length,7);assert.equal(field('Ilość pozycji 1').value,'2');await click(button('Wróć do oglądania'));assert.equal(document.querySelector('[aria-label="Zakupy w galerii"]'),null);await click(button(/^Zamów odbitki i produkty/));assert.equal(lines().length,7);await submit();assert.equal(orders.length,1);assert.equal(orders[0].total_amount,18000);await adminOrder(1)});

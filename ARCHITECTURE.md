@@ -1,3 +1,17 @@
+## Uzupełnienie audytu 2026-09-14
+
+Dalszy audyt wykrył realne błędy wykonania: GET wyborów rodzica odwoływał się do niezdefiniowanego participant_id, POST ZIP-a do correlationId zadeklarowanego tylko w GET, a null w dniu warsztatu przerywał kalendarz. Poprawiono zakresy zmiennych i walidację dni. tests/qa/gallery-operating-regressions.cjs wykonuje te endpointy (odczyt wyborów, utworzenie/reuse ZIP-a, brak HQ, uszkodzony harmonogram); wszystkie scenariusze przeszły.
+
+## 2026-09-14 — wspólna obsługa administratora
+
+Wspólna mapa src/lib/admin/navigation.ts służy menu i testom tras. session.ts obsługuje weryfikację oraz POST /api/auth/logout?scope=admin; brak scope nadal wylogowuje tylko klienta. Layout sprawdza sesję przy wejściu do chronionej części, API nadal autoryzuje każde żądanie. 5xx/offline nie kasują tożsamości. AbortController odrzuca spóźnione odpowiedzi.
+
+GalleryShopAdmin prowadzi do /admin/bookings/orders?gallery=ID. Istniejący mapper rozpoznaje snapshot zakupu, wspólna lista aktualizuje szczegóły po zapisie. InPost przekazuje tracking do formularza etapu, bez utożsamiania zakupu etykiety z wysłaniem paczki. Konta administratorów korzystają ze wspólnej blokady admin-accounts i ponownej weryfikacji aktora w transakcji.
+
+## 2026-09-14 — jedno miejsce obsługi zamówień
+
+Jeden punkt obsługi /admin/bookings/orders. API admin/orders rozpoznaje snapshot gallery_merchandise i zachowuje kwoty pozycji oraz dostawy. MerchandiseOrderDetails udostępnia produkcję, etapy i InPost w istniejących szczegółach. Stary adres gallery-orders przekierowuje. Bez migracji danych.
+
 ## 2026-09-14 — wspólne multimedia produktu
 
 Autoryzowany PATCH produktu zapisuje istniejące pola video_url i sample_pages. loadGalleryShop normalizuje listy i adres MP4; publicShopCatalog jawnie przekazuje te same pola. GalleryProductPreview renderuje je w adminie, sklepie i galerii, bez iframe, HTML producenta i nowych wywołań serwerowych do dostawcy.

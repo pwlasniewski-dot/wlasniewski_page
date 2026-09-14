@@ -68,7 +68,7 @@ test('admin flow stores price visibility and permits personal pickup without an 
     const schema = source('prisma/schema.prisma');
     const route = source('src/app/api/gift-cards/route.ts');
     const admin = source('src/app/admin/gift-cards/page.tsx');
-    const sidebar = source('src/components/admin/Sidebar.tsx');
+    const sidebar = source('src/lib/admin/navigation.ts');
 
     assert.match(schema, /show_price\s+Boolean\s+@default\(true\)/);
     assert.match(route, /recipient_email: data\.recipientEmail \|\| null/);

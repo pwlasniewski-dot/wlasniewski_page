@@ -567,6 +567,23 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+Dalszy audyt wykrył realne błędy wykonania: GET wyborów rodzica odwoływał się do niezdefiniowanego participant_id, POST ZIP-a do correlationId zadeklarowanego tylko w GET, a null w dniu warsztatu przerywał kalendarz. Poprawiono zakresy zmiennych i walidację dni. tests/qa/gallery-operating-regressions.cjs wykonuje te endpointy (odczyt wyborów, utworzenie/reuse ZIP-a, brak HQ, uszkodzony harmonogram); wszystkie scenariusze przeszły.
+
+
+## 2026-09-14 — unifikacja całego panelu: zamówienia, sesja, konta i audyt
+
+- Zasada w AGENTS.md: rozwijamy istniejące procesy i dane, bez równoległych zakładek. Rezerwacje → Zamówienia jest jedynym miejscem realizacji; galeria przekazuje filtr, stary adres przekierowuje.
+- Wspólna nawigacja wybiera jeden aktywny adres; usunięto zdublowany kalendarz. Sesja rozróżnia brak dostępu od awarii sieci, odrzuca spóźnione odpowiedzi, obsługuje cookie i nie przeładowuje formularzy przy zmianie sekcji. Wylogowanie usuwa właściwe HttpOnly cookie.
+- Naprawiono utratę etapu po ponownym otwarciu zamówienia, filtr paid/completed, utratę filtrów przy odświeżaniu, późną odpowiedź poprzedniej galerii, wybór niedozwolonego etapu oraz ręczne przepisywanie numeru zwróconego przez InPost.
+- Konta administratorów: walidacja, brak samousunięcia/degradacji, blokada transakcyjna i ponowne sprawdzenie uprawnień po jej uzyskaniu. Usunięto mylące tworzenie galerii klienta z konta administratora. Klienci pozostają w CRM.
+- Audyt produkcji wyłącznie odczytowy. Sprawdzono 98 modeli/1365 pól i 83 FK. 13 różnic NOT NULL dotyczy poradnika; naprawę sprawdzamy tylko na osobnej gałęzi Neon. Historyczne brakujące wpisy ledger mają zgodne identyfikatory, kwoty i walutę w historycznych logach COMPLETED PayU; nie zmieniono księgowań.
+- Testy regresji oraz przegląd zmienionego preview poprzedzają decyzję o wdrożeniu. Nie składano płatnych zamówień ani przesyłek.
+
+
+### 2026-09-14 — korekta niespójnej obsługi zamówień
+
+Usunięto osobną pozycję Zamówienia i przesyłki. Istniejąca lista Rezerwacje → Zamówienia otrzymuje snapshot produktów, dostawę oraz obsługę realizacji i InPost. Powód: osobna lista dublowała istniejący proces i utrudniała obsługę. Bez usuwania zamówień i zmiany płatności. Stan: weryfikacja przed publikacją.
+
 ### [2026-02-21] S3 PDF Generation & CRM PDF Download Fixes
 
 **Zmiany:**

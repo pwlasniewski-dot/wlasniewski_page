@@ -3,144 +3,10 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import {
-    LayoutDashboard,
-    Image,
-    Camera,
-    FileText,
-    Megaphone,
-    Tag,
-    MessageSquare,
-    BarChart3,
-    Settings,
-    LogOut,
-    X,
-    Calendar,
-    List,
-    Trophy,
-    Sparkles,
-    Menu,
-    Users,
-    ChevronDown,
-    Zap,
-    Briefcase,
-    Shield,
-    FileEdit,
-    Search,
-    Box,
-    Cake,
-    TrendingUp,
-    GraduationCap,
-    MapPin,
-    Mail,
-    BookOpen,
-    AlertTriangle
-} from 'lucide-react';
-
-const navigation = [
-    { name: 'Pulpit', href: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Media', href: '/admin/media', icon: Image },
-    { name: 'Portfolio', href: '/admin/portfolio', icon: Camera },
-    { name: 'Strony', href: '/admin/pages', icon: FileText },
-    { name: 'Jak się ubrać', href: '/admin/style-guide/outfits', icon: Sparkles },
-    { name: 'Przygotowanie klienta', href: '/admin/pages/przygotowanie-klienta', icon: BookOpen },
-    {
-        name: 'Rezerwacje',
-        href: '/admin/bookings',
-        icon: Calendar,
-        children: [
-            { name: 'Złożone rezerwacje', href: '/admin/bookings' },
-            { name: 'Kalendarz', href: '/admin/bookings/calendar' },
-            { name: 'Grafik / Dostępność', href: '/admin/bookings/calendar' },
-            { name: 'Zamówienia', href: '/admin/bookings/orders' },
-            { name: 'Pakiety rezerwacji', href: '/admin/rezerwacja' },
-            { name: 'Promocje pakietów', href: '/admin/promocje' },
-            { name: 'Lejek zapytań', href: '/admin/photo-funnel' },
-        ]
-    },
-    { name: 'Galerie', href: '/admin/galleries', icon: Image },
-    { name: 'Oferta galerii', href: '/admin/gallery-shop', icon: Box },
-    { name: 'Zamówienia i przesyłki', href: '/admin/gallery-orders', icon: Box },
-    { name: 'Albumy nPhoto', href: '/admin/nphoto-albums', icon: Box },
-    { name: 'Multimedia', href: '/admin/multimedia', icon: Sparkles },
-    { name: 'Kostka 3D', href: '/admin/photo-cube', icon: Box },
-    { name: 'Menu', href: '/admin/menu', icon: Menu },
-    { name: 'Foto Wyzwania', href: '/admin/challenges', icon: Trophy },
-    { name: 'Blog', href: '/admin/blog', icon: FileText },
-    { name: 'Kody rabatowe', href: '/admin/socio', icon: Megaphone },
-    { name: 'Kody promocyjne', href: '/admin/promo-codes', icon: Sparkles },
-    { name: 'Banery', href: '/admin/banners', icon: Tag },
-    { name: 'Opinie', href: '/admin/testimonials', icon: MessageSquare },
-    {
-        name: 'Vouchery / prezenty',
-        href: '/admin/gift-cards',
-        icon: FileText,
-        children: [
-            { name: 'Studio voucherów', href: '/admin/gift-cards' },
-            { name: 'Oferta w sklepie', href: '/admin/gift-cards/sklep' },
-        ]
-    },
-    { name: 'Zlecenia Dronowe', href: '/admin/drone-orders', icon: Zap },
-    { name: 'Zapytania', href: '/admin/inquiries', icon: MessageSquare },
-    {
-        name: 'Klienci (CRM)',
-        href: '/admin/clients',
-        icon: Users,
-        children: [
-            { name: 'Lista klientów', href: '/admin/clients' },
-        ]
-    },
-    {
-        name: 'Foto-Match',
-        href: '/admin/foto-match',
-        icon: Sparkles,
-        children: [
-            { name: 'Dashboard', href: '/admin/foto-match' },
-            { name: 'Profile', href: '/admin/foto-match/profiles' },
-            { name: 'Zdjęcia do akceptacji', href: '/admin/foto-match/photos' },
-            { name: 'Lista oczekujących', href: '/admin/foto-match/waitlist' },
-            { name: 'Matching i bonusy', href: '/admin/foto-match/match-settings' },
-            { name: 'Ustawienia', href: '/admin/foto-match/settings' },
-        ]
-    },
-    {
-        name: 'Warsztaty',
-        href: '/admin/warsztaty',
-        icon: GraduationCap,
-        children: [
-            { name: 'Lista warsztatów', href: '/admin/warsztaty' },
-            { name: 'Uczestnicy', href: '/admin/warsztaty/uczestnicy' },
-        ]
-    },
-    { name: 'Administratorzy', href: '/admin/users', icon: Shield },
-    { name: 'Fotografowie', href: '/admin/photographers', icon: Camera },
-
-    { name: 'Analityka', href: '/admin/analytics', icon: BarChart3 },
-    { name: 'Marketing & UTM', href: '/admin/marketing', icon: TrendingUp },
-    { name: 'Mailing', href: '/admin/mailing', icon: Mail },
-    {
-        name: 'SEO Ops',
-        href: '/admin/seo',
-        icon: Search,
-        children: [
-            { name: 'Audyt & Autopilot', href: '/admin/seo' },
-            { name: 'Nagłówki H1/H2/H3', href: '/admin/seo/headings' },
-        ]
-    },
-    { name: 'Local SEO / Maps', href: '/admin/local-seo', icon: MapPin },
-    { name: 'Logi', href: '/admin/logs', icon: List },
-    { name: 'Incydenty', href: '/admin/incidents', icon: AlertTriangle },
-    { name: 'Stopka', href: '/admin/footer', icon: FileText },
-    {
-        name: 'Ustawienia',
-        href: '/admin/settings',
-        icon: Settings,
-        children: [
-            { name: 'Ogólne', href: '/admin/settings' },
-            { name: 'aeroanaliza.pl', href: '/admin/settings/aeroanaliza' },
-        ]
-    },
-];
+import { LogOut, X, ChevronDown } from 'lucide-react';
+import { navigation, activeAdminNavigation } from '@/lib/admin/navigation';
+import { logoutAdmin } from '@/lib/admin/session';
+import toast from 'react-hot-toast';
 
 interface SidebarProps {
     isOpen?: boolean;
@@ -152,24 +18,24 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     const router = useRouter();
     const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
+    const [loggingOut, setLoggingOut] = useState(false);
+    const active = activeAdminNavigation(pathname);
     useEffect(() => {
-        const activeParent = navigation.find((item) => {
-            if (!('children' in item) || !item.children) return false;
+        setExpandedMenu(active?.parent ?? null);
+    }, [active?.parent]);
 
-            return item.children.some((child: any) => {
-                return pathname === child.href || pathname.startsWith(`${child.href}/`);
-            });
-        });
-
-        if (activeParent) {
-            setExpandedMenu(activeParent.name);
+    const handleLogout = async () => {
+        if (loggingOut) return;
+        setLoggingOut(true);
+        try {
+            await logoutAdmin();
+            router.replace('/admin/login');
+            router.refresh();
+        } catch {
+            toast.error('Nie udało się zakończyć sesji. Spróbuj ponownie.');
+        } finally {
+            setLoggingOut(false);
         }
-    }, [pathname]);
-
-    const handleLogout = () => {
-        localStorage.removeItem('admin_token');
-        localStorage.removeItem('admin_user');
-        router.push('/admin/login');
     };
 
     return (
@@ -190,6 +56,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     </span>
                     <button
                         onClick={() => setIsOpen?.(false)}
+                        aria-label="Zamknij menu"
                         className="md:hidden text-zinc-400 hover:text-white"
                     >
                         <X className="h-6 w-6" />
@@ -197,12 +64,9 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 </div>
 
                 <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
-                    <nav className="mt-2 flex-1 space-y-1 px-2">
+                    <nav aria-label="Panel administratora" className="mt-2 flex-1 space-y-1 px-2">
                         {navigation.map((item) => {
-                            const isPreparationEditor = pathname.startsWith('/admin/pages/przygotowanie-klienta');
-                            const isActive = item.href === '/admin/pages'
-                                ? pathname.startsWith(item.href) && !isPreparationEditor
-                                : pathname.startsWith(item.href);
+                            const isActive = active?.parent === item.name;
                             const hasChildren = 'children' in item && item.children;
                             const isExpanded = expandedMenu === item.name;
 
@@ -210,6 +74,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                 return (
                                     <div key={item.name}>
                                         <button
+                                            aria-expanded={isExpanded}
                                             onClick={() => setExpandedMenu(isExpanded ? null : item.name)}
                                             className={`w-full group flex items-center justify-between px-2 py-3 text-base font-medium rounded-md transition-colors ${isActive
                                                 ? 'bg-zinc-800 text-gold-400'
@@ -233,9 +98,10 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                                 {item.children.map((child: any) => (
                                                     <Link
                                                         key={child.href}
+                                                        aria-current={active?.href === child.href ? 'page' : undefined}
                                                         href={child.href}
                                                         onClick={() => setIsOpen?.(false)}
-                                                        className={`block px-2 py-2 text-sm rounded-md transition-colors ${pathname === child.href
+                                                        className={`block px-2 py-2 text-sm rounded-md transition-colors ${active?.href === child.href
                                                             ? 'bg-zinc-800 text-gold-400'
                                                             : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
                                                             }`}
@@ -252,6 +118,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                             return (
                                 <Link
                                     key={item.name}
+                                    aria-current={isActive ? 'page' : undefined}
                                     href={item.href}
                                     onClick={() => setIsOpen?.(false)}
                                     className={`group flex items-center px-2 py-3 text-base font-medium rounded-md transition-colors ${isActive
@@ -274,13 +141,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 <div className="flex flex-shrink-0 bg-zinc-900 p-4 border-t border-zinc-800">
                     <button
                         onClick={handleLogout}
+                        disabled={loggingOut}
                         className="group flex w-full items-center px-2 py-2 text-sm font-medium rounded-md text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
                     >
                         <LogOut
                             className="mr-3 h-5 w-5 flex-shrink-0 text-zinc-500 group-hover:text-zinc-300"
                             aria-hidden="true"
                         />
-                        Wyloguj się
+                        {loggingOut ? 'Wylogowywanie…' : 'Wyloguj się'}
                     </button>
                 </div>
             </div>

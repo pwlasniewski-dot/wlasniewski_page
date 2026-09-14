@@ -5,7 +5,7 @@ const MediaPicker = lazy(() => import('@/components/admin/MediaPicker'));
 import NphotoStarterCatalog from './NphotoStarterCatalog';
 import NphotoOfferImporter from './NphotoOfferImporter';
 import PublicShopOfferSettings from './PublicShopOfferSettings';
-import GalleryShipmentPanel from './GalleryShipmentPanel';
+import Link from 'next/link';
 import { GalleryProductPreviewDialog } from '@/components/galleries/GalleryProductPreview';
 
 
@@ -13,7 +13,6 @@ import { validateShopConfig, type PrintFormat, type ShopConfig, type ProductShop
 type Product = { id: number; title: string; description?: string | null; image_url?: string | null; preview_images?: string[]; video_url?: string | null; sample_pages?: string[]; price: number; is_active: boolean };
 type Photo = { id: number; file_url: string; thumbnail_url?: string | null };
 type Album = { id: number; title: string; format?: string | null; cover_image_url?: string | null };
-type Order = { id: number; created_at: string; total_amount: number; payment_status: string; metadata?: any; product_ids?: string | null };
 const inputClass = 'mt-2 w-full min-w-0 min-h-12 rounded-xl border border-white/15 bg-zinc-950/60 px-3.5 py-3 text-base text-white shadow-inner transition focus:border-amber-200/60 focus:outline-none focus:ring-2 focus:ring-amber-200/30';
 const buttonClass = 'min-h-11 rounded-xl border border-white/20 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-zinc-100 transition hover:border-amber-200/40 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 disabled:cursor-not-allowed disabled:opacity-40';
 const panelClass = 'min-w-0 space-y-4 rounded-2xl border border-white/10 bg-zinc-900/80 p-4 sm:p-6';
@@ -29,12 +28,10 @@ export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId
     const [inherited, setInherited] = useState(false);
     const isDefault = galleryId === 'default';
     const [albums, setAlbums] = useState<Album[]>([]);
-    const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
-    const [tab, setTab] = useState<'offer' | 'orders'>('offer');
     const [albumId, setAlbumId] = useState('');
     const [albumPrice, setAlbumPrice] = useState('');
     const [dirty, setDirty] = useState(false);
@@ -49,11 +46,12 @@ export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId
         if (!response.ok || data.success === false) throw new Error(data.error || 'Nie udało się zapisać zmian. Spróbuj ponownie.');
         return data;
     }, []);
-    const load = useCallback(async () => {
-        const data = await request(base);
-        setConfig(data.config); setInherited(data.inherited === true); setSharedProducts(data.sharedProducts || []); setProducts(data.products || []); setAlbums(data.nphotoAlbums || []); setOrders(data.orders || []); setDirty(false);
+    const load = useCallback(async (signal?: AbortSignal) => {
+        const data = await request(base, { signal });
+        if (signal?.aborted) return;
+        setConfig(data.config); setInherited(data.inherited === true); setSharedProducts(data.sharedProducts || []); setProducts(data.products || []); setAlbums(data.nphotoAlbums || []); setDirty(false); setProductDrafts({}); setImportDirty(false);
     }, [base, request]);
-    useEffect(() => { let active = true; setLoading(true); load().catch(e => { if (active) setError(e.message); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [load]);
+    useEffect(() => { const controller = new AbortController(); setLoading(true); setConfig(null); setError(''); setNotice(''); load(controller.signal).catch(e => { if (!controller.signal.aborted) setError(e.message); }).finally(() => { if (!controller.signal.aborted) setLoading(false); }); return () => controller.abort(); }, [load]);
     useEffect(() => {
         const handler = (event: BeforeUnloadEvent) => { if (dirty || hasProductDrafts || importDirty) { event.preventDefault(); event.returnValue = ''; } };
         window.addEventListener('beforeunload', handler); return () => window.removeEventListener('beforeunload', handler);
@@ -91,14 +89,14 @@ export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId
             <div className="max-w-xl"><p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-amber-200/80">{isDefault ? 'Standard sprzedaży' : 'Sprzedaż w galerii'}</p><h3 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">{isDefault ? 'Wspólna oferta galerii' : 'Sklep prywatnej galerii'}</h3><p className="mt-3 text-sm leading-relaxed text-zinc-400">{isDefault ? 'Ustal formaty, ceny, produkty nPhoto i dostawę raz. Galerie bez własnych ustawień korzystają z tej oferty automatycznie.' : 'Przygotuj ofertę odbitek i produktów nPhoto. Klient wybierze zdjęcia, produkty i dostawę w jednym koszyku.'}</p></div>
             <span className={`rounded-full border px-3 py-2 text-xs font-semibold ${config.enabled && hasOffer && hasDelivery && !dirty ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-amber-200/25 bg-amber-200/10 text-amber-200'}`}>{dirty ? 'Niezapisane zmiany' : config.enabled && hasOffer && hasDelivery ? 'Oferta aktywna' : config.enabled ? 'Uzupełnij ofertę' : 'Przygotowanie oferty'}</span>
         </header>
-        <div className="grid gap-3 sm:grid-cols-3">{steps.map((step, index) => <a key={step.label} href={`#shop-${galleryId}-${step.target}`} onClick={() => setTab('offer')} className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-4 transition hover:bg-white/[0.06]"><span aria-hidden="true" className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm ${step.done ? 'bg-emerald-300/10 text-emerald-200' : 'bg-white/5 text-zinc-400'}`}>{step.done ? '✓' : `0${index + 1}`}</span><span><span className="block text-sm font-semibold text-white">{step.label}</span><span className="mt-0.5 block text-xs leading-relaxed text-zinc-400">{step.detail}</span></span></a>)}</div>
-        <div className="flex flex-wrap gap-2 border-b border-white/10 pb-5" aria-label="Widok sklepu"><button type="button" aria-pressed={tab === 'offer'} className={`${buttonClass} ${tab === 'offer' ? '!border-amber-200/50 !bg-amber-200/10 !text-amber-100' : ''}`} onClick={() => setTab('offer')}>Oferta i dostawa</button>{!isDefault && <button type="button" aria-pressed={tab === 'orders'} className={`${buttonClass} ${tab === 'orders' ? '!border-amber-200/50 !bg-amber-200/10 !text-amber-100' : ''}`} onClick={() => setTab('orders')}>Zamówienia ({orders.length})</button>}<a href={isDefault ? "#nphoto-launch" : "/admin/gallery-shop"} className={`${buttonClass} sm:ml-auto`}>Wspólna kolekcja nPhoto</a></div>
+        <div className="grid gap-3 sm:grid-cols-3">{steps.map((step, index) => <a key={step.label} href={`#shop-${galleryId}-${step.target}`} className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-4 transition hover:bg-white/[0.06]"><span aria-hidden="true" className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm ${step.done ? 'bg-emerald-300/10 text-emerald-200' : 'bg-white/5 text-zinc-400'}`}>{step.done ? '✓' : `0${index + 1}`}</span><span><span className="block text-sm font-semibold text-white">{step.label}</span><span className="mt-0.5 block text-xs leading-relaxed text-zinc-400">{step.detail}</span></span></a>)}</div>
+        <div className="flex flex-wrap gap-2 border-b border-white/10 pb-5" aria-label="Obsługa sklepu"><Link href={isDefault ? '/admin/bookings/orders' : `/admin/bookings/orders?gallery=${galleryId}`} className={buttonClass}>{isDefault ? 'Rezerwacje → Zamówienia' : 'Zamówienia tej galerii'}</Link><a href={isDefault ? "#nphoto-launch" : "/admin/gallery-shop"} className={`${buttonClass} sm:ml-auto`}>Wspólna kolekcja nPhoto</a></div>
         {!isDefault && <div className={`rounded-2xl border p-4 sm:p-5 ${inherited ? 'border-emerald-300/20 bg-emerald-300/5' : 'border-amber-200/20 bg-amber-200/5'}`}><div className="flex flex-wrap items-start justify-between gap-4"><div className="max-w-xl"><h4 className="font-semibold text-white">{inherited ? 'Wspólna oferta — bez dodatkowej konfiguracji' : 'Indywidualne ustawienia tej galerii'}</h4><p className="mt-2 text-sm leading-relaxed text-zinc-300">{inherited ? 'Formaty, ceny i dostawa pochodzą ze wspólnej oferty. Nie musisz ustawiać ich każdemu klientowi. Zapis poniższych ustawień utworzy wyjątek tylko dla tej galerii.' : 'Ta galeria ma własny cennik lub dostawę. Możesz wrócić do wspólnego standardu bez zmieniania wcześniejszych zamówień.'}</p></div><a href="/admin/gallery-shop" className={buttonClass}>Edytuj wspólną ofertę</a></div>{!inherited && <button type="button" className={`${buttonClass} mt-4`} disabled={busy || dirty || hasProductDrafts} onClick={() => run(async () => { await request(base, { method: 'DELETE' }); await load(); }, 'Przywrócono wspólną ofertę galerii.')}>Przywróć wspólną ofertę</button>}</div>}
         {error && <p role="alert" className="rounded-lg bg-red-950 p-3 text-red-100">{error}</p>}
         {notice && <p role="status" className="rounded-lg bg-emerald-950 p-3 text-emerald-100">{notice}</p>}
         {hasProductDrafts && <p className="rounded-xl border border-amber-200/20 bg-amber-200/5 p-3 text-sm text-amber-200">Masz niezapisane zmiany produktów. Zapisz je przy każdej edytowanej karcie produktu.</p>}
         {dirty && <p className="text-sm text-amber-300">Masz niezapisane ustawienia oferty. Zapisz je przed opuszczeniem strony.</p>}
-        {tab === 'offer' ? <div className="space-y-6">
+        <div className="space-y-6">
             {isDefault && <NphotoOfferImporter disabled={busy || dirty || hasProductDrafts} onImported={load} onDirtyChange={setImportDirty} onBusyChange={setBusy} />}
             {isDefault && !dirty && !hasProductDrafts && !importDirty && <details id="nphoto-launch" open className="rounded-2xl border border-white/10 p-4"><summary className="min-h-11 cursor-pointer text-sm font-semibold text-zinc-300">Gotowe propozycje startowe nPhoto</summary><NphotoStarterCatalog onImported={load} onBusyChange={setBusy} disabled={busy} /></details>}
             {isDefault && <PublicShopOfferSettings value={config.publicOffer} formats={config.formats} products={products} shopEnabled={config.enabled} delivery={config.delivery} productRules={config.productRules} disabled={busy} onChange={publicOffer => update({ publicOffer })} />}
@@ -122,7 +120,7 @@ export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId
                 <button type="button" className={buttonClass} onClick={() => update({ formats: [...config.formats, { id: `format-${Date.now()}`, label: '', widthMm: 100, heightMm: 150, unitAmount: 0, active: false, paper: 'mat' }] })}>Dodaj format</button>
             </fieldset>
             <fieldset id={`shop-${galleryId}-delivery`} disabled={busy} className={panelClass}><legend className="px-2 text-lg font-semibold text-white">Dostawa od Foto-Dron do klienta</legend>
-                <p className="text-sm text-amber-200">Ustal cenę dostawy, którą klient zobaczy w podsumowaniu. Dane do wysyłki zapiszą się przy zamówieniu. Po skonfigurowaniu integracji InPost możesz w panelu „Zamówienia i przesyłki” utworzyć przesyłkę, pobrać etykietę i sprawdzić jej status.</p>
+                <p className="text-sm text-amber-200">Ustal cenę dostawy, którą klient zobaczy w podsumowaniu. Dane do wysyłki zapiszą się przy zamówieniu. Po skonfigurowaniu integracji InPost możesz w panelu „Rezerwacje → Zamówienia” utworzyć przesyłkę, pobrać etykietę i sprawdzić jej status.</p>
                 <div className="grid gap-4 sm:grid-cols-2">{(['locker', 'courier'] as const).map(key => { const label = key === 'locker' ? 'Paczkomat' : 'Kurier'; return <div key={key} className="rounded-xl border border-zinc-700 p-4"><label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={config.delivery[key].enabled} onChange={e => update({ delivery: { ...config.delivery, [key]: { ...config.delivery[key], enabled: e.target.checked } } })} />{label} dostępny</label><label className="text-sm">Cena dostawy {label} (zł)<input className={inputClass} type="number" min="0" step="0.01" value={moneyValue(config.delivery[key].amount)} onChange={e => update({ delivery: { ...config.delivery, [key]: { ...config.delivery[key], amount: amountFromInput(e.target.value) } } })} /></label></div>; })}</div>
             </fieldset>
 
@@ -138,7 +136,7 @@ export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId
                 <div className="grid items-start gap-4 xl:grid-cols-2">{products.map(product => <ProductEditor key={product.id} product={product} disabled={busy} onDirty={value => setProductDrafts(current => ({ ...current, [product.id]: value }))} rule={config.productRules[String(product.id)] || { minPhotos: 1, maxPhotos: 50 }} onRule={rule => update({ productRules: { ...config.productRules, [product.id]: rule } })} onSave={patch => run(async () => { const data = await request(`${base}/products/${product.id}`, { method: 'PATCH', body: JSON.stringify(patch) }); setProducts(current => current.map(p => p.id === product.id ? (data.product || { ...p, ...patch }) : p)); setProductDrafts(current => ({ ...current, [product.id]: false })); }, 'Zapisano produkt.')} />)}</div>
             </div>
             <div className="sticky bottom-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200/20 bg-zinc-950/95 p-4 shadow-2xl backdrop-blur"><button type="button" disabled={busy || !dirty} onClick={save} className="min-h-12 rounded-xl bg-[#ead5ad] px-6 py-3 font-semibold text-zinc-950 transition hover:bg-[#f4e4c7] disabled:opacity-40">{busy ? 'Zapisywanie…' : 'Zapisz ustawienia sklepu'}</button><span className="text-sm text-zinc-400">{isDefault ? 'Ceny w PLN. Zapis aktualizuje wspólny standard galerii.' : 'Ceny w PLN. Zapis tworzy wyjątek dla tej galerii.'}</span></div>
-        </div> : <div className="space-y-4"><div className="flex flex-wrap justify-between gap-3"><p className="text-sm text-zinc-300">Zamówienia fizyczne. Status płatności jest tylko do odczytu.</p><button type="button" className={buttonClass} disabled={busy} onClick={() => run(async () => { const data = await request(base); setOrders(data.orders || []); }, 'Odświeżono zamówienia.')}>Odśwież zamówienia</button></div>{orders.length === 0 && <p className="rounded-2xl border border-dashed border-white/15 px-5 py-10 text-center leading-relaxed text-zinc-400">Brak zamówień fizycznych w tej galerii. Po zakupie zobaczysz tutaj wybrane zdjęcia, formaty, ilości i dane do wysyłki.</p>}{orders.map(order => <OrderDetails key={order.id} galleryId={Number(galleryId)} order={order} photos={photos} disabled={busy} onSave={(status, trackingNumber) => run(async () => { await request(`${base}/orders/${order.id}`, { method: 'PATCH', body: JSON.stringify({ status, trackingNumber }) }); const data = await request(base); setOrders(data.orders || []); }, 'Zapisano etap realizacji.')} />)}</div>}
+        </div>
     </section>;
 }
 
@@ -170,29 +168,4 @@ function ProductEditor({ product, rule, disabled, onRule, onSave, onDirty }: { o
         <div className="grid gap-3 border-t border-zinc-700 pt-3 sm:grid-cols-2"><label className="text-sm">Produkt #{product.id} minimum zdjęć<input className={inputClass} type="number" min="1" step="1" value={Number.isFinite(rule.minPhotos) ? rule.minPhotos : ''} onChange={e => onRule({ ...rule, minPhotos: e.target.value === '' ? NaN : Number(e.target.value) })} /></label><label className="text-sm">Produkt #{product.id} maksimum zdjęć<input className={inputClass} type="number" min="1" step="1" value={Number.isFinite(rule.maxPhotos) ? rule.maxPhotos : ''} onChange={e => onRule({ ...rule, maxPhotos: e.target.value === '' ? NaN : Number(e.target.value) })} /></label></div><p className="text-xs text-zinc-400">Limity zdjęć zapisuje przycisk „Zapisz ustawienia sklepu”.</p>
         <label className="block text-sm">Dostawa produktu #{product.id}<select className={inputClass} value={rule.deliveryMethods?.length === 1 ? rule.deliveryMethods[0] : 'all'} onChange={e => onRule({ ...rule, deliveryMethods: e.target.value === 'all' ? ['locker', 'courier'] : [e.target.value as 'locker' | 'courier'] })}><option value="all">Paczkomat lub kurier</option><option value="courier">Tylko kurier — np. duży fotoobraz</option><option value="locker">Tylko Paczkomat</option></select></label><p className="text-xs text-zinc-400">Ograniczenie dotyczy całej paczki z tym produktem. Sprawdź gabaryt opakowania i cenę przed aktywacją; zapisuje się z ustawieniami sklepu.</p>
     </fieldset>;
-}
-
-function OrderDetails({ galleryId, order, photos, disabled, onSave }: { galleryId: number; order: Order; photos: Photo[]; disabled: boolean; onSave: (status: string, trackingNumber: string) => void }) {
-    let meta = order.metadata;
-    if (!meta && order.product_ids) { try { meta = JSON.parse(order.product_ids); } catch { /* Preserve read access to legacy data. */ } }
-    meta = meta || {};
-    const currentStatus = meta.fulfillment?.status || 'new';
-    const currentTracking = meta.fulfillment?.trackingNumber || '';
-    const [status, setStatus] = useState(currentStatus);
-    const [tracking, setTracking] = useState(currentTracking);
-    useEffect(() => { setStatus(currentStatus); setTracking(currentTracking); }, [currentStatus, currentTracking]);
-    const stages = [{ id: 'new', label: 'Nowe' }, { id: 'ordered', label: 'Zamówione u producenta' }, { id: 'received', label: 'Odebrane w Foto-Dron' }, { id: 'packed', label: 'Spakowane' }, { id: 'shipped', label: 'Wysłane do klienta' }];
-    const stageIndex = stages.findIndex(stage => stage.id === currentStatus);
-    const availableStages = stages.filter((_, index) => index === stageIndex || index === stageIndex + 1);
-    const canFulfill = order.payment_status === 'paid';
-    const lines = Array.isArray(meta.lines) ? meta.lines : [];
-    const recipient = meta.recipient || meta.customer || {};
-    const delivery = meta.delivery || {};
-    return <details className="rounded-2xl border border-white/10 bg-zinc-900/70 p-4 sm:p-5"><summary className="min-h-11 cursor-pointer leading-loose text-white"><span className="font-semibold">Zamówienie #{order.id} · {money(order.total_amount)}</span><span className="ml-3 text-sm text-zinc-300">{new Date(order.created_at).toLocaleDateString('pl-PL')} · płatność: {({ paid: 'opłacone', pending: 'oczekuje', cancelled: 'anulowana', failed: 'nieudana', refunded: 'zwrócona' } as Record<string, string>)[order.payment_status] || order.payment_status}</span></summary><div className="mt-4 space-y-4">
-        <div className="grid gap-4 lg:grid-cols-2"><div><h5 className="font-semibold">Klient i dostawa</h5><p className="whitespace-pre-line break-words text-sm text-zinc-300">{[delivery.recipientName || recipient.name, delivery.email || recipient.email, delivery.phone || recipient.phone, delivery.method === 'locker' ? 'InPost Paczkomat' : delivery.method === 'courier' ? 'Kurier' : delivery.method, delivery.pointCode, delivery.address?.street, delivery.address?.postalCode, delivery.address?.city].filter(Boolean).join('\n') || 'Dane dostawy dostępne w szczegółach zamówienia.'}</p></div><div className="text-sm text-zinc-300"><p>Etap 1: nPhoto → Foto-Dron (zamawiasz i odbierasz).</p><p>Etap 2: kontrola, pakowanie i wysyłka do klienta.</p><p>Koszt dostawy do klienta: {money(delivery.amount || 0)}</p><p className="mt-2">Po potwierdzeniu płatności panel „Przesyłka InPost” pozwala sprawdzić konfigurację integracji, utworzyć przesyłkę, pobrać etykietę i odświeżyć status. Numer przesyłki nadanej poza panelem możesz wpisać ręcznie.</p></div></div>
-        <div className="space-y-3">{lines.map((line: any, index: number) => <div key={line.id || index} className="rounded-lg bg-zinc-950 p-3"><div className="mb-2 flex flex-wrap gap-2">{(line.photoIds || (line.photoId ? [line.photoId] : [])).map((photoId: number) => { const photo = photos.find(p => p.id === photoId); return <div key={photoId} className="w-20 text-center">{photo && <img loading="lazy" src={photo.thumbnail_url || photo.file_url} alt={`Zdjęcie ${photoId}`} className="h-20 w-20 rounded object-contain" />}<span className="text-xs text-zinc-400">#{photoId}{line.coverPhotoId === photoId ? " · główne" : ""}</span></div>; })}</div><p className="font-semibold">{line.title || (line.kind === 'print' ? 'Odbitka' : 'Produkt')} · {line.quantity} szt. · {money(line.lineTotal ?? line.unitAmount * line.quantity)}</p><p className="text-sm text-zinc-300">{[line.formatLabel || line.format?.label || line.formatId, line.paper || line.format?.paper, line.fit, line.photoId ? `Zdjęcie #${line.photoId}` : '', line.coverPhotoId ? `Zdjęcie główne #${line.coverPhotoId}` : ''].filter(Boolean).join(' · ')}</p>{line.photoIds?.length > 0 && <p className="break-words text-sm text-zinc-300">Kolejność zdjęć: {line.photoIds.join(', ')}</p>}{line.crop && <p className="text-xs text-zinc-400">Kadr: {JSON.stringify(line.crop)}</p>}</div>)}</div>
-        {canFulfill && <GalleryShipmentPanel galleryId={galleryId} orderId={order.id} method={delivery.method} />}
-        <p className="text-sm text-zinc-300">{canFulfill ? 'Zapisuj etapy po kolei. Przed wysyłką uzupełnij numer przesyłki.' : 'Realizacja jest dostępna po potwierdzeniu płatności.'}</p>
-        <fieldset disabled={disabled || !canFulfill} className="grid items-end gap-3 lg:grid-cols-3"><label className="text-sm">Etap zamówienia #{order.id}<select className={inputClass} value={status} onChange={e => setStatus(e.target.value)}>{availableStages.map(stage => <option key={stage.id} value={stage.id}>{stage.label}</option>)}</select></label><label className="text-sm">Numer przesyłki #{order.id}<input className={inputClass} value={tracking} maxLength={100} onChange={e => setTracking(e.target.value)} /></label><button type="button" className={buttonClass} disabled={!canFulfill || (status === 'shipped' && !tracking.trim())} onClick={() => { if (canFulfill) onSave(status, tracking); }}>Zapisz etap zamówienia #{order.id}</button></fieldset>
-    </div></details>;
 }
