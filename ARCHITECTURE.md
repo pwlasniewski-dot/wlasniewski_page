@@ -1,3 +1,9 @@
+## Zatwierdzony katalog testowy — 2026-09-14
+
+Po jednoznacznym zatwierdzeniu użytkownika wykonano transakcję wyłącznie na gałęzi Neon audit-admin-unification-20260914 (br-dawn-scene-aeokidlt): aktywne produkty 6–9 z pełnymi opisami i rzeczywistymi materiałami; stare 1/3/4/5 ukryte; wspólna oferta i galeria 26 mają aktualne ceny użytkownika 2,50/1,50 zł oraz dostawę 17/25 zł. Pierwszy rekord ustawień ma publiczny POS PayU 300746 w sandbox oraz callback do preview75. Produkcja została sprawdzona odczytowo: 6–9 nadal nieaktywne. Nie wykonano płatności ani nadania.
+
+Automatyczny przegląd ponownie odrzucił konkretną czynność: przekazanie uprzywilejowanego adresu połączenia tej bazy do Netlify, żądając osobnej zgody na ujawnienie tego połączenia i dokładny zakres gałęzi. Formularz anulowano bez zapisu. Wymagany zakres: Netlify helpful-axolotl-cc1cbb, sekret GALLERY_QA_DATABASE_URL, tylko fix/admin-unification-audit-20260914, Builds i Functions; puste wartości pozostałych kontekstów. Żaden sekret nie został zapisany w repozytorium. Preview nadal korzysta ze zwykłej bazy; nie można jeszcze wykonywać na nim testowej sprzedaży.
+
 ## Odbiór preview — 2026-09-14
 
 Odbiór Netlify: flaga preview uwzględnia kontekst wdrożenia, nagłówki proxy oraz domenę przeglądarki. Jest informacją, nie mechanizmem autoryzacji. Brak tokenu Geowidget ma osobny komunikat. Istniejący storefront zgłasza dostępność i etykietę CTA z CMS do strony sklepu, bez drugiego zapytania katalogu; katalog jest bezpośrednio pod główną sekcją, przed listą kart.

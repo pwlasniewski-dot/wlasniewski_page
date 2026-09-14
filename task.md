@@ -1,3 +1,10 @@
+## Zatwierdzony katalog testowy — 2026-09-14
+
+- [x] Zatwierdzona konfiguracja osobnej bazy i publicznego POS sandbox PayU.
+- [x] Odczyt i wykonanie loadera, wyceny oraz podglądu na faktycznie zapisanym katalogu.
+- [ ] Podłączenie testowej bazy do Netlify — odrzucone przez automatyczną kontrolę, formularz anulowany.
+- [ ] Rzeczywista transakcja sandbox i obsługa wysyłki po podłączeniu.
+
 ## Odbiór preview — 2026-09-14
 
 - [x] Odbiór przeglądarkowy PR75: aktywne odbitki 15×21 za 2,50 zł, dostęp OAuth PayU, ujawnione braki InPost w preview.

@@ -567,6 +567,14 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### 2026-09-14 — zatwierdzony zapis katalogu i PayU na odizolowanej bazie
+
+Po jednoznacznym zatwierdzeniu użytkownika wykonano transakcję wyłącznie na gałęzi Neon audit-admin-unification-20260914 (br-dawn-scene-aeokidlt): aktywne produkty 6–9 z pełnymi opisami i rzeczywistymi materiałami; stare 1/3/4/5 ukryte; wspólna oferta i galeria 26 mają aktualne ceny użytkownika 2,50/1,50 zł oraz dostawę 17/25 zł. Pierwszy rekord ustawień ma publiczny POS PayU 300746 w sandbox oraz callback do preview75. Produkcja została sprawdzona odczytowo: 6–9 nadal nieaktywne. Nie wykonano płatności ani nadania.
+
+Snapshot odczytu docs/NPHOTO_QA_CATALOG.json i scripts/verify-nphoto-qa-catalog.cjs: PASS. Wykonano wspólny loader, projekcję publiczną, wycenę serwerową i interaktywny render React. Pięć ofert, dwa formaty klienta, minimum zdjęć 12/20/16/1, Canvas tylko kurier. Sumy pojedynczych produktów z właściwą dostawą: 58,54 / 274,70 / 157,59 / 144,24 zł. Dziesięć odbitek z Paczkomatem 42 zł; koszyk mieszany 609,07 zł. Test używa zapisanych danych, ale nie wywołuje dostawców i nie tworzy zamówień.
+
+Automatyczny przegląd ponownie odrzucił konkretną czynność: przekazanie uprzywilejowanego adresu połączenia tej bazy do Netlify, żądając osobnej zgody na ujawnienie tego połączenia i dokładny zakres gałęzi. Formularz anulowano bez zapisu. Wymagany zakres: Netlify helpful-axolotl-cc1cbb, sekret GALLERY_QA_DATABASE_URL, tylko fix/admin-unification-audit-20260914, Builds i Functions; puste wartości pozostałych kontekstów. Żaden sekret nie został zapisany w repozytorium. Preview nadal korzysta ze zwykłej bazy; nie można jeszcze wykonywać na nim testowej sprzedaży.
+
 ### 2026-09-14 — widoczna oferta i uczciwy wynik diagnostyki
 
 Odbiór live commitu 78cd694: Netlify Complete. W przeglądarce potwierdzono odbitki 15×21 za 2,50 zł i realne zdjęcie; cztery produkty nPhoto nadal są szkicami. Użytkownik ustawił też 10×15 za 1,50 zł (format nie należy do wyboru publicznego). Tych cen nie nadpisano. Nieodpłatny test OAuth PayU: dostęp produkcyjny potwierdzony. Preview: brak INPOST_API_TOKEN i INPOST_ORGANIZATION_ID oraz tokenu mapy. Nie potwierdza to stanu InPost w kontekście production. Dalsza poprawka przenosi sekcję zdjęć przed karty, dodaje odnośnik z etykietą CMS oraz naprawia rozpoznawanie preview za proxy i komunikat braku mapy. Regresje: 16 grup storefront i 6 grup readiness PASS.
