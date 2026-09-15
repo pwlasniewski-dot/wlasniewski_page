@@ -3,9 +3,17 @@ import {Prisma} from '@prisma/client';
 import {withAuth} from '@/lib/auth/middleware';
 import prisma from '@/lib/db/prisma';
 import {shopError} from '@/lib/galleries/merchandise-server';
+import {validateProductEdit} from '@/lib/galleries/product-edit';
 import {ShopValidationError} from '@/lib/galleries/merchandise';
 export async function POST(request:NextRequest,{params}:{params:Promise<{id:string}>}) {return withAuth(request,async()=>{try {
  const raw=(await params).id;const galleryId=raw==='default'?null:Number(raw);const body=await request.json().catch(()=>null);
+ if ((galleryId!==null && (!Number.isSafeInteger(galleryId)||galleryId<1)) || !body || typeof body!=='object' || Array.isArray(body)) throw new ShopValidationError('Nieprawidłowe dane produktu.');
+ if(body.nphotoAlbumId===undefined) {
+  if(galleryId!==null && !await prisma.clientGallery.findUnique({where:{id:galleryId},select:{id:true}})) throw new ShopValidationError('Nie znaleziono galerii.',404);
+  const data=validateProductEdit({...body,is_active:false});
+  const product=await prisma.galleryProduct.create({data:{...data,gallery_id:galleryId}});
+  return NextResponse.json({success:true,product},{status:201});
+ }
  if((galleryId!==null && (!Number.isSafeInteger(galleryId)||galleryId<1))||!body||!Number.isSafeInteger(body.nphotoAlbumId)||!Number.isSafeInteger(body.price)||body.price<1||body.price>10000000) throw new ShopValidationError('Wybierz produkt i podaj własną cenę.');
  const [gallery,album]=await Promise.all([galleryId===null?Promise.resolve({id:null}):prisma.clientGallery.findUnique({where:{id:galleryId},select:{id:true}}),prisma.nphotoAlbum.findUnique({where:{id:body.nphotoAlbumId}})]);
  if(!gallery||!album||!album.is_active) throw new ShopValidationError('Galeria lub produkt nie istnieje.',404);

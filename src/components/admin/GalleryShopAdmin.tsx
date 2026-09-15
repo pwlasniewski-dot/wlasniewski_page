@@ -1,6 +1,6 @@
 'use client';
 
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 const MediaPicker = lazy(() => import('@/components/admin/MediaPicker'));
 import NphotoStarterCatalog from './NphotoStarterCatalog';
 import NphotoOfferImporter from './NphotoOfferImporter';
@@ -26,6 +26,12 @@ const validAmount = (value: number) => Number.isSafeInteger(value) && value >= 0
 
 export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId: number | 'default'; photos?: Photo[] }) {
     const [config, setConfig] = useState<ShopConfig | null>(null);
+    const [archivedProducts, setArchivedProducts] = useState<Array<{id:number;title:string}>>([]);
+    const [newTitle, setNewTitle] = useState('');
+    const [newPrice, setNewPrice] = useState('');
+    const removeDialog = useRef<HTMLDivElement>(null);
+    const [removeId, setRemoveId] = useState<number | null>(null);
+    useEffect(()=>{if(removeId!==null){removeDialog.current?.scrollIntoView({block:'center',behavior:'smooth'});removeDialog.current?.focus();}},[removeId]);
     const [products, setProducts] = useState<Product[]>([]);
     const [sharedProducts, setSharedProducts] = useState<Product[]>([]);
     const [inherited, setInherited] = useState(false);
@@ -56,7 +62,7 @@ export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId
         if (signal?.aborted) return;
         const preview = data.preview || /^deploy-preview-\d+--.*\.netlify\.app$/.test(window.location.hostname);
         setPreviewMode(preview ? data.isolatedReview ? 'isolated' : 'shared' : null);
-        setConfig(data.config); setInherited(data.inherited === true); setSharedProducts(data.sharedProducts || []); setProducts(data.products || []); setAlbums(data.nphotoAlbums || []); setDirty(false); setProductDrafts({}); setImportDirty(false);
+        setArchivedProducts(data.archivedProducts || []); setConfig(data.config); setInherited(data.inherited === true); setSharedProducts(data.sharedProducts || []); setProducts(data.products || []); setAlbums(data.nphotoAlbums || []); setDirty(false); setProductDrafts({}); setImportDirty(false);
     }, [base, request]);
     useEffect(() => { const controller = new AbortController(); setLoading(true); setConfig(null); setError(''); setNotice(''); load(controller.signal).catch(e => { if (!controller.signal.aborted) setError(e.message); }).finally(() => { if (!controller.signal.aborted) setLoading(false); }); return () => controller.abort(); }, [load]);
     useEffect(() => {
@@ -89,7 +95,7 @@ export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId
         if (saved.config) { setConfig(saved.config); setInherited(false); }
         try {
             const data = await request(base);
-            setConfig(data.config); setInherited(data.inherited === true); setProducts(data.products || []); setSharedProducts(data.sharedProducts || []);
+            setArchivedProducts(data.archivedProducts || []); setConfig(data.config); setInherited(data.inherited === true); setProducts(data.products || []); setSharedProducts(data.sharedProducts || []);
         } catch { throw new Error('Zmiany zostały zapisane, ale nie udało się odświeżyć podglądu. Odśwież stronę, aby ponownie odczytać ofertę.'); }
     }, 'Zapisano produkty i ustawienia. Oferta została ponownie odczytana.');
     if (loading) return <section className="rounded-2xl border border-zinc-800 p-6" aria-busy="true">Wczytywanie sklepu galerii…</section>;
@@ -148,7 +154,22 @@ export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId
             </fieldset>
 
             <div id={`shop-${galleryId}-products`} className={panelClass}><div className="flex flex-wrap items-start justify-between gap-3"><div><h4 className="text-lg font-semibold text-white">{isDefault ? 'Produkty nPhoto we wspólnej ofercie' : 'Produkty nPhoto w tej galerii'}</h4><p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">Wybierz produkt, ustal własną cenę i pokaż go klientowi ze zdjęciem oraz opisem. Zamówienie realizujesz w nPhoto, odbierasz w Foto-Dron i wysyłasz klientowi.</p></div><span className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-zinc-400">{activeProducts} widocznych</span></div><p className="text-xs leading-relaxed text-zinc-500">We wspólnej ofercie możesz zaimportować przygotowane propozycje nPhoto ze zdjęciami i parametrami lub dodać produkt z własnego katalogu. Import nie składa zamówienia u producenta — zamówienie w nPhoto realizujesz osobno.</p>
-                <details className="rounded-xl border border-white/10 p-4"><summary className="min-h-11 cursor-pointer text-sm text-zinc-400">Dodaj z wcześniejszego katalogu — opcjonalnie</summary><div className="mt-3 space-y-4">
+                <div className="space-y-3 rounded-xl border border-white/15 p-4">
+                    <h5 className="font-semibold text-white">Dodaj własny produkt</h5>
+                    <div className="grid items-end gap-3 sm:grid-cols-2">
+                        <label className="text-sm">Nazwa nowego produktu<input className={inputClass} maxLength={200} value={newTitle} onChange={e=>setNewTitle(e.target.value)} /></label>
+                        <label className="text-sm">Cena nowego produktu (zł)<input className={inputClass} type="number" min="0" step="0.01" value={newPrice} onChange={e=>setNewPrice(e.target.value)} /></label>
+                    </div>
+                    <button type="button" className={buttonClass} disabled={busy || hasChanges || importDirty || !newTitle.trim()} onClick={()=>run(async()=>{
+                        const price=newPrice.trim()==='' ? 0 : amountFromInput(newPrice);
+                        if(!validAmount(price)) throw new Error('Podaj poprawną cenę produktu.');
+                        const result=await request(`${base}/products`,{method:'POST',body:JSON.stringify({title:newTitle,price,is_active:false})});
+                        setProducts(current=>[...current,result.product]);setNewTitle('');setNewPrice('');
+                    },'Dodano ukryty produkt. Uzupełnij opis i zdjęcia na jego karcie, a następnie włącz widoczność i zapisz.')}>Dodaj własny produkt</button>
+                    <p className="text-sm text-zinc-400">Nowy produkt jest ukryty. Opis, zdjęcia i widoczność ustawisz na jego karcie poniżej.</p>
+                    {(hasChanges || importDirty) && <p className="text-sm text-amber-200">Zapisz bieżące zmiany przed dodaniem lub usunięciem produktu.</p>}
+                </div>
+                <details className="rounded-xl border border-white/10 p-4"><summary className="min-h-11 cursor-pointer text-sm text-zinc-400">Dodaj z wcześniejszego katalogu — opcjonalnie</summary><div className="mt-3 space-y-4"><p className="text-sm text-zinc-400">Albumy ze starszych stron sklepu znajdziesz w tym katalogu. Tutaj dodasz wybrany album do wspólnej oferty galerii.</p><a href="/admin/nphoto-albums" className="inline-flex min-h-11 items-center text-sm font-semibold text-amber-200 underline underline-offset-4">Edytuj wcześniejszy katalog albumów — nazwy, zdjęcia, ceny i widoczność</a>
                 <div className="grid items-end gap-3 lg:grid-cols-3"><label className="text-sm">Produkt z katalogu<select className={inputClass} value={albumId} onChange={e => setAlbumId(e.target.value)}><option value="">Wybierz produkt</option>{albums.map(a => <option key={a.id} value={a.id}>{a.title}{a.format ? ` · ${a.format}` : ''}</option>)}</select></label><label className="text-sm">Twoja cena produktu (zł)<input className={inputClass} type="number" min="0.01" step="0.01" value={albumPrice} onChange={e => setAlbumPrice(e.target.value)} /></label><button type="button" className={buttonClass} disabled={busy || !albumId || dirty || hasProductDrafts} onClick={() => run(async () => { const price = amountFromInput(albumPrice); if (!validAmount(price) || price === 0) throw new Error('Podaj dodatnią cenę produktu.'); await request(`${base}/products`, { method: 'POST', body: JSON.stringify({ nphotoAlbumId: Number(albumId), price }) }); await load(); setAlbumId(''); setAlbumPrice(''); }, isDefault ? 'Dodano produkt do wspólnej oferty.' : 'Dodano produkt do prywatnej galerii.')}>{isDefault ? 'Dodaj produkt do wspólnej oferty' : 'Dodaj produkt do galerii'}</button></div>
                 {selectedAlbum && <div className="flex items-center gap-4 rounded-xl border border-amber-200/20 bg-amber-200/5 p-4">{selectedAlbum.cover_image_url && <img src={selectedAlbum.cover_image_url} alt={selectedAlbum.title} className="h-20 w-20 rounded-lg bg-white/5 object-contain" loading="lazy" />}<div><p className="font-semibold text-white">{selectedAlbum.title}</p><p className="mt-1 text-sm text-zinc-400">{selectedAlbum.format || 'Produkt z Twojego katalogu'} · {isDefault ? 'opis i zdjęcie zostaną skopiowane do wspólnej oferty.' : 'opis i zdjęcie zostaną skopiowane do tej galerii.'}</p></div></div>}
                 {!albums.length && <div className="rounded-xl border border-dashed border-white/15 p-5"><p className="font-medium text-white">Najpierw przygotuj katalog nPhoto</p><p className="mt-2 text-sm leading-relaxed text-zinc-400">Dodaj album, fotoksiążkę lub inny produkt ze zdjęciem i opisem. Oznacz go jako aktywny, aby był dostępny do przypisania.</p><a href="/admin/nphoto-albums" target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex min-h-11 items-center font-semibold text-amber-200 underline underline-offset-4">Dodaj produkty w katalogu ↗</a><button type="button" className={`${buttonClass} ml-3`} disabled={busy || dirty} onClick={() => run(async () => { const data = await request(base); setAlbums(data.nphotoAlbums || []); }, 'Odświeżono katalog nPhoto.')}>Odśwież katalog</button></div>}
@@ -156,18 +177,31 @@ export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId
                 {dirty && <p className="text-sm text-amber-300">Zapisz ustawienia przed dodaniem produktu.</p>}
                 {!products.length && !sharedProducts.length && <p className="text-sm text-zinc-300">{isDefault ? 'Wspólna oferta nie ma jeszcze produktów.' : 'Nie przypisano produktów do tej galerii.'} Dodaj pierwszy produkt powyżej — potem dopracujesz jego prezentację i liczbę zdjęć.</p>}
                 {!isDefault && sharedProducts.length > 0 && <div className="space-y-3"><div className="flex flex-wrap items-center justify-between gap-2"><h5 className="font-semibold text-white">Produkty ze wspólnej oferty</h5><a href="/admin/gallery-shop" className="text-sm font-semibold text-amber-200 underline underline-offset-4">Zarządzaj wspólnymi produktami</a></div><div className="grid gap-3 sm:grid-cols-2">{sharedProducts.map(product => <div key={product.id} className="flex min-w-0 items-center gap-3 rounded-xl border border-white/10 bg-white/[0.025] p-3">{product.image_url && <img src={product.image_url} alt={product.title} loading="lazy" className="h-20 w-20 shrink-0 rounded-lg bg-[#efede8] object-contain" />}<div className="min-w-0"><p className="break-words font-medium text-white">{product.title}</p><p className="mt-1 text-sm text-amber-200">{money(product.price)}</p><p className="mt-1 text-xs text-zinc-400">{product.is_active ? 'Ze wspólnego katalogu' : 'Ukryty'}</p></div></div>)}</div><p className="text-xs leading-relaxed text-zinc-400">Te produkty są dostępne bez przypisywania każdemu klientowi. Poniżej możesz dodać produkty tylko dla tej galerii.</p></div>}
-                <div className="grid items-start gap-4 xl:grid-cols-2">{products.map(product => <ProductEditor key={product.id} product={product} draft={productDrafts[product.id] || product} disabled={busy} onChange={draft => { setProductDrafts(current => { const next = { ...current }; if (JSON.stringify(draft) === JSON.stringify(product)) delete next[product.id]; else next[product.id] = draft; return next; }); setNotice(''); setError(''); }} rule={config.productRules[String(product.id)] || { minPhotos: 1, maxPhotos: 50 }} onRule={rule => update({ productRules: { ...config.productRules, [product.id]: rule } })} />)}</div>
+                {removeId !== null && <div ref={removeDialog} tabIndex={-1} role="alertdialog" aria-label="Usunięcie produktu" className="space-y-3 rounded-xl border border-red-300/40 p-4">
+                    <p>Usunąć „{products.find(p=>p.id===removeId)?.title}” z oferty? Produkt trafi do archiwum. Wcześniejsze zamówienia pozostaną bez zmian.</p>
+                    <div className="flex flex-wrap gap-3"><button type="button" className={buttonClass} disabled={busy || hasChanges || importDirty} onClick={()=>run(async()=>{
+                        const product=products.find(p=>p.id===removeId);
+                        if(!product) throw new Error('Odśwież ofertę.');
+                        await request(`${base}/products/${product.id}`,{method:'DELETE',body:JSON.stringify({expected:productEditSnapshot(product)})});
+                        setProducts(current=>current.filter(p=>p.id!==product.id));setArchivedProducts(current=>[...current,{id:product.id,title:product.title}]);setRemoveId(null);
+                    },'Usunięto produkt z oferty. Możesz przywrócić go z archiwum.')}>Potwierdź usunięcie</button><button type="button" className={buttonClass} disabled={busy} onClick={()=>setRemoveId(null)}>Anuluj usunięcie</button></div>
+                </div>}
+                {archivedProducts.length>0 && <details className="rounded-xl border border-white/10 p-4"><summary className="cursor-pointer py-2">Archiwum produktów ({archivedProducts.length})</summary><div className="space-y-3">{archivedProducts.map(product=><div key={product.id} className="flex flex-wrap items-center justify-between gap-3"><span>{product.title}</span><button type="button" className={buttonClass} disabled={busy || hasChanges || importDirty} onClick={()=>run(async()=>{
+                    await request(`${base}/products/${product.id}`,{method:'PATCH',body:JSON.stringify({restore:true})});await load();
+                },'Przywrócono ukryty produkt. Sprawdź jego dane przed ponownym włączeniem.')}>Przywróć produkt #{product.id}</button></div>)}</div></details>}
+                <div className="grid items-start gap-4 xl:grid-cols-2">{products.map(product => <ProductEditor key={product.id} product={product} draft={productDrafts[product.id] || product} disabled={busy} onRemove={()=>setRemoveId(product.id)} removeDisabled={hasChanges || importDirty} onChange={draft => { setProductDrafts(current => { const next = { ...current }; if (JSON.stringify(draft) === JSON.stringify(product)) delete next[product.id]; else next[product.id] = draft; return next; }); setNotice(''); setError(''); }} rule={config.productRules[String(product.id)] || { minPhotos: 1, maxPhotos: 50 }} onRule={rule => update({ productRules: { ...config.productRules, [product.id]: rule } })} />)}</div>
             </div>
             <div className="sticky bottom-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200/20 bg-zinc-950/95 p-4 shadow-2xl backdrop-blur">{error && <p role="alert" className="w-full rounded-lg bg-red-950 p-3 text-red-100">{error}</p>}{notice && <p role="status" className="w-full rounded-lg bg-emerald-950 p-3 text-emerald-100">{notice}</p>}<button type="button" disabled={busy || !hasChanges} onClick={save} className="min-h-12 rounded-xl bg-[#ead5ad] px-6 py-3 font-semibold text-zinc-950 transition hover:bg-[#f4e4c7] disabled:opacity-40">{busy ? 'Zapisywanie…' : 'Zapisz ustawienia sklepu'}</button><span className="text-sm text-zinc-400">{isDefault ? 'Jeden zapis produktów i wspólnych ustawień galerii.' : dirty ? 'Zapis produktów i indywidualnych ustawień tej galerii.' : 'Zapis produktów. Wspólny cennik pozostaje bez zmian.'}</span></div>
         </div>
     </section>;
 }
 
-function ProductEditor({ product, draft, rule, disabled, onRule, onChange: editDraft }: { product: Product; draft: Product; rule: ProductShopRule; disabled: boolean; onRule: (value: ProductShopRule) => void; onChange: (value: Product) => void }) {
+function ProductEditor({ product, draft, rule, disabled, onRemove, removeDisabled, onRule, onChange: editDraft }: { product: Product; draft: Product; rule: ProductShopRule; disabled: boolean; onRemove: () => void; removeDisabled: boolean; onRule: (value: ProductShopRule) => void; onChange: (value: Product) => void }) {
     const [mediaOpen, setMediaOpen] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
     return <fieldset disabled={disabled} className="min-w-0 space-y-4 rounded-2xl border border-white/10 bg-zinc-950/40 p-4 sm:p-5"><legend className="px-2 text-sm font-semibold">Produkt #{product.id} — {product.title}</legend>
         <div className="overflow-hidden rounded-xl border border-white/10 bg-zinc-900"><div className="flex aspect-[4/3] items-center justify-center bg-[#efede8] p-5">{draft.image_url && /^https?:\/\//i.test(draft.image_url) ? <img src={draft.image_url} alt={draft.title || 'Zdjęcie produktu'} loading="lazy" className="h-full w-full object-contain" /> : <div className="text-center text-zinc-500"><span aria-hidden="true" className="text-4xl">▧</span><p className="mt-2 text-sm">Dodaj zdjęcie produktu</p></div>}</div><div className="space-y-2 p-4"><div className="flex flex-wrap items-start justify-between gap-2"><h5 className="font-semibold text-white">{draft.title || 'Nazwa produktu'}</h5><span className="text-sm font-semibold text-amber-200">{Number.isFinite(draft.price) ? money(draft.price) : 'Ustal cenę'}</span></div>{draft.description && <p className="line-clamp-3 text-sm leading-relaxed text-zinc-400">{draft.description}</p>}<span className={`inline-block rounded-full px-2.5 py-1 text-xs ${draft.is_active ? 'bg-emerald-300/10 text-emerald-200' : 'bg-white/5 text-zinc-400'}`}>{draft.is_active ? 'Widoczny w ofercie po zapisie' : 'Ukryty w ofercie po zapisie'}</span></div></div>
+        <button type="button" className={buttonClass} disabled={removeDisabled} onClick={onRemove}>Usuń produkt #{product.id}</button>
         <label className="block text-sm">Nazwa produktu #{product.id}<input className={inputClass} value={draft.title} onChange={e => editDraft({ ...draft, title: e.target.value })} /></label>
         <button type="button" className={buttonClass} onClick={() => setPreviewOpen(true)}>Podgląd klienta produktu #{product.id}</button>
         {previewOpen && <GalleryProductPreviewDialog adminPreview product={{ ...draft, ...rule }} onClose={() => setPreviewOpen(false)} />}

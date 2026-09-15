@@ -1,7 +1,7 @@
 const {assert,check,log}=require('./gallery-shop-dom.cjs');
 const Module=require('node:module');
 let rows=[],payuCalls=0,access=true,participant=3,adminAllowed=true,mails=0,ledger=new Map();
-const matches=(r,where)=>Object.entries(where).every(([k,v])=>k==='OR'?v.some(branch=>matches(r,branch)):v&&typeof v==='object'?('not' in v?r[k]!==v.not:'in' in v?v.in.includes(r[k]):false):r[k]===v);
+const matches=(r,where)=>Object.entries(where).every(([k,v])=>k==='OR'?v.some(branch=>matches(r,branch)):v&&typeof v==='object'?('not' in v?r[k]!==v.not:'in' in v?v.in.includes(r[k]):false):v===null?r[k]==null:r[k]===v);
 const gallery={id:12,access_code:'private',is_active:true,expires_at:null,gallery_mode:'INDIVIDUAL'};
 const config={version:1,enabled:true,title:'Sklep',introduction:'Oferta',buttonLabel:'Zamów',formats:[{id:'p10',label:'10×15',widthMm:100,heightMm:150,unitAmount:350,active:true,paper:'mat'}],productRules:{},delivery:{locker:{enabled:true,amount:1500},courier:{enabled:true,amount:2000}}};
 const settings=new Map([['gallery_shop_12',JSON.stringify(config)]]);

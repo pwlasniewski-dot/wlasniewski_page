@@ -13,7 +13,7 @@ let products = [
 ];
 let settings = new Map();
 function matches(row, where) {
-  return Object.entries(where).every(([key, value]) => key === 'OR' ? value.some(part => matches(row, part)) : value && typeof value === 'object' && 'in' in value ? value.in.includes(row[key]) : row[key] === value);
+  return Object.entries(where).every(([key, value]) => key === 'OR' ? value.some(part => matches(row, part)) : value && typeof value === 'object' && 'in' in value ? value.in.includes(row[key]) : value && typeof value === 'object' && 'not' in value ? row[key] != value.not : value === null ? row[key] == null : row[key] === value);
 }
 const db = {
   setting: {
@@ -25,6 +25,9 @@ const db = {
     },
   },
   galleryProduct: {
+    create: async ({data}) => { const product={id:Math.max(...products.map(p=>p.id))+1,archived_at:null,...clone(data)}; products.push(product);return clone(product); },
+    findFirst: async ({where})=>clone(products.find(p=>matches(p,where)) || null),
+    updateMany: async ({where,data})=>{const selected=products.filter(p=>matches(p,where));selected.forEach(p=>Object.assign(p,clone(data)));return {count:selected.length};},
     findMany: async ({ where }) => clone(products.filter(product => matches(product, where))),
     update: async ({ where, data }) => {
       const product = products.find(product => matches(product, where));
@@ -57,6 +60,8 @@ const send = (body, id = 'default') => route.PUT(new NextRequest('http://localho
 global.fetch = async (url, init = {}) => {
   const method = init.method || 'GET'; requests.push({ url, method, body: init.body && JSON.parse(init.body) });
   if (url === '/api/galleries/12/shop') return Response.json({ success: true, catalog: (await loadGalleryShop(12)).catalog });
+  const itemMatch=String(url).match(/^\/api\/admin\/galleries\/(default|12)\/shop\/products(?:\/(\d+))?$/);
+  if(itemMatch) { const handler=itemMatch[2]?require('../../src/app/api/admin/galleries/[id]/shop/products/[productId]/route.ts'):require('../../src/app/api/admin/galleries/[id]/shop/products/route.ts');return handler[method](new NextRequest(`http://localhost${url}`,init),{params:Promise.resolve({id:itemMatch[1],productId:itemMatch[2]})}); }
   const match = String(url).match(/^\/api\/admin\/galleries\/(default|12)\/shop$/); assert.ok(match, url);
   if (method === 'GET' && failRead) throw new Error('Simulated read failure');
   return route[method](new NextRequest(`http://localhost${url}`, init), { params: Promise.resolve({ id: match[1] }) });
@@ -133,6 +138,34 @@ const changed = (id, patch) => { const expected = clone(products.find(product =>
     assert.equal(products[1].is_active, false); assert.ok(save().disabled);
     assert.match(document.querySelector('[role=alert]').textContent, /Zmiany zostały zapisane/);
     await admin(); assert.equal(field('Produkt #3 widoczny').checked, false);
+  });
+  await check('own product create, media edit, publish, archive and restore in the same admin for three rounds',async()=>{
+    for(let round=0;round<3;round++) {
+      await admin();await set(field('Nazwa nowego produktu'),`Własny album ${round}`);await set(field('Cena nowego produktu (zł)'),125.50);
+      await click(button('Dodaj własny produkt'));const product=products.at(-1),id=product.id;
+      assert.equal(product.price,12550);assert.equal(product.is_active,false);
+      await set(field(`Opis produktu #${id}`),'Opis własnego albumu');await set(field(`Adres zdjęcia produktu #${id}`),'https://example.com/album.jpg');
+      await click(field(`Produkt #${id} widoczny`));await click(save());await admin();
+      assert.equal(field(`Produkt #${id} widoczny`).checked,true);assert.ok((await loadGalleryShop(12)).catalog.products.some(p=>p.id===id));
+      const originalTitle=product.title;
+      await click(button(`Usuń produkt #${id}`));await click(button('Anuluj usunięcie'));assert.equal(products.at(-1).archived_at,null);
+      await click(button(`Usuń produkt #${id}`));await click(button('Potwierdź usunięcie'));
+      assert.ok(products.at(-1).archived_at);assert.equal(products.at(-1).is_active,false);assert.equal((await loadGalleryShop(12)).catalog.products.some(p=>p.id===id),false);
+      await admin();assert.ok(!document.body.textContent.includes(`Nazwa produktu #${id}`));
+      await click(button(`Przywróć produkt #${id}`));assert.equal(products.at(-1).archived_at,null);assert.equal(products.at(-1).is_active,false);
+      assert.equal(field(`Opis produktu #${id}`).value,'Opis własnego albumu');assert.equal(products.find(p=>p.id===id).title,originalTitle);
+    }
+  });
+  await check('archive rejects unauthorized, foreign and stale requests, is repeatable and blocks stale publication',async()=>{
+    const handler=require('../../src/app/api/admin/galleries/[id]/shop/products/[productId]/route.ts');
+    const product=products.at(-1), expected=clone(product);
+    const remove=(id='default',snapshot=expected)=>handler.DELETE(new NextRequest('http://localhost/product',{method:'DELETE',body:JSON.stringify({expected:snapshot})}),{params:Promise.resolve({id,productId:String(product.id)})});
+    allowed=false;assert.equal((await remove()).status,401);allowed=true;
+    assert.equal((await remove('12')).status,404);products.find(p=>p.id===product.id).price+=1;assert.equal((await remove()).status,409);
+    assert.equal((await remove('default',products.find(p=>p.id===product.id))).status,200);assert.equal((await remove('default',products.find(p=>p.id===product.id))).status,200);
+    assert.equal((await send({productEdits:[{id:product.id,expected:products.find(p=>p.id===product.id),data:{...product,is_active:true}}]})).status,404);
+    const {productsReadyToPublish}=require('../../src/lib/galleries/shop-publication.ts');
+    assert.equal(productsReadyToPublish({...config,publicOffer:{...config.publicOffer,productIds:[product.id]}},[products.find(p=>p.id===product.id)]).length,0);
   });
   await reset(); console.log(`${h.log.length} unified shop save groups: PASS (database and authentication mocked).`);
 })().catch(error => { console.error(error); process.exitCode = 1; });

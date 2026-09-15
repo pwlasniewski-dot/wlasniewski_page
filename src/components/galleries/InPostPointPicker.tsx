@@ -19,6 +19,8 @@ export default function InPostPointPicker({ value, onChange }: Props) {
   const [token, setToken] = useState<string | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
   const [mapLoading, setMapLoading] = useState(false);
+  const [mapError, setMapError] = useState('');
+  const [mapAttempt, setMapAttempt] = useState(0);
   const [selectedPoint, setSelectedPoint] = useState<Point | null>(null);
   const mapContainer = useRef<HTMLDivElement>(null);
   const searchRequest = useRef<AbortController | null>(null);
@@ -38,12 +40,19 @@ export default function InPostPointPicker({ value, onChange }: Props) {
     if (!mapOpen || !token || !mapContainer.current) return;
     const container = mapContainer.current;
     const globalCallbacks = window as unknown as Record<string, unknown>;
-    globalCallbacks[callback] = (point: { name?: string; address?: { line1?: string; line2?: string } }) => {
+    const selectPoint = (point: { name?: string; address?: { line1?: string; line2?: string } }) => {
       if (typeof point?.name !== 'string' || !/^[A-Z0-9_-]{3,30}$/.test(point.name)) return;
       onChangeRef.current(point.name);
       setSelectedPoint({ name: point.name, address: [point.address?.line1, point.address?.line2].filter(Boolean).join(', '), description: '', openingHours: '' });
       setMapOpen(false);
     };
+    // Geowidget versions can dispatch the named DOM event or call a global function.
+    const pointEvent = (event: Event) => {
+      const payload = (event as CustomEvent).detail ?? (event as Event & { details?: unknown }).details;
+      if (payload && typeof payload === 'object') selectPoint(payload);
+    };
+    document.addEventListener(callback, pointEvent);
+    globalCallbacks[callback] = selectPoint;
     // Official v5 integration: https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/50069505
     const widget = document.createElement('inpost-geowidget');
     widget.setAttribute('token', token);
@@ -51,26 +60,31 @@ export default function InPostPointPicker({ value, onChange }: Props) {
     widget.setAttribute('config', 'parcelCollect');
     widget.setAttribute('onpoint', callback);
     widget.style.cssText = 'display:block;width:100%;height:100%';
-    const loaded = () => setMapLoading(false);
+    let timeout: number;
+    const loaded = () => { window.clearTimeout(timeout); setMapLoading(false); setMapError(''); };
     widget.addEventListener('inpost.geowidget.init', loaded);
-    container.appendChild(widget);
-    setMapLoading(true);
-    const failed = () => { setMapLoading(false); setError('Mapa nie jest teraz dostępna. Skorzystaj z wyszukiwarki punktów poniżej.'); };
+    setMapLoading(true); setMapError('');
+    const failed = () => { window.clearTimeout(timeout); setMapLoading(false); setMapError('Mapa nie jest teraz dostępna. Spróbuj ponownie lub wybierz punkt z wyszukiwarki poniżej.'); };
+    const scriptFailed = () => { script?.remove(); failed(); };
     let script = document.querySelector<HTMLScriptElement>('script[data-inpost-geowidget]');
     if (!script) {
+      if (!document.querySelector('link[data-inpost-geowidget]')) {
       const css = document.createElement('link');
+      css.dataset.inpostGeowidget = 'true';
       css.rel = 'stylesheet'; css.href = 'https://geowidget.inpost.pl/inpost-geowidget.css';
       document.head.appendChild(css);
+      }
       script = document.createElement('script');
       script.src = 'https://geowidget.inpost.pl/inpost-geowidget.js';
       script.async = true; script.dataset.inpostGeowidget = 'true';
+      script.addEventListener('error', scriptFailed, { once: true });
       document.head.appendChild(script);
     }
-    script.addEventListener('error', failed);
-    const timeout = window.setTimeout(failed, 15000);
-    widget.addEventListener('inpost.geowidget.init', () => window.clearTimeout(timeout), { once: true });
-    return () => { window.clearTimeout(timeout); script?.removeEventListener('error', failed); widget.removeEventListener('inpost.geowidget.init', loaded); widget.remove(); delete globalCallbacks[callback]; };
-  }, [mapOpen, token, callback]);
+    script.addEventListener('error', scriptFailed, { once: true });
+    timeout = window.setTimeout(failed, 15000);
+    container.appendChild(widget);
+    return () => { window.clearTimeout(timeout); script?.removeEventListener('error', scriptFailed); document.removeEventListener(callback, pointEvent); widget.removeEventListener('inpost.geowidget.init', loaded); widget.remove(); delete globalCallbacks[callback]; };
+  }, [mapOpen, token, callback, mapAttempt]);
 
   const search = async (nextPage = 1) => {
     const nextQuery = nextPage === 1 ? query.trim() : lastQuery;
@@ -92,7 +106,8 @@ export default function InPostPointPicker({ value, onChange }: Props) {
     <legend className="px-2 font-medium">Punkt odbioru InPost</legend>
     {value && <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"><strong>Wybrany punkt: {value}</strong>{selectedPoint?.name === value && selectedPoint.address && <p className="mt-1">{selectedPoint.address}</p>}</div>}
     {token && <button type="button" className={button} aria-expanded={mapOpen} onClick={() => { setMapOpen(!mapOpen); setError(''); }}>{mapOpen ? 'Zamknij mapę' : 'Wybierz punkt na mapie'}</button>}
-    {mapOpen && <div><p className="mb-2 text-sm text-stone-600" role="status">{mapLoading ? 'Ładowanie mapy InPost…' : 'Wybierz punkt odbioru na mapie.'}</p><div ref={mapContainer} className="h-[min(65vh,520px)] min-h-80 overflow-hidden rounded-xl bg-white" aria-label="Mapa punktów InPost" /></div>}
+    {mapOpen && <div><p className="mb-2 text-sm text-stone-600" role="status">{mapLoading ? 'Ładowanie mapy InPost…' : mapError ? 'Nie udało się załadować mapy.' : 'Wybierz punkt odbioru na mapie.'}</p><div ref={mapContainer} className="h-[min(65vh,520px)] min-h-80 overflow-hidden rounded-xl bg-white" aria-label="Mapa punktów InPost" /></div>}
+    {mapOpen && mapError && <div className="space-y-2"><p role="alert" className="text-sm text-red-800">{mapError}</p><button type="button" className={button} onClick={()=>setMapAttempt(attempt=>attempt+1)}>Załaduj mapę ponownie</button></div>}
     <div className="flex flex-wrap items-end gap-2"><label className="min-w-48 flex-1 text-sm">Miejscowość, kod pocztowy lub kod punktu<input className={field} value={query} maxLength={80} placeholder="np. Toruń lub 87-100" onChange={event => setQuery(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); void search(); } }} /></label><button type="button" className={button} disabled={busy || query.trim().length < 2} onClick={() => void search()}>{busy ? 'Szukam…' : 'Szukaj punktu'}</button></div>
     {error && <p role="alert" className="text-sm text-red-800">{error}</p>}
     {searched && !points.length && <p role="status" className="text-sm text-stone-600">Nie znaleziono dostępnych punktów. Sprawdź pełną nazwę miejscowości lub wyszukaj po kodzie pocztowym.</p>}

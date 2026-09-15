@@ -42,6 +42,32 @@ const request = (query) => new NextRequest(`https://example.test/api/shipping/in
     await h.act(async () => { widget.dispatchEvent(new CustomEvent('inpost.geowidget.init')); window[name]({ name: 'TOR01M', address: { line1: 'Ulica 1', line2: 'Toruń' } }); });
     assert.equal(selected, 'TOR01M'); assert.equal(document.querySelector('inpost-geowidget'), null); assert.equal(window[name], undefined); await reset();
   });
+  await check('InPost: DOM selection event survives three map open/select cycles without stale listeners', async () => {
+    global.fetch = async () => ({ok:true,json:async()=>({token:'public-widget'})});
+    const selected=[];await mount(Picker,{value:'',onChange:code=>selected.push(code)});
+    let eventName;
+    for(let round=0;round<3;round++) {
+      await click(button('Wybierz punkt na mapie'));
+      const widget=document.querySelector('inpost-geowidget');eventName=widget.getAttribute('onpoint');
+      await h.act(async()=>{document.dispatchEvent(new CustomEvent(eventName,{detail:{name:'TOR01M',address:{line1:'Ulica 1'}}}));});
+      assert.equal(selected.length,round+1);assert.equal(document.querySelector('inpost-geowidget'),null);
+      await h.act(async()=>{document.dispatchEvent(new CustomEvent(eventName,{detail:{name:'TOR02M'}}));});
+      assert.equal(selected.length,round+1);
+    }
+    await reset();
+  });
+  await check('InPost: failed script can be retried without duplicated styles',async()=>{
+    document.querySelector('script[data-inpost-geowidget]')?.remove();
+    global.fetch=async()=>({ok:true,json:async()=>({token:'public-widget'})});
+    await mount(Picker,{value:'',onChange:()=>{}});await click(button('Wybierz punkt na mapie'));
+    const first=document.querySelector('script[data-inpost-geowidget]');
+    await h.act(async()=>first.dispatchEvent(new Event('error')));
+    assert.equal(document.querySelector('script[data-inpost-geowidget]'),null);
+    await click(button('Załaduj mapę ponownie'));
+    assert.ok(document.querySelector('script[data-inpost-geowidget]'));assert.equal(document.querySelectorAll('link[data-inpost-geowidget]').length,1);
+    await h.act(async()=>document.querySelector('inpost-geowidget').dispatchEvent(new CustomEvent('inpost.geowidget.init')));
+    assert.equal(document.querySelector('[role="alert"]'),null);await reset();
+  });
   await check('InPost: checkout rejects closed and unknown points, verifies exact authenticated result', async () => {
     const {verifyParcelPoint}=require('../../src/lib/shipping/inpost-point.ts');
     process.env.INPOST_API_TOKEN='checkout-test-secret';
@@ -55,5 +81,10 @@ const request = (query) => new NextRequest(`https://example.test/api/shipping/in
     await assert.rejects(()=>verifyParcelPoint('TOR01M'),/sprawdzić/);
     delete process.env.INPOST_API_TOKEN;delete process.env.INPOST_ENVIRONMENT;
   });
-  console.log('InPost picker: 6 groups PASS');
+  await check('InPost: private gallery CSP permits the official map frame and rejects unrelated hosts',async()=>{
+    const config=(await import('../../next.config.mjs')).default;
+    const headers=await config.headers();const csp=headers.filter(row=>row.source==='/galeria/:path*').flatMap(row=>row.headers).find(row=>row.key==='Content-Security-Policy').value;
+    assert.ok(csp.split(' ').includes('https://geowidget.inpost.pl'));assert.ok(!csp.includes('*'));assert.ok(!csp.includes('https: '));
+  });
+  console.log('InPost picker: 9 groups PASS');
 })().catch(error => { console.error(error); process.exitCode = 1; });

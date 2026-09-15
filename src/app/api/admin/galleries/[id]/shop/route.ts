@@ -37,7 +37,7 @@ export async function PUT(request:NextRequest,{params}:{params:Promise<{id:strin
     const existing=await tx.galleryProduct.findMany({where:{gallery_id:id,id:{in:changes.map(change=>change.id)}}});
     for(const change of changes) {
      const product=existing.find(product=>product.id===change.id);
-     if(!product) throw new ShopValidationError('Produkt nie należy do tej galerii.',404);
+     if(!product || product.archived_at) throw new ShopValidationError('Produkt nie należy do tej galerii.',404);
      if(JSON.stringify(productEditSnapshot(product))!==JSON.stringify(change.expected)) throw new ShopValidationError(`Produkt #${change.id} został zmieniony w innym oknie. Odśwież ofertę przed ponownym zapisem.`,409);
     }
     for(const change of changes) { await tx.galleryProduct.update({where:{id:change.id,gallery_id:id},data:change.data}); products.push({id:change.id,...change.data}); }
