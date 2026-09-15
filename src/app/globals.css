@@ -644,6 +644,21 @@ body {
 }
 
 /* Draw attention to gallery shopping without moving content or fading text. */
+.gallery-products-tab {
+  border: 2px solid #a47b28;
+  background: #fff3cc;
+  color: #51370c;
+  font-weight: 700;
+}
+.gallery-products-tab[aria-current="page"] {
+  background: #51370c;
+  color: #fff3cc;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .gallery-products-tab {
+    animation: gallery-shop-invitation-pulse 2.4s ease-in-out 2;
+  }
+}
 .gallery-shop-invitation {
   border-color: #b6a07e;
   box-shadow: 0 0 0 1px rgb(182 160 126 / 12%);
