@@ -1,5 +1,6 @@
 'use client';
 
+import { hasShopDelivery } from '@/lib/galleries/shop-delivery';
 import { defaultPublicOffer, type PublicShopOffer } from '@/lib/galleries/public-offer';
 import type { PrintFormat, ShopConfig } from '@/lib/galleries/merchandise';
 import {productsReadyToPublish} from '@/lib/galleries/shop-publication';
@@ -18,7 +19,7 @@ export default function PublicShopOfferSettings({ value, formats, products, shop
         [result[index], result[index + direction]] = [result[index + direction], result[index]];
         return result;
     };
-    const deliverable = (id: number) => (productRules[String(id)]?.deliveryMethods || ['locker', 'courier'] as const).some(method => delivery[method].enabled);
+    const deliverable = (id: number) => hasShopDelivery(delivery, productRules[String(id)]);
     const ready = products.filter(p => offer.productIds.includes(p.id) && p.is_active && p.price > 0 && deliverable(p.id)).length + formats.filter(f => offer.formatIds.includes(f.id) && f.active && f.unitAmount > 0).length;
     const publishable=productsReadyToPublish({publicOffer:offer,productRules,delivery} as ShopConfig,products);
     const drafts=publishable.filter(p=>!p.is_active);

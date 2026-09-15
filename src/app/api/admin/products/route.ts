@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
             const { searchParams } = new URL(request.url);
             const galleryId = searchParams.get('gallery_id');
 
-            const where: any = {};
+            const where: any = { archived_at: null };
             if (galleryId) {
                 where.gallery_id = parseInt(galleryId);
             }

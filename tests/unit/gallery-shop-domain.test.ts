@@ -43,3 +43,18 @@ test('tier validation rejects ambiguous or invalid price schedules',()=>{
  assert.equal(validateShopConfig(config).formats[0].priceTiers?.[0].unitAmount,200);
  for(const tiers of [[{minQuantity:1,unitAmount:200}],[{minQuantity:3,unitAmount:0}],[{minQuantity:3,unitAmount:351}],[{minQuantity:3,unitAmount:200},{minQuantity:3,unitAmount:150}],[{minQuantity:3.5,unitAmount:200}],[{minQuantity:3,unitAmount:200},{minQuantity:6,unitAmount:250}]]) assert.throws(()=>validateShopConfig({...config,formats:[{...config.formats[0],priceTiers:tiers}]}));
 });
+
+test('pickup is free, strips shipping data and snapshots current admin instructions',()=>{
+ const cat={...catalog,delivery:{...catalog.delivery,pickup:{enabled:true,amount:0,instructions:'Odbiór po telefonie.'}}};
+ const result=price([print()],cat,{...delivery,method:'pickup',address:{street:'stary adres',postalCode:'00-001',city:'Toruń'},instructions:'client text'});
+ assert.equal(result.total,700);assert.equal(result.delivery.amount,0);assert.equal(result.delivery.address,undefined);assert.equal(result.delivery.pointCode,undefined);assert.equal(result.delivery.instructions,'Odbiór po telefonie.');
+ assert.throws(()=>price([print()],{...cat,delivery:{...cat.delivery,pickup:{...cat.delivery.pickup,enabled:false}}},{...delivery,method:'pickup'}));
+});
+test('legacy config enables pickup; pickup-only shop validates and courier-only products can be collected',()=>{
+ const legacy={...defaultShopConfig(),enabled:true,delivery:{locker:{enabled:false,amount:0},courier:{enabled:false,amount:0}}};
+ const normalized=validateShopConfig(legacy);assert.equal(normalized.delivery.pickup?.enabled,true);
+ const cat={...catalog,products:catalog.products.map(p=>({...p,deliveryMethods:['courier'] as ('courier')[]})),delivery:normalized.delivery};
+ assert.equal(price([product],cat,{...delivery,method:'pickup',pointCode:undefined}).total,9900);
+ assert.throws(()=>validateShopConfig({...normalized,delivery:{...normalized.delivery,pickup:{enabled:true,amount:500,instructions:'Adres'}}}));
+ assert.throws(()=>validateShopConfig({...normalized,delivery:{...normalized.delivery,pickup:{enabled:true,amount:0,instructions:''}}}));
+});

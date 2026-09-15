@@ -1,3 +1,4 @@
+import { hasShopDelivery } from './shop-delivery';
 import { verifyParcelPoint } from '@/lib/shipping/inpost-point';
 import { readProductImages, isProductVideoUrl } from './product-media';
 import { createHash } from 'node:crypto';
@@ -17,16 +18,16 @@ export async function loadGalleryShop(galleryId: number | null) {
  const inherited = galleryId !== null && !setting;
  const config=readShopConfig((setting || globalSetting)?.setting_value);
  const globalConfig = galleryId === null ? config : readShopConfig(globalSetting?.setting_value);
- const catalog: ShopCatalog={galleryId:galleryId ?? 0,enabled:config.enabled,title:config.title,introduction:config.introduction,buttonLabel:config.buttonLabel,formats:config.formats.filter(f=>f.active),delivery:config.delivery,products:products.filter(p=>p.is_active && p.price>0).map(p=>{
+ const catalog: ShopCatalog={galleryId:galleryId ?? 0,enabled:config.enabled,title:config.title,introduction:config.introduction,buttonLabel:config.buttonLabel,formats:config.formats.filter(f=>f.active),delivery:config.delivery,products:products.filter(p=>!p.archived_at && p.is_active && p.price>0).map(p=>{
   const globalRule = p.gallery_id === null ? globalConfig.productRules[String(p.id)] : undefined;
   const rule = config.productRules[String(p.id)] || globalRule || {minPhotos:1,maxPhotos:50};
   // A local photo-count override cannot relax a shared product's shipping constraints.
   const deliveryMethods = globalRule?.deliveryMethods ? globalRule.deliveryMethods.filter(method => !rule.deliveryMethods || rule.deliveryMethods.includes(method)) : rule.deliveryMethods;
   return {id:p.id,title:p.title,description:p.description,price:p.price,image_url:p.image_url,preview_images:readProductImages(p.preview_images),video_url:isProductVideoUrl(p.video_url)?p.video_url:null,sample_pages:readProductImages(p.sample_pages),product_type:p.product_type,nphoto_product_id:p.nphoto_product_id,nphoto_url:p.nphoto_url,...rule,...(deliveryMethods ? {deliveryMethods} : {})};
- }).filter(product => !product.deliveryMethods || product.deliveryMethods.some(method => config.delivery[method].enabled))};
+ }).filter(product => hasShopDelivery(config.delivery, product))};
  catalog.enabled = config.enabled && (catalog.formats.length > 0 || catalog.products.length > 0);
- const editableProducts = products.map(p => ({...p, preview_images:readProductImages(p.preview_images),video_url:p.video_url,sample_pages:readProductImages(p.sample_pages)}));
- return {config,catalog,inherited,products:editableProducts.filter(p=>p.gallery_id===galleryId),sharedProducts:galleryId===null?[]:editableProducts.filter(p=>p.gallery_id===null)};
+ const editableProducts = products.filter(p=>!p.archived_at).map(p => ({...p, preview_images:readProductImages(p.preview_images),video_url:p.video_url,sample_pages:readProductImages(p.sample_pages)}));
+ return {config,catalog,inherited,archivedProducts:products.filter(p=>p.gallery_id===galleryId && p.archived_at).map(p=>({id:p.id,title:p.title})),products:editableProducts.filter(p=>p.gallery_id===galleryId),sharedProducts:galleryId===null?[]:editableProducts.filter(p=>p.gallery_id===null)};
 }
 export async function authorizeShop(request: NextRequest, scope: {accessCode:string} | {participantId:number}) {
  let participantId: number | null=null;

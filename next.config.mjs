@@ -47,7 +47,7 @@ const nextConfig = {
             {
                 source: '/galeria/:path*',
                 headers: [
-                    { key: 'Content-Security-Policy', value: "frame-src 'self' https://www.youtube-nocookie.com" },
+                    { key: 'Content-Security-Policy', value: "frame-src 'self' https://www.youtube-nocookie.com https://geowidget.inpost.pl" },
                 ],
             },
             {

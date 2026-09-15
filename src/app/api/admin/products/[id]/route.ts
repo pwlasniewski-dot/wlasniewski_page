@@ -15,8 +15,9 @@ export async function DELETE(
                 return NextResponse.json({ error: 'Nieprawidłowe ID' }, { status: 400 });
             }
 
-            await prisma.galleryProduct.delete({
-                where: { id: productId }
+            await prisma.galleryProduct.update({
+                where: { id: productId },
+                data: { is_active: false, archived_at: new Date() }
             });
 
             return NextResponse.json({ success: true });

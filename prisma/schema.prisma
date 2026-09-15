@@ -1299,6 +1299,7 @@ model GalleryProduct {
   image_url   String?
   video_url   String?
   is_active   Boolean @default(true)
+  archived_at DateTime?
 
   // nPhoto Integration
   nphoto_url        String?

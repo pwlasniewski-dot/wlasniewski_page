@@ -643,6 +643,30 @@ body {
   object-position: var(--thermal-position-mobile, center center);
 }
 
+/* Draw attention to gallery shopping without moving content or fading text. */
+.gallery-shop-invitation {
+  border-color: #b6a07e;
+  box-shadow: 0 0 0 1px rgb(182 160 126 / 12%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .gallery-shop-invitation {
+    /* Two gentle pulses, then leave a quiet, visible border. */
+    animation: gallery-shop-invitation-pulse 2.4s ease-in-out 2;
+  }
+}
+
+@keyframes gallery-shop-invitation-pulse {
+  0%, 100% {
+    border-color: #b6a07e;
+    box-shadow: 0 0 0 1px rgb(182 160 126 / 12%);
+  }
+  50% {
+    border-color: #947850;
+    box-shadow: 0 0 0 4px rgb(182 160 126 / 20%), 0 3px 16px rgb(182 160 126 / 12%);
+  }
+}
+
 @media (min-width: 768px) {
   .thermal-comparison-media {
     object-position: var(--thermal-position, center center);

@@ -16,7 +16,9 @@ export async function handleMerchandisePayment(event: {extOrderId:string;orderId
   if(updated.count===1) {
    const money=(n:number)=>(n/100).toFixed(2)+' zł';
    const rows=metadata.lines.map(l=>`<li>${escape(l.title)}${l.kind==='print' ? ` · ${escape(l.format?.paper)} · zdjęcie #${l.photoId}`:''} — ${l.quantity} szt. — ${money(l.lineTotal)}</li>`).join('');
-   const html=`<h2>Zamówienie #${order.id} zostało opłacone</h2><ul>${rows}</ul><p>Dostawa: ${money(metadata.delivery.amount)}. Razem: ${money(order.total_amount)}.</p><p>Odbiorca: ${escape(metadata.delivery.recipientName)}.</p>`;
+   const deliveryName=metadata.delivery.method==='pickup'?'Odbiór osobisty':metadata.delivery.method==='locker'?'InPost Paczkomat':'Kurier';
+   const pickupInfo=metadata.delivery.method==='pickup'?`<p>${escape(metadata.delivery.instructions)}</p>`:'';
+   const html=`<h2>Zamówienie #${order.id} zostało opłacone</h2><ul>${rows}</ul><p>${deliveryName}: ${money(metadata.delivery.amount)}. Razem: ${money(order.total_amount)}.</p><p>Odbiorca: ${escape(metadata.delivery.recipientName)}.</p>${pickupInfo}`;
    // No production messages are sent by the test harness. Delivery failures do not reverse payment.
    try {await sendEmail({to:metadata.delivery.email,subject:`Potwierdzenie zamówienia #${order.id}`,html}); const admin=await getAdminEmail();if(admin) await sendEmail({to:admin,subject:`Zamówienie produktów #${order.id} do realizacji`,html});}catch(error){console.error('Gallery merchandise confirmation failed',order.id);}
   }
