@@ -34,10 +34,11 @@ import ClientStyleGuidePanel from '@/components/StyleGuide/ClientStyleGuidePanel
 import AccountTabButton from '@/components/client/AccountTabButton';
 import { createPortalEventReporter, portalResponseDiagnostics } from '@/lib/client-portal-events-client';
 import type { PortalClientEvent, PortalModule } from '@/lib/client-portal-events';
+import AccountOrders from '@/components/client/AccountOrders';
 import PhotoProductStorefront from '@/components/shop/PhotoProductStorefront';
 import { parseShopIntent, shopAccountHref } from '@/lib/galleries/shop-intent';
 
-type Tab = 'overview' | 'sessions' | 'bookings' | 'documents' | 'gift_cards' | 'workshops' | 'preparation' | 'settings' | 'partner';
+type Tab = 'orders' | 'overview' | 'sessions' | 'bookings' | 'documents' | 'gift_cards' | 'workshops' | 'preparation' | 'settings' | 'partner';
 
 type ActionSummary = {
     nextAction: null | {
@@ -57,7 +58,9 @@ export default function AccountPage() {
     useEffect(() => {
         if (!authLoading && !token) {
             const intent = parseShopIntent(window.location.search);
-            router.push(intent ? `/logowanie?returnTo=${encodeURIComponent(shopAccountHref(intent))}` : '/logowanie');
+            const params = new URLSearchParams(window.location.search);
+            const orderReturn = params.get('tab') === 'orders' ? `/konto?${params.toString()}` : null;
+            router.push(orderReturn ? `/logowanie?returnTo=${encodeURIComponent(orderReturn)}` : intent ? `/logowanie?returnTo=${encodeURIComponent(shopAccountHref(intent))}` : '/logowanie');
         }
     }, [authLoading, token, router]);
 
@@ -77,6 +80,7 @@ function AccountLoading() {
 function AuthenticatedAccountPage({ user, token, logout }: Pick<ReturnType<typeof useAuth>, 'user' | 'logout'> & { token: string }) {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<Tab>('overview');
+    useEffect(() => { if (new URLSearchParams(window.location.search).get('tab') === 'orders') setActiveTab('orders'); }, []);
     const [loading, setLoading] = useState(true);
     const [actionSummary, setActionSummary] = useState<ActionSummary | null>(null);
     const [dashboardError, setDashboardError] = useState<{ message: string; caseCode?: string } | null>(null);
@@ -303,6 +307,7 @@ function AuthenticatedAccountPage({ user, token, logout }: Pick<ReturnType<typeo
 
                     {/* Tab Navigation — filtered by permissions */}
                     <nav aria-label="Sekcje konta" className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-700 backdrop-blur-xl">
+                        <AccountTabButton label="Moje zamówienia" active={activeTab === 'orders'} onClick={() => { window.history.replaceState(null, '', '/konto?tab=orders'); setActiveTab('orders'); }} icon={<ShoppingBag className="h-6 w-6" />} />
                         <AccountTabButton label="Przegląd" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<Star className="h-6 w-6" />} />
 
                         {actionSummary && ((actionSummary.modules.galleries && actionSummary.counts.galleries > 0) || actionSummary.counts.challenges > 0) && (
@@ -396,6 +401,7 @@ function AuthenticatedAccountPage({ user, token, logout }: Pick<ReturnType<typeo
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.2 }}
                     >
+                        {activeTab === 'orders' && <AccountOrders token={token} />}
                         {activeTab === 'overview' && renderOverview()}
                         {activeTab === 'sessions' && renderSessions()}
                         {activeTab === 'bookings' && renderBookingsTab()}

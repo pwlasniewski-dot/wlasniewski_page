@@ -1,3 +1,7 @@
+import { orderClient } from './order-account';
+import { orderOrigin } from './order-origin';
+import { isClientRecordOwner } from '@/lib/auth/document-access';
+import { orderAccountPath } from './order-presentation';
 import { hasShopDelivery } from './shop-delivery';
 import { verifyParcelPoint } from '@/lib/shipping/inpost-point';
 import { readProductImages, isProductVideoUrl } from './product-media';
@@ -80,12 +84,14 @@ export async function postShopOrder(request:NextRequest,scope:{accessCode:string
   const priced=priceShopCart(catalog,body.lines,body.delivery,allowed);
   if(priced.total!==body.expectedTotal) return NextResponse.json({success:false,code:'PRICE_CHANGED',error:'Cennik się zmienił. Sprawdź aktualne podsumowanie przed płatnością.',catalog,total:priced.total},{status:409});
   if(priced.delivery.method==='locker') await verifyParcelPoint(priced.delivery.pointCode!);
-  const metadata:ShopMetadata={kind:'gallery_merchandise',version:1,lines:priced.lines,delivery:priced.delivery,fulfillment:{status:'new',trackingNumber:null}};
+  const client = participantId === null ? await orderClient(request) : null;
+  const accountBuyer = client && isClientRecordOwner(gallery, client) ? client : null;
+  const metadata:ShopMetadata={...(accountBuyer ? {customerId:accountBuyer.id} : {}),kind:'gallery_merchandise',version:1,lines:priced.lines,delivery:priced.delivery,fulfillment:{status:'new',trackingNumber:null}};
   let order;
   try {order=await prisma.photoOrder.create({data:{gallery_id:gallery.id,participant_id:participantId,photo_ids:'[]',photo_count:priced.lines.filter(l=>l.kind==='print').reduce((sum,l)=>sum+l.quantity,0),product_ids:JSON.stringify(metadata),total_amount:priced.total,payment_status:'initializing',idempotency_key:key,checkout_fingerprint:fingerprint}});}catch(error){if((error as {code?:string})?.code!=='P2002') throw error; const raced=await prisma.photoOrder.findUnique({where:{idempotency_key:key}});if(!raced) throw error;return existingResponse(raced);}
   try {
-   const origin=new URL(request.url).origin;
-   const result=await createPayUOrder({description:`Zamówienie odbitek i produktów #${order.id}`,currencyCode:'PLN',totalAmount:priced.total,extOrderId:`GALLERY_${order.id}_${Date.now()}`,buyer:{email:priced.delivery.email,firstName:priced.delivery.recipientName.split(' ')[0],lastName:priced.delivery.recipientName.split(' ').slice(1).join(' ') || '-',language:'pl'},products:[...priced.lines.map(l=>({name:l.title,unitPrice:l.unitAmount,quantity:l.quantity})),...(priced.delivery.amount ? [{name:'Dostawa',unitPrice:priced.delivery.amount,quantity:1}]:[])],continueUrl:participantId ? `${origin}/galeria/grupowa?shopOrder=${order.id}`:`${origin}/galeria/${gallery.access_code}?shopOrder=${order.id}`},extractClientIpv4(request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')));
+   const origin=orderOrigin(request.url);
+   const result=await createPayUOrder({description:`Zamówienie odbitek i produktów #${order.id}`,currencyCode:'PLN',totalAmount:priced.total,extOrderId:`GALLERY_${order.id}_${Date.now()}`,buyer:{email:priced.delivery.email,firstName:priced.delivery.recipientName.split(' ')[0],lastName:priced.delivery.recipientName.split(' ').slice(1).join(' ') || '-',language:'pl'},products:[...priced.lines.map(l=>({name:l.title,unitPrice:l.unitAmount,quantity:l.quantity})),...(priced.delivery.amount ? [{name:'Dostawa',unitPrice:priced.delivery.amount,quantity:1}]:[])],continueUrl:accountBuyer ? `${origin}${orderAccountPath(order.id)}` : participantId ? `${origin}/galeria/grupowa?shopOrder=${order.id}`:`${origin}/galeria/${gallery.access_code}?shopOrder=${order.id}`},extractClientIpv4(request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')));
    await prisma.photoOrder.updateMany({where:{id:order.id,payment_status:'initializing'},data:{payment_status:'pending',payment_id:result.orderId,payment_url:result.redirectUri}});
    return NextResponse.json({success:true,orderId:order.id,paymentUrl:result.redirectUri});
   } catch {

@@ -1,0 +1,5 @@
+// Isolated preview: synthetic data only, no database, SMTP or payment calls.
+require('./gallery-shop-dom.cjs');
+const {renderOrderEmail}=require('../../src/lib/galleries/order-email.ts');
+const metadata={kind:'gallery_merchandise',version:1,lines:[{id:'album',kind:'product',title:'Harmonijka nPhoto 8×8 cm',productId:2,photoIds:[1,2,3],coverPhotoId:1,quantity:1,unitAmount:4154,lineTotal:4154,product:{title:'Harmonijka'}},{id:'print',kind:'print',title:'Odbitka 15×21 cm',photoId:1,quantity:3,unitAmount:350,lineTotal:1050,format:{label:'15×21 cm',paper:'Matowy'}}],delivery:{method:'locker',pointCode:'TEST01',recipientName:'Klient Testowy',email:'test@example.com',phone:'500000000',amount:1700},fulfillment:{status:'new',trackingNumber:null}};
+require('node:http').createServer((req,res)=>{res.setHeader('Content-Type','text/html; charset=utf-8');res.end(renderOrderEmail({id:30,total:6904,metadata,admin:req.url==='/admin',url:'https://wlasniewski.pl/konto?tab=orders&order=30'}).html);}).listen(8770,'0.0.0.0',()=>console.log('Synthetic order mail preview on port 8770'));

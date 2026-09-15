@@ -10,8 +10,8 @@ export type ShopCatalog = Omit<ShopConfig, 'version' | 'productRules' | 'publicO
 export type ShopCrop = {mode: 'fit' | 'fill'; x: number; y: number; zoom: number};
 export type ShopLine = {id: string; kind: 'print'; photoId: number; formatId: string; quantity: number; crop: ShopCrop; confirmed: boolean} | {id: string; kind: 'product'; productId: number; photoIds: number[]; coverPhotoId: number; quantity: number};
 export type ShopDelivery = {method: 'locker' | 'courier' | 'pickup'; recipientName: string; email: string; phone: string; pointCode?: string; instructions?: string; address?: {street: string; postalCode: string; city: string}};
-export type PricedShopLine = ShopLine & {title: string; unitAmount: number; lineTotal: number; format?: PrintFormat; product?: {title: string; description: string | null; nphoto_product_id?: string | null; nphoto_url?: string | null}};
-export type ShopMetadata = {kind: 'gallery_merchandise'; version: 1; lines: PricedShopLine[]; delivery: ShopDelivery & {amount: number}; fulfillment: {status: 'new' | 'ordered' | 'received' | 'packed' | 'shipped' | 'collected'; trackingNumber: string | null}};
+export type PricedShopLine = ShopLine & {title: string; unitAmount: number; lineTotal: number; format?: PrintFormat; product?: {image_url?: string | null; title: string; description: string | null; nphoto_product_id?: string | null; nphoto_url?: string | null}};
+export type ShopMetadata = {customerId?: number; kind: 'gallery_merchandise'; version: 1; lines: PricedShopLine[]; delivery: ShopDelivery & {amount: number}; fulfillment: {status: 'new' | 'ordered' | 'received' | 'packed' | 'shipped' | 'collected'; trackingNumber: string | null}};
 export class ShopValidationError extends Error { constructor(message: string, public status = 400) {super(message); this.name = 'ShopValidationError';} }
 function check(ok: unknown, message: string): asserts ok {if (!ok) throw new ShopValidationError(message);}
 function integer(value: unknown, min: number, max: number) {return typeof value === 'number' && Number.isSafeInteger(value) && value >= min && value <= max;}
@@ -78,7 +78,7 @@ export function priceShopCart(catalog: ShopCatalog, input: unknown, deliveryInpu
   const product = catalog.products.find(p=>p.id===line.productId); check(product, 'Produkt nie jest dostępny.');
   check(Array.isArray(line.photoIds) && line.photoIds.length >= product.minPhotos && line.photoIds.length <= product.maxPhotos && new Set(line.photoIds).size === line.photoIds.length, 'Sprawdź liczbę zdjęć w produkcie.');
   line.photoIds.forEach(photo); check(line.photoIds.includes(line.coverPhotoId), 'Wybierz zdjęcie na okładkę.');
-  return {id:line.id,kind:'product',productId:product.id,photoIds:[...line.photoIds],coverPhotoId:line.coverPhotoId,quantity:line.quantity,title:product.title,unitAmount:product.price,lineTotal:product.price*line.quantity,product:{title:product.title,description:product.description,nphoto_product_id:product.nphoto_product_id,nphoto_url:product.nphoto_url}};
+  return {id:line.id,kind:'product',productId:product.id,photoIds:[...line.photoIds],coverPhotoId:line.coverPhotoId,quantity:line.quantity,title:product.title,unitAmount:product.price,lineTotal:product.price*line.quantity,product:{image_url:product.image_url,title:product.title,description:product.description,nphoto_product_id:product.nphoto_product_id,nphoto_url:product.nphoto_url}};
  });
  const d = deliveryInput as ShopDelivery;
  check(d && ['locker','courier','pickup'].includes(d.method) && (d.method === 'pickup' ? (catalog.delivery.pickup ?? defaultPickupDelivery()).enabled : catalog.delivery[d.method]?.enabled), 'Wybierz dostępną dostawę.');
