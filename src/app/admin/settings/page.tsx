@@ -88,6 +88,8 @@ export default function SettingsPage() {
         bank_account_holder: '',
         bank_name: '',
         bank_swift: '',
+        // InPost Geowidget (publiczny token ograniczony do domeny sklepu)
+        inpost_geowidget_token: '',
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -376,6 +378,34 @@ export default function SettingsPage() {
             </div>
 
             <div className="grid gap-8">
+                {/* InPost map settings */}
+                <div className="bg-zinc-900 shadow rounded-lg border border-gold-500/40 p-6">
+                    <div className="flex flex-col gap-2 mb-5">
+                        <h2 className="text-lg font-medium text-white">InPost — mapa Paczkomatów</h2>
+                        <p className="text-sm text-zinc-400">
+                            Wklej publiczny token Geowidget wygenerowany w panelu InPost dla domeny <strong className="text-zinc-200">wlasniewski.pl</strong>.
+                            Nie wklejaj tutaj prywatnego tokenu ShipX/API do nadawania przesyłek.
+                        </p>
+                    </div>
+                    <div>
+                        <label htmlFor="inpost-geowidget-token" className="block text-sm font-medium text-zinc-300 mb-1">
+                            Token Geowidget
+                        </label>
+                        <input
+                            id="inpost-geowidget-token"
+                            type="password"
+                            autoComplete="off"
+                            value={settings.inpost_geowidget_token || ''}
+                            onChange={e => setSettings(s => ({ ...s, inpost_geowidget_token: e.target.value }))}
+                            placeholder="Wklej token mapy z panelu InPost"
+                            className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                        />
+                        <p className="mt-2 text-xs text-zinc-500">
+                            Po wklejeniu użyj przycisku „Zapisz wszystkie zmiany” u góry. Nowy token zacznie działać bez zmiany kodu strony.
+                        </p>
+                    </div>
+                </div>
+
                 {/* Home Page Settings */}
                 <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
                     <h2 className="text-lg font-medium text-white mb-4">Ustawienia Strony Głównej</h2>

@@ -1,6 +1,14 @@
 const h = require('./gallery-shop-dom.cjs');
 const { assert, mount, reset, click, set, button, field, check } = h;
+const fs = require('node:fs');
+const Module = require('node:module');
 const { NextRequest } = require('next/server');
+let savedWidgetToken = null;
+const originalLoad = Module._load;
+Module._load = function (name, ...args) {
+  if (name === '@/lib/db/prisma') return { __esModule: true, default: { setting: { findUnique: async () => savedWidgetToken === null ? null : { setting_value: savedWidgetToken } } } };
+  return originalLoad.call(this, name, ...args);
+};
 const pointsRoute = require('../../src/app/api/shipping/inpost/points/route.ts');
 const configRoute = require('../../src/app/api/shipping/inpost/config/route.ts');
 const Picker = require('../../src/components/galleries/InPostPointPicker.tsx').default;
@@ -24,6 +32,7 @@ const request = (query) => new NextRequest(`https://example.test/api/shipping/in
     const response = await pointsRoute.GET(request('q=Toruń')); assert.equal(response.status, 503); const failure = await response.json(); assert.ok(!JSON.stringify(failure).includes('private-secret')); assert.doesNotMatch(failure.error, /mapie/);
     process.env.INPOST_API_TOKEN = 'private-secret'; process.env.INPOST_GEOWIDGET_TOKEN = 'public-widget';
     assert.deepEqual(await (await configRoute.GET()).json(), { token: 'public-widget' });
+    savedWidgetToken = 'admin-saved-widget'; assert.deepEqual(await (await configRoute.GET()).json(), { token: 'admin-saved-widget' }); savedWidgetToken = null;
     delete process.env.INPOST_GEOWIDGET_TOKEN; delete process.env.INPOST_API_TOKEN;
     process.env.NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN='deployed-widget'; assert.deepEqual(await (await configRoute.GET()).json(), {token:'deployed-widget'}); delete process.env.NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN;
   });
@@ -84,7 +93,13 @@ const request = (query) => new NextRequest(`https://example.test/api/shipping/in
   await check('InPost: private gallery CSP permits the official map frame and rejects unrelated hosts',async()=>{
     const config=(await import('../../next.config.mjs')).default;
     const headers=await config.headers();const csp=headers.filter(row=>row.source==='/galeria/:path*').flatMap(row=>row.headers).find(row=>row.key==='Content-Security-Policy').value;
-    assert.ok(csp.split(' ').includes('https://geowidget.inpost.pl'));assert.ok(!csp.includes('*'));assert.ok(!csp.includes('https: '));
+    assert.ok(csp.split(' ').includes('https://geowidget-app.inpost.pl'));assert.ok(!csp.split(' ').includes('https://geowidget.inpost.pl'));assert.ok(!csp.includes('*'));assert.ok(!csp.includes('https: '));
   });
-  console.log('InPost picker: 9 groups PASS');
+  await check('InPost: admin settings expose a dedicated Geowidget field wired to server storage', async()=>{
+    const page=fs.readFileSync(require.resolve('../../src/app/admin/settings/page.tsx'),'utf8');
+    const api=fs.readFileSync(require.resolve('../../src/app/api/settings/route.ts'),'utf8');
+    assert.match(page,/InPost — mapa Paczkomatów/);assert.match(page,/inpost_geowidget_token/);assert.match(page,/wlasniewski\.pl/);
+    assert.match(api,/inpost_geowidget_token/);assert.match(api,/Token Geowidget InPost ma nieprawidłowy format/);
+  });
+  console.log('InPost picker: 10 groups PASS');
 })().catch(error => { console.error(error); process.exitCode = 1; });
