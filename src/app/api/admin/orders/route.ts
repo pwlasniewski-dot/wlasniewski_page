@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import {readShopMetadata, type ShopMetadata} from '@/lib/galleries/merchandise';
 import { requireAuth } from '@/lib/auth/middleware';
+import { orderPhotoIds } from '@/lib/galleries/order-presentation';
 
 type UnifiedOrder = {
     type: 'gift_card' | 'gallery_photo';
@@ -231,6 +232,7 @@ export async function GET(request: NextRequest) {
         const allPhotoIds = Array.from(
             new Set([
                 ...photoOrders.flatMap((order) => parsePhotoIds(order.photo_ids)),
+                ...photoOrders.flatMap(order => { const metadata=readShopMetadata(order.product_ids); return metadata ? orderPhotoIds(metadata) : []; }),
                 ...Array.from(standardPhotoIdsByParticipant.values()).flat(),
             ])
         );
@@ -294,8 +296,8 @@ export async function GET(request: NextRequest) {
                 createdAt: order.created_at, paymentMethod: 'payu', paymentRef: order.payment_id || undefined,
                 galleryId: order.gallery.id, galleryName: order.gallery.client_name,
                 merchandise,
-                photoIds: parsePhotoIds(order.photo_ids),
-                selectedPhotos: parsePhotoIds(order.photo_ids).flatMap(id => { const photo = photosById.get(id); return photo ? [photo] : []; }),
+                photoIds: orderPhotoIds(merchandise),
+                selectedPhotos: orderPhotoIds(merchandise).flatMap(id => { const photo = photosById.get(id); return photo ? [photo] : []; }),
                 orderItems: merchandise.lines.map(line => ({kind: line.kind === 'print' ? 'extra_photo' : 'product', title: line.title, quantity: line.quantity, unitAmount: line.unitAmount, totalAmount: line.lineTotal, sizeLabel: line.kind === 'print' ? line.format?.label : undefined})),
                 sizeSummary: [...new Set(merchandise.lines.flatMap(line => line.kind === 'print' && line.format ? [line.format.label] : []))],
             } satisfies UnifiedOrder;

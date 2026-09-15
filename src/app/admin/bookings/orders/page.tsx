@@ -86,6 +86,8 @@ export default function AdminOrdersPage() {
 
     useEffect(() => {
         const gallery = new URLSearchParams(window.location.search).get('gallery');
+        const order = new URLSearchParams(window.location.search).get('order');
+        if (order && /^(GL|GC)-[1-9]\d*$/.test(order)) setSearchTerm(order);
         if (gallery && /^[1-9]\d*$/.test(gallery)) setGalleryFilter(gallery);
         // Authentication belongs to AdminLayout and the API, including cookie sessions.
         setIsAuthorized(true);
@@ -157,7 +159,8 @@ export default function AdminOrdersPage() {
             if (requestId.current !== currentRequest) return;
             if (res.ok && data.success && Array.isArray(data.orders)) {
                 setOrders(data.orders);
-                setSelectedOrder(current => current ? data.orders.find((order: Order) => order.id === current.id) || null : null);
+                const linkedOrder = new URLSearchParams(window.location.search).get('order');
+                setSelectedOrder(current => data.orders.find((order: Order) => order.id === (current?.id || linkedOrder)) || null);
             } else {
                 toast.error(data.error || 'Błąd pobierania zamówień');
             }

@@ -117,6 +117,7 @@ export async function sendEmail(emailData: EmailData) {
             replyTo,
             bcc,
             subject,
+            text: emailData.text,
             html: emailHtml,
             attachments
         });

@@ -1,5 +1,5 @@
 /** Operational diagnostics only. Never add free text, URLs, tokens or document contents. */
-export const PORTAL_SECTIONS = ['overview', 'sessions', 'bookings', 'documents', 'gift_cards', 'workshops', 'preparation', 'settings', 'partner'] as const;
+export const PORTAL_SECTIONS = ['orders', 'overview', 'sessions', 'bookings', 'documents', 'gift_cards', 'workshops', 'preparation', 'settings', 'partner'] as const;
 export const PORTAL_MODULES = ['summary', 'account', 'sessions', 'workshops', 'session'] as const;
 export const PORTAL_CLIENT_EVENTS = ['portal_opened', 'tab_opened', 'module_load_started', 'module_load_succeeded', 'module_load_failed', 'retry_clicked', 'action_clicked'] as const;
 export const PORTAL_ACTIONS = ['gallery_open', 'offer_open', 'contract_open', 'contract_pdf_download', 'booking_open', 'voucher_open', 'challenge_open', 'next_action_open', 'logout', 'note_save', 'workshop_payment'] as const;
@@ -50,7 +50,7 @@ export const PORTAL_EVENT_LABELS: Record<string, string> = {
     voucher_pdf_generated: 'Serwer wygenerował PDF vouchera z oferty', voucher_pdf_failed: 'Błąd generowania PDF vouchera z oferty',
 };
 export const PORTAL_SECTION_LABELS: Record<string, string> = {
-    overview: 'Podsumowanie', sessions: 'Galerie i sesje', bookings: 'Rezerwacje', documents: 'Dokumenty',
+    orders: 'Moje zamówienia', overview: 'Podsumowanie', sessions: 'Galerie i sesje', bookings: 'Rezerwacje', documents: 'Dokumenty',
     gift_cards: 'Karty podarunkowe', workshops: 'Warsztaty', preparation: 'Przygotowanie', settings: 'Ustawienia', partner: 'Partner',
     summary: 'Podsumowanie', account: 'Dane konta', session: 'Sprawdzenie sesji',
 };
