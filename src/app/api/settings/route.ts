@@ -28,6 +28,7 @@ const SENSITIVE_KEYS = [
     'payu_client_secret',
     'payu_merchant_pos_id',
     'payu_md5_key',
+    'inpost_geowidget_token',
     'stripe_secret_key',
     'stripe_webhook_secret'
 ];
@@ -128,6 +129,17 @@ export async function POST(request: NextRequest) {
                     { success: false, error: 'Nieobsługiwany układ strony Portfolio' },
                     { status: 400 }
                 );
+            }
+
+            if (Object.prototype.hasOwnProperty.call(body, 'inpost_geowidget_token')) {
+                const token = String(body.inpost_geowidget_token ?? '').trim();
+                if (token.length > 4096 || /\s/.test(token)) {
+                    return NextResponse.json(
+                        { success: false, error: 'Token Geowidget InPost ma nieprawidłowy format' },
+                        { status: 400 }
+                    );
+                }
+                body.inpost_geowidget_token = token;
             }
 
             // Separate specific columns from generic key/value pairs

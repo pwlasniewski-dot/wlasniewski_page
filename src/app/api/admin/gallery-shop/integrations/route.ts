@@ -6,16 +6,18 @@ import {checkPayUConnection} from '@/lib/payu';
 import {inpostWidgetToken} from '@/lib/shipping/inpost-widget';
 import {isShopQa} from '@/lib/shop-qa';
 import {getClientIp, rateLimit} from '@/lib/rate-limit';
+import prisma from '@/lib/db/prisma';
 
 export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
  return withAuth(request, async () => {
   if (!rateLimit(`shop-integrations:${getClientIp(request)}`,6,60_000).ok) return NextResponse.json({error:'Odczekaj minutę przed kolejnym sprawdzeniem.'},{status:429});
   const config = inpostConfiguration();
-  const [organization, points, payment] = await Promise.allSettled([
+  const [organization, points, payment, widgetSetting] = await Promise.allSettled([
    shipX<{id:number; services?:string[]}>(`/organizations/${config.organizationId}`),
    fetchInpostPoints(new URLSearchParams({per_page:'1',type:'parcel_locker',functions:'parcel_collect'})),
    checkPayUConnection(),
+   prisma.setting.findUnique({where:{setting_key:'inpost_geowidget_token'}}),
   ]);
   const connected = organization.status === 'fulfilled' && String(organization.value.id) === config.organizationId;
   const services = organization.status === 'fulfilled' && Array.isArray(organization.value.services) ? organization.value.services : [];
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
     locker:connected && services.includes('inpost_locker_standard'),
     courier:connected && services.includes(config.courierService), courierService:config.courierService,
     pickupConfigured:Boolean(config.sender), pointsConnected:points.status === 'fulfilled',
-    mapConfigured:Boolean(inpostWidgetToken()),
+    mapConfigured:Boolean(widgetSetting.status === 'fulfilled' && widgetSetting.value?.setting_value?.trim() || inpostWidgetToken()),
     message:connected ? 'InPost potwierdził dostęp do organizacji. Dostępność usług pochodzi z API przewoźnika.' : 'InPost nie potwierdził dostępu. Sprawdź token, numer organizacji i środowisko w ustawieniach hostingu.',
    },
    payment:payment.status === 'fulfilled' ? payment.value : {connected:false,environment:null,message:'Nie udało się sprawdzić PayU.'},
