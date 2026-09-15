@@ -193,6 +193,33 @@ async function clickLink(link) { link.addEventListener('click', event => event.p
     assert.ok(document.body.textContent.includes('Twój koszyk')); assert.ok(!document.body.textContent.includes('Album PRO — wybór zdjęć'));
     assert.equal(window.location.search, '?shopOrder=55&shopProduct=12'); assert.ok(requests.every(request => request.method === 'GET'));
   });
+  await check('Storefront: exact 16-photo product explains 3/16 and 15/16, enables 16/16, and reports excess selection', async () => {
+    await fresh('/galeria/own-gallery-code?shopProduct=15');
+    clientCatalog.products.push({ id: 15, title: 'Lite Album 16', description: '16 zdjęć', price: 14059, image_url: null, product_type: 'album', minPhotos: 16, maxPhotos: 16 });
+    await mount(Client, { endpoint: '/api/galleries/26/shop', photos });
+    for (let id = 1; id <= 3; id++) await click(field(`Zaznacz zdjęcie ${id}`));
+    let cta = button(/Wybierz jeszcze 13 zdjęć/);
+    assert.equal(cta.disabled, true); assert.equal(cta.getAttribute('aria-describedby'), 'product-selection-status');
+    assert.equal(document.getElementById('product-selection-status').textContent, 'Wybierz jeszcze 13 zdjęć.');
+    for (let id = 4; id <= 15; id++) await click(field(`Zaznacz zdjęcie ${id}`));
+    cta = button(/Wybierz jeszcze 1 zdjęcie/);
+    assert.equal(cta.disabled, true); assert.equal(document.getElementById('product-selection-status').textContent, 'Wybierz jeszcze 1 zdjęcie.');
+    await click(field('Zaznacz zdjęcie 16'));
+    cta = button(/Dodaj produkt do koszyka/);
+    assert.equal(cta.disabled, false); assert.equal(document.getElementById('product-selection-status').textContent, 'Wybór gotowy. Możesz dodać produkt do koszyka.');
+    await click(field('Zaznacz zdjęcie 17'));
+    cta = button(/Usuń 1 zdjęcie/);
+    assert.equal(cta.disabled, true); assert.equal(document.getElementById('product-selection-status').textContent, 'Usuń 1 zdjęcie z wyboru.');
+    await click(button('Wyczyść wybór'));
+    assert.equal(button(/Wybierz jeszcze 16 zdjęć/).disabled, true);
+    await click(button('Zaznacz pierwsze 16 zdjęć'));
+    cta = button(/Dodaj produkt do koszyka/); assert.equal(cta.disabled, false);
+    assert.equal(document.querySelectorAll('input[aria-label^="Zaznacz zdjęcie"]:checked').length, 16);
+    assert.equal(JSON.parse(sessionStorage.getItem('gallery-shop:/api/galleries/26/shop')).length, 0);
+    await click(cta);
+    const cart = JSON.parse(sessionStorage.getItem('gallery-shop:/api/galleries/26/shop'));
+    assert.equal(cart.length, 1); assert.equal(cart[0].photoIds.length, 16);
+  });
   await check('Storefront: Wall Decor selects exactly one photo and offers courier or pickup with correct total', async () => {
     await fresh('/galeria/own-gallery-code?shopProduct=14'); await mount(Client, { endpoint: '/api/galleries/26/shop', photos });
     await click(field('Zaznacz zdjęcie 1')); await click(field('Zaznacz zdjęcie 2'));
