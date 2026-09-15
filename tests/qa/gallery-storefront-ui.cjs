@@ -208,6 +208,11 @@ async function clickLink(link) { link.addEventListener('click', event => event.p
     cta = button(/Dodaj produkt do koszyka/);
     assert.equal(cta.disabled, false); assert.equal(document.getElementById('product-selection-status').textContent, 'Wybór gotowy. Możesz dodać produkt do koszyka.');
     await click(field('Zaznacz zdjęcie 17'));
+    const persistentStatus = document.querySelector('[data-product-selection-banner]');
+    assert.match(persistentStatus.textContent, /Wybrano 17 \/ 16 zdjęć/);
+    assert.match(persistentStatus.textContent, /Przekroczono limit 16 zdjęć/);
+    assert.equal(persistentStatus.closest('main'), null, 'limit remains outside the scrolling photo list');
+    assert.ok(document.querySelector('.gallery-products-tab'));
     cta = button(/Usuń 1 zdjęcie/);
     assert.equal(cta.disabled, true); assert.equal(document.getElementById('product-selection-status').textContent, 'Usuń 1 zdjęcie z wyboru.');
     await click(button('Wyczyść wybór'));
