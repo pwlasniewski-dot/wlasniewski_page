@@ -1,3 +1,5 @@
+import { hasShopDelivery } from './shop-delivery';
+import { defaultPickupDelivery } from './merchandise';
 import type { PrintFormat, ShopConfig, ShopProduct } from './merchandise';
 import { isProductImageUrl } from './product-media';
 
@@ -58,7 +60,7 @@ export function publicShopCatalog(config: ShopConfig, activeSharedProducts: Shop
         return format ? [{ ...format }] : [];
     });
     const products = offer.productIds.flatMap(id => {
-        const product = activeSharedProducts.find(p => p.id === id && p.price > 0 && (!p.deliveryMethods || p.deliveryMethods.some(method => config.delivery[method].enabled)));
+        const product = activeSharedProducts.find(p => p.id === id && p.price > 0 && hasShopDelivery(config.delivery, p));
         // Do not expose supplier IDs, URLs, timestamps or internal catalogue fields.
         return product ? [{ id: product.id, title: product.title, description: product.description,
             price: product.price, image_url: product.image_url, preview_images: product.preview_images || [], video_url: product.video_url || null, sample_pages: product.sample_pages || [],
@@ -67,5 +69,5 @@ export function publicShopCatalog(config: ShopConfig, activeSharedProducts: Shop
     });
     if (!formats.length && !products.length) return null;
     return { offer: { ...offer, productIds: products.map(p => p.id), formatIds: formats.map(f => f.id) }, formats, products,
-        delivery: { locker: { ...config.delivery.locker }, courier: { ...config.delivery.courier } } };
+        delivery: { locker: { ...config.delivery.locker }, courier: { ...config.delivery.courier }, pickup: { ...(config.delivery.pickup ?? defaultPickupDelivery()) } } };
 }

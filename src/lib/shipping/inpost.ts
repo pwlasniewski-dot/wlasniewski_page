@@ -33,6 +33,7 @@ export async function shipX<T>(path: string, method = 'GET', body?: unknown, bin
  return await response.json() as T;
 }
 export function shipmentPayload(delivery: ShopDelivery, parcel: ParcelInput, reference: string) {
+ if (delivery.method === 'pickup') throw new ShopValidationError('Odbiór osobisty nie wymaga przesyłki InPost.', 409);
  if (!parcel || !Number.isFinite(parcel.weight) || parcel.weight < 0.01 || parcel.weight > 25) throw new ShopValidationError('Podaj wagę od 0,01 do 25 kg.');
  const phone = delivery.phone.replace(/\D/g, '').replace(/^48(?=\d{9}$)/, '');
  if (!/^\d{9}$/.test(phone)) throw new ShopValidationError('InPost wymaga polskiego numeru telefonu z 9 cyframi.');

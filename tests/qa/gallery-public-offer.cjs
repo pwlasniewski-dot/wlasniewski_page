@@ -74,8 +74,11 @@ const config={...defaultShopConfig(),enabled:true,formats:[{id:'nphoto-15x21-sil
   const saved=settings.get('gallery_shop_default');settings.set('gallery_shop_default',JSON.stringify({...config,publicOffer:{...config.publicOffer,formatIds:[],productIds:[3,99]}}));
   assert.equal((await(await publicGET()).json()).catalog,null);settings.set('gallery_shop_default',saved);
  });
- await check('courier-only product is not offered when courier is unavailable',async()=>{
-  const saved=settings.get('gallery_shop_default');settings.set('gallery_shop_default',JSON.stringify({...config,delivery:{...config.delivery,courier:{enabled:false,amount:2200}}}));
+ await check('courier-only product stays available for pickup, hidden only when neither method is available',async()=>{
+  const saved=settings.get('gallery_shop_default');settings.set('gallery_shop_default',JSON.stringify({...config,delivery:{...config.delivery,courier:{enabled:false,amount:2200},pickup:{enabled:true,amount:0,instructions:'Po ustaleniu terminu.'}}}));
+  assert.equal((await loadGalleryShop(45)).catalog.products.some(p=>p.id===2),true);
+  assert.equal((await(await publicGET()).json()).catalog.products.some(p=>p.id===2),true);
+  settings.set('gallery_shop_default',JSON.stringify({...config,delivery:{...config.delivery,courier:{enabled:false,amount:2200},pickup:{enabled:false,amount:0,instructions:''}}}));
   assert.equal((await loadGalleryShop(45)).catalog.products.some(p=>p.id===2),false);
   assert.equal((await(await publicGET()).json()).catalog.products.some(p=>p.id===2),false);settings.set('gallery_shop_default',saved);
  });

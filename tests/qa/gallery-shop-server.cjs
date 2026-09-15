@@ -24,6 +24,36 @@ await check('changed cart cannot reuse key; failed-init replay cannot recreate p
 await check('fingerprint includes qty, gallery and participant but ignores property order',async()=>{const a=shopCheckoutFingerprint(12,null,body);assert.equal(a,shopCheckoutFingerprint(12,null,{delivery:body.delivery,expectedTotal:2200,lines:body.lines}));assert.notEqual(a,shopCheckoutFingerprint(13,null,body));assert.notEqual(a,shopCheckoutFingerprint(12,3,body));assert.notEqual(a,shopCheckoutFingerprint(12,null,{...body,lines:[{...body.lines[0],quantity:3}]}))});
 await check('getShopOrder scope and legacy-kind protection',async()=>{assert.equal((await getShopOrder(req(),{accessCode:'private'},1)).status,200);rows[0].gallery_id=99;assert.equal((await getShopOrder(req(),{accessCode:'private'},1)).status,404);rows[0].gallery_id=12;const original=rows[0].product_ids;rows[0].product_ids='[1,2]';assert.equal((await getShopOrder(req(),{accessCode:'private'},1)).status,404);rows[0].product_ids=original});
 await check('real admin route rejects auth, unpaid, jump/backwards and shipped without tracking',async()=>{const {PATCH}=require('../../src/app/api/admin/galleries/[id]/shop/orders/[orderId]/route.ts');const ctx={params:Promise.resolve({id:'12',orderId:'1'})};const patch=(status,trackingNumber='')=>PATCH(new NextRequest('http://localhost/api/admin/shop',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({status,trackingNumber})}),ctx);adminAllowed=false;assert.equal((await patch('ordered')).status,401);adminAllowed=true;assert.equal((await patch('ordered')).status,409);rows[0].payment_status='paid';assert.equal((await patch('shipped')).status,409);assert.equal((await patch('ordered')).status,200);assert.equal((await patch('new')).status,409);assert.equal((await patch('received')).status,200);assert.equal((await patch('packed')).status,200);assert.equal((await patch('shipped')).status,400);assert.equal((await patch('shipped','123456789')).status,200);assert.equal(JSON.parse(rows[0].product_ids).fulfillment.status,'shipped')});
+await check('pickup fulfillment authorizes, requires payment, preserves stages and completes without tracking',async()=>{
+ const {PATCH}=require('../../src/app/api/admin/galleries/[id]/shop/orders/[orderId]/route.ts');
+ const original=rows[0].product_ids, payment=rows[0].payment_status;
+ const seed=JSON.parse(original);seed.delivery={method:'pickup',amount:0,recipientName:'Anna Testowa',email:'a@example.com',phone:'501222333'};seed.fulfillment={status:'packed',trackingNumber:null};rows[0].product_ids=JSON.stringify(seed);
+ const patch=(status,id='12',trackingNumber)=>PATCH(new NextRequest('http://localhost/api/admin/shop',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({status,trackingNumber})}),{params:Promise.resolve({id,orderId:'1'})});
+ try {
+  adminAllowed=false;assert.equal((await patch('collected')).status,401);adminAllowed=true;
+  assert.equal((await patch('collected','99')).status,404);
+  rows[0].payment_status='pending';assert.equal((await patch('collected')).status,409);rows[0].payment_status='paid';
+  assert.equal((await patch('shipped','12','12345')).status,409);assert.equal((await patch('received')).status,409);
+  assert.equal((await patch('collected')).status,200);assert.deepEqual(JSON.parse(rows[0].product_ids).fulfillment,{status:'collected',trackingNumber:null});
+  assert.equal((await patch('collected','12','stale-carrier-number')).status,200);assert.equal(JSON.parse(rows[0].product_ids).fulfillment.trackingNumber,null);
+  assert.equal((await patch('packed')).status,409);
+  seed.delivery.method='locker';seed.fulfillment.status='packed';rows[0].product_ids=JSON.stringify(seed);assert.equal((await patch('collected')).status,409);
+ }finally{rows[0].product_ids=original;rows[0].payment_status=payment;adminAllowed=true;}
+});
+await check('pickup fulfillment refuses concurrent metadata or payment changes instead of overwriting them',async()=>{
+ const {PATCH}=require('../../src/app/api/admin/galleries/[id]/shop/orders/[orderId]/route.ts');
+ const original=rows[0].product_ids,payment=rows[0].payment_status,updateMany=db.photoOrder.updateMany;
+ const seed=JSON.parse(original);seed.delivery.method='pickup';seed.fulfillment={status:'packed',trackingNumber:null};
+ const patch=()=>PATCH(new NextRequest('http://localhost/api/admin/shop',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({status:'collected'})}),{params:Promise.resolve({id:'12',orderId:'1'})});
+ try {
+  for(const race of ['metadata','payment']){
+   rows[0].product_ids=JSON.stringify(seed);rows[0].payment_status='paid';
+   db.photoOrder.updateMany=async(args)=>{if(race==='payment')rows[0].payment_status='refunded';else rows[0].product_ids=JSON.stringify({...seed,concurrentNote:'saved by other request'});return updateMany(args)};
+   assert.equal((await patch()).status,409);assert.equal(JSON.parse(rows[0].product_ids).fulfillment.status,'packed');
+   if(race==='metadata')assert.equal(JSON.parse(rows[0].product_ids).concurrentNote,'saved by other request');else assert.equal(rows[0].payment_status,'refunded');
+  }
+ }finally{db.photoOrder.updateMany=updateMany;rows[0].product_ids=original;rows[0].payment_status=payment;}
+});
 await check('payment validates total/currency/provider and isolates legacy order',async()=>{const {handleMerchandisePayment:pay}=require('../../src/lib/galleries/merchandise-payment.ts');const ev={extOrderId:'GALLERY_1_123',orderId:'pay1',status:'COMPLETED',totalAmount:2200,currencyCode:'PLN'};await assert.rejects(pay({...ev,totalAmount:1}));await assert.rejects(pay({...ev,currencyCode:'EUR'}));await assert.rejects(pay({...ev,orderId:'different'}));assert.equal(await pay({...ev,extOrderId:'OTHER_1_123'}),false);assert.equal(mails,0)});
 await check('payment canceled/rejected then completed is idempotent; late cancel never reverses paid',async()=>{const {handleMerchandisePayment:pay}=require('../../src/lib/galleries/merchandise-payment.ts');const ev={extOrderId:'GALLERY_1_123',orderId:'pay1',status:'CANCELED',totalAmount:2200,currencyCode:'PLN'};rows[0].payment_status='pending';await pay(ev);assert.equal(rows[0].payment_status,'cancelled');rows[0].payment_status='pending';await pay({...ev,status:'REJECTED'});assert.equal(rows[0].payment_status,'rejected');await pay({...ev,status:'COMPLETED'});await pay({...ev,status:'COMPLETED'});assert.equal(rows[0].payment_status,'paid');assert.equal(ledger.size,1);assert.equal(mails,2);await pay(ev);assert.equal(rows[0].payment_status,'paid')});
 await check('real admin PUT auth denied/invalid config and valid save GET reread',async()=>{const {PUT,GET}=require('../../src/app/api/admin/galleries/[id]/shop/route.ts');const ctx={params:Promise.resolve({id:'12'})};const put=(value)=>PUT(new NextRequest('http://localhost/api/admin/shop',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({config:value})}),ctx);adminAllowed=false;assert.equal((await put(config)).status,401);adminAllowed=true;assert.equal((await put({...config,formats:[{...config.formats[0],unitAmount:-1}]})).status,400);assert.equal((await put({...config,title:'Po zapisie QA'})).status,200);const r=await GET(req(),ctx);assert.equal(r.status,200);assert.equal((await r.json()).config.title,'Po zapisie QA')});

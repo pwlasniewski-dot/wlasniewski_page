@@ -129,7 +129,7 @@ async function clickLink(link) { link.addEventListener('click', event => event.p
   });
   await check('Storefront: unpublished, zero-price and incompatible-delivery offers never invite purchase', async () => {
     await fresh(); publicCatalog = null; let available=true; await mount(Storefront, {onAvailabilityChange: value => {available=value;}}); assert.equal(available,false); assert.equal(document.querySelector('section'), null);
-    await fresh(); publicCatalog.products[0].price = 0; publicCatalog.formats[0].unitAmount = 0; publicCatalog.delivery.courier.enabled = false;
+    await fresh(); publicCatalog.products[0].price = 0; publicCatalog.formats[0].unitAmount = 0; publicCatalog.delivery.courier.enabled = false; publicCatalog.delivery.pickup = {enabled:false,amount:0,instructions:''};
     await mount(Storefront, {});
     assert.equal(document.querySelector('#produkt-11'), null); assert.equal(document.querySelector('#format-nphoto-15x21-silk'), null); assert.equal(document.querySelector('#produkt-14'), null);
     assert.equal(JSON.parse(document.querySelector('script').textContent).itemListElement.length, 2);
@@ -193,7 +193,7 @@ async function clickLink(link) { link.addEventListener('click', event => event.p
     assert.ok(document.body.textContent.includes('Twój koszyk')); assert.ok(!document.body.textContent.includes('Album PRO — wybór zdjęć'));
     assert.equal(window.location.search, '?shopOrder=55&shopProduct=12'); assert.ok(requests.every(request => request.method === 'GET'));
   });
-  await check('Storefront: Wall Decor selects exactly one photo and requires courier with correct total', async () => {
+  await check('Storefront: Wall Decor selects exactly one photo and offers courier or pickup with correct total', async () => {
     await fresh('/galeria/own-gallery-code?shopProduct=14'); await mount(Client, { endpoint: '/api/galleries/26/shop', photos });
     await click(field('Zaznacz zdjęcie 1')); await click(field('Zaznacz zdjęcie 2'));
     assert.equal(field('Zaznacz zdjęcie 1').checked, false); assert.equal(field('Zaznacz zdjęcie 2').checked, true);
@@ -201,11 +201,11 @@ async function clickLink(link) { link.addEventListener('click', event => event.p
     await click(button(/Dodaj produkt do koszyka/));
     assert.deepEqual(JSON.parse(sessionStorage.getItem('gallery-shop:/api/galleries/26/shop'))[0].photoIds, [2]);
     await click(button('Dostawa i podsumowanie'));
-    const methods = field('Sposób dostawy'); assert.equal(methods.options.length, 1); assert.equal(methods.value, 'courier');
-    assert.ok(button('Zamawiam i płacę 209,00 zł')); assert.ok(document.body.textContent.includes('wymaga dostawy kurierem'));
+    const methods = field('Sposób dostawy'); assert.deepEqual([...methods.options].map(o=>o.value), ['courier','pickup']); assert.equal(methods.value, 'courier');
+    assert.ok(button('Zamawiam i płacę 209,00 zł')); assert.ok(methods.textContent.includes('Odbiór osobisty'));
   });
   await check('Storefront: a cart with no compatible delivery cannot submit payment', async () => {
-    await fresh('/galeria/own-gallery-code?shopProduct=14'); clientCatalog.delivery.courier.enabled = false;
+    await fresh('/galeria/own-gallery-code?shopProduct=14'); clientCatalog.delivery.courier.enabled = false; clientCatalog.delivery.pickup = {enabled:false,amount:0,instructions:''};
     await mount(Client, { endpoint: '/api/galleries/26/shop', photos }); await click(field('Zaznacz zdjęcie 1')); await click(button(/Dodaj produkt do koszyka/)); await click(button('Dostawa i podsumowanie'));
     assert.ok(document.body.textContent.includes('Brak wspólnego sposobu dostawy')); assert.ok(button(/Zamawiam i płacę/).disabled);
     assert.ok(requests.every(request => request.method === 'GET'));

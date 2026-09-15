@@ -131,7 +131,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
       }
       if (validIds(saved?.selected)) setSelected(saved.selected);
       const d = saved?.delivery;
-      if (d && ['locker', 'courier'].includes(d.method) && ['recipientName', 'email', 'phone'].every(key => typeof d[key] === 'string' && d[key].length <= 300)) {
+      if (d && ['locker', 'courier', 'pickup'].includes(d.method) && ['recipientName', 'email', 'phone'].every(key => typeof d[key] === 'string' && d[key].length <= 300)) {
         setDelivery({ method: d.method, recipientName: d.recipientName, email: d.email, phone: d.phone, pointCode: typeof d.pointCode === 'string' ? d.pointCode.slice(0, 30) : '', address: { street: typeof d.address?.street === 'string' ? d.address.street.slice(0, 200) : '', postalCode: typeof d.address?.postalCode === 'string' ? d.address.postalCode.slice(0, 20) : '', city: typeof d.address?.city === 'string' ? d.address.city.slice(0, 100) : '' } });
       }
     } catch { /* An incomplete selection never prevents opening the gallery. */ }
@@ -171,7 +171,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
       setCatalogLoadedEndpoint(endpoint);
       onAvailabilityChange?.(!!value?.enabled);
       if (value?.formats?.length) setFormat(value.formats[0].id);
-      if (value?.delivery) setDelivery(previous => ({ ...previous, method: value.delivery[previous.method]?.enabled ? previous.method : value.delivery.locker.enabled ? 'locker' : 'courier' }));
+      if (value?.delivery) setDelivery(previous => ({ ...previous, method: value.delivery[previous.method]?.enabled ? previous.method : value.delivery.locker.enabled ? 'locker' : value.delivery.courier.enabled ? 'courier' : 'pickup' }));
     }).catch(() => { if (active) { onAvailabilityChange?.(false); if (parseShopIntent(window.location.search)) setCatalogError('Nie udało się odczytać oferty dla wybranego produktu. Twój wybór jest zachowany.'); } });
     return () => { active = false; };
   }, [endpoint, headersKey, onAvailabilityChange, catalogAttempt]);
@@ -204,13 +204,13 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   }, [catalog, catalogLoadedEndpoint, hydratedEndpoint, endpoint, pendingOrder, checkingPayment]);
 
   useEffect(() => {
-    if (!availableDelivery || availableDelivery[delivery.method].enabled) return;
-    const next = availableDelivery.locker.enabled ? 'locker' : availableDelivery.courier.enabled ? 'courier' : null;
+    if (!availableDelivery || availableDelivery[delivery.method]?.enabled) return;
+    const next = availableDelivery.locker.enabled ? 'locker' : availableDelivery.courier.enabled ? 'courier' : availableDelivery.pickup?.enabled ? 'pickup' : null;
     if (next) {
       setDelivery(previous => ({ ...previous, method: next }));
-      if (lines.length) setNotice(next === 'courier' ? 'Wybrany produkt wymaga dostawy kurierem. Koszt dostawy został zaktualizowany w podsumowaniu.' : 'Dostawa została dopasowana do produktów w koszyku.');
+      if (lines.length) setNotice(next === 'courier' ? 'Wybrano dostawę kurierem. Koszt dostawy został zaktualizowany w podsumowaniu.' : 'Dostawa została dopasowana do produktów w koszyku.');
     }
-  }, [availableDelivery?.locker.enabled, availableDelivery?.courier.enabled, delivery.method]);
+  }, [availableDelivery?.locker.enabled, availableDelivery?.courier.enabled, availableDelivery?.pickup?.enabled, delivery.method]);
 
   useEffect(() => {
     if (!open || !catalog?.enabled) return;
@@ -333,7 +333,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   };
 
   return <>
-    <div className="mb-8 flex flex-wrap items-center justify-between gap-5 rounded-3xl border border-stone-200 bg-[#f7f5f0] p-6 text-stone-900 sm:p-8">
+    <div className="gallery-shop-invitation mb-8 flex flex-wrap items-center justify-between gap-5 rounded-3xl border border-stone-200 bg-[#f7f5f0] p-6 text-stone-900 sm:p-8">
       <div><h2 className="text-xl font-semibold">{catalog.title}</h2><p className="mt-1 text-stone-600">{catalog.introduction}</p></div>
       <button ref={entryRef} type="button" className={primary} onClick={() => setOpen(true)}>{catalog.buttonLabel || 'Zamów odbitki i produkty'}{lines.length ? ` · Koszyk (${lines.length})` : ''}</button>
     </div>
@@ -364,7 +364,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
         </section>}
         {tab === 'products' && <section aria-label="Produkty fotograficzne">
           <div className="mb-4 flex flex-wrap justify-between gap-3"><h3 className="font-serif text-3xl font-medium tracking-tight sm:text-4xl">Produkty</h3><div className="flex gap-2 sm:hidden"><button className={button} aria-label="Poprzednie produkty" onClick={() => carouselRef.current?.scrollBy({ left: -340, behavior: 'smooth' })}>←</button><button className={button} aria-label="Następne produkty" onClick={() => carouselRef.current?.scrollBy({ left: 340, behavior: 'smooth' })}>→</button></div></div>
-          <div ref={carouselRef} className="mb-8 flex snap-x snap-proximity gap-4 overflow-x-auto pb-4 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-3">{catalog.products.map(item => <article key={item.id} className={`flex w-[85%] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border bg-white sm:w-auto ${productId === item.id ? "border-stone-700 ring-1 ring-stone-700" : "border-stone-200"}`}>
+          <div ref={carouselRef} className="gallery-shop-invitation rounded-3xl mb-8 flex snap-x snap-proximity gap-4 overflow-x-auto pb-4 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-3">{catalog.products.map(item => <article key={item.id} className={`flex w-[85%] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border bg-white sm:w-auto ${productId === item.id ? "border-stone-700 ring-1 ring-stone-700" : "border-stone-200"}`}>
             {item.image_url ? <button type="button" aria-label={`Zobacz zdjęcia produktu: ${item.title}`} className="aspect-[4/3] bg-stone-100 p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-700" onClick={() => setProductPreviewId(item.id)}><img src={item.image_url} alt={item.title} className="h-full w-full object-contain" loading="lazy" /></button> : <div className="flex aspect-[4/3] items-center justify-center bg-stone-100" aria-hidden="true"><svg width="76" height="76" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1" className="text-stone-400"><rect x="12" y="8" width="40" height="48" rx="3"/><path d="M19 8v48M26 22h18M26 28h13M26 42h18"/></svg></div>}<div className="flex flex-1 flex-col p-5"><h4 className="text-xl font-semibold">{item.title}</h4><p className="mb-5 mt-2 line-clamp-3 whitespace-pre-line text-sm leading-relaxed text-stone-600">{item.description}</p><p className="mb-4 mt-auto text-xl font-medium">{money(item.price)}</p><button type="button" className="mb-3 min-h-11 text-left text-sm font-medium text-stone-600 underline decoration-stone-300 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-700" aria-label={`Zobacz szczegóły produktu: ${item.title}`} onClick={() => setProductPreviewId(item.id)}>Zobacz szczegóły</button><button className={button} onClick={() => chooseProduct(item.id)}>Wybierz produkt: {item.title}</button></div>
           </article>)}</div>
           {!catalog.products.length && <p className="rounded-3xl border border-dashed border-stone-300 bg-white px-6 py-16 text-center text-stone-500">Fotograf nie udostępnił jeszcze produktów w tej galerii.</p>}
@@ -388,10 +388,10 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
           </article>; })}</div>
           {!!lines.length && <div className="mt-8 rounded-3xl border border-stone-200 bg-white p-5 sm:p-8"><p className="mb-3 text-xl font-semibold">Produkty: {money(subtotal)}</p>{!checkout && <button className={primary} onClick={() => setCheckout(true)}>Dostawa i podsumowanie</button>}
             {checkout && <form onSubmit={submit} className="space-y-4">
-              {!availableDelivery?.locker.enabled && !availableDelivery?.courier.enabled && <p role="alert" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">Brak wspólnego sposobu dostawy dla produktów w koszyku. Zmień koszyk lub skontaktuj się z fotografem przed zamówieniem.</p>}
-              <label className="block">Sposób dostawy<select className={input} aria-label="Sposób dostawy" value={delivery.method} onChange={event => setDelivery(previous => ({ ...previous, method: event.target.value as ShopDelivery['method'] }))}>{Object.entries(availableDelivery || {}).filter(([, value]) => value.enabled).map(([key, value]) => <option value={key} key={key}>{key === 'locker' ? 'InPost Paczkomat' : 'Kurier'} · {money(value.amount)}</option>)}</select></label>
+              {!availableDelivery?.locker.enabled && !availableDelivery?.courier.enabled && !availableDelivery?.pickup?.enabled && <p role="alert" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">Brak wspólnego sposobu dostawy dla produktów w koszyku. Zmień koszyk lub skontaktuj się z fotografem przed zamówieniem.</p>}
+              <label className="block">Sposób dostawy<select className={input} aria-label="Sposób dostawy" value={delivery.method} onChange={event => setDelivery(previous => ({ ...previous, method: event.target.value as ShopDelivery['method'] }))}>{Object.entries(availableDelivery || {}).filter(([, value]) => value.enabled).map(([key, value]) => <option value={key} key={key}>{key === 'locker' ? 'InPost Paczkomat' : key === 'pickup' ? 'Odbiór osobisty' : 'Kurier'} · {money(value.amount)}</option>)}</select></label>
               <div className="grid gap-4 sm:grid-cols-2">{(['recipientName', 'email', 'phone'] as const).map(field => <label key={field}>{field === 'recipientName' ? 'Imię i nazwisko' : field === 'email' ? 'E-mail' : 'Telefon'}<input className={input} required autoComplete={field === 'recipientName' ? 'name' : field === 'email' ? 'email' : 'tel'} type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'} value={delivery[field]} onChange={event => setDelivery(previous => ({ ...previous, [field]: event.target.value }))} /></label>)}</div>
-              {delivery.method === 'locker' ? <InPostPointPicker value={delivery.pointCode || ''} onChange={pointCode => setDelivery(previous => ({ ...previous, pointCode }))} /> : <div className="grid gap-4 sm:grid-cols-3">{(['street', 'postalCode', 'city'] as const).map(field => <label key={field}>{field === 'street' ? 'Ulica, numer domu i lokalu' : field === 'postalCode' ? 'Kod pocztowy' : 'Miejscowość'}<input className={input} required value={delivery.address?.[field] || ''} onChange={event => setDelivery(previous => ({ ...previous, address: { street: '', postalCode: '', city: '', ...previous.address, [field]: event.target.value } }))} /></label>)}</div>}
+              {delivery.method === 'locker' ? <InPostPointPicker value={delivery.pointCode || ''} onChange={pointCode => setDelivery(previous => ({ ...previous, pointCode }))} /> : delivery.method === 'courier' ? <div className="grid gap-4 sm:grid-cols-3">{(['street', 'postalCode', 'city'] as const).map(field => <label key={field}>{field === 'street' ? 'Ulica, numer domu i lokalu' : field === 'postalCode' ? 'Kod pocztowy' : 'Miejscowość'}<input className={input} required value={delivery.address?.[field] || ''} onChange={event => setDelivery(previous => ({ ...previous, address: { street: '', postalCode: '', city: '', ...previous.address, [field]: event.target.value } }))} /></label>)}</div> : <p className="whitespace-pre-line rounded-xl bg-stone-100 p-4 text-sm text-stone-700">{availableDelivery?.pickup?.instructions}</p>}
               <p>Dostawa: {money(deliveryPrice)} · Razem: <strong>{money(total)}</strong></p><button className={primary} disabled={busy || !!pendingOrder || invalidLines || !availableDelivery?.[delivery.method]?.enabled} type="submit">{busy ? 'Przygotowuję płatność…' : `Zamawiam i płacę ${money(total)}`}</button><button className={`${button} sm:ml-3`} type="button" onClick={() => setCheckout(false)}>Wróć do koszyka</button>
             </form>}
           </div>}

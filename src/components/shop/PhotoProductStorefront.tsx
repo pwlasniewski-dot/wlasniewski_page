@@ -1,5 +1,6 @@
 'use client';
 
+import { hasShopDelivery } from '@/lib/galleries/shop-delivery';
 import { useEffect, useId, useRef, useState } from 'react';
 import { GalleryProductPreviewDialog } from '@/components/galleries/GalleryProductPreview';
 import { parseShopIntent, replaceShopIntent, shopAccountHref, shopGalleryHref, trackShopIntent, type ShopIntent } from '@/lib/galleries/shop-intent';
@@ -16,7 +17,7 @@ const secondary = 'min-h-11 rounded-xl border border-stone-600 px-4 py-2 text-sm
 export function storefrontStructuredData(catalog: PublicShopCatalog) {
   const entries = [
     ...catalog.formats.filter(format => format.active && format.unitAmount > 0).map(format => ({ name: format.label, description: `${format.paper} · ${format.widthMm} × ${format.heightMm} mm`, price: format.unitAmount, image: catalog.offer.printImageUrl, anchor: `format-${format.id}` })),
-    ...catalog.products.filter(product => product.price > 0 && (!product.deliveryMethods || product.deliveryMethods.some(method => catalog.delivery[method].enabled))).map(product => ({ name: product.title, description: product.description || '', price: product.price, image: product.image_url, anchor: `produkt-${product.id}` })),
+    ...catalog.products.filter(product => product.price > 0 && hasShopDelivery(catalog.delivery, product)).map(product => ({ name: product.title, description: product.description || '', price: product.price, image: product.image_url, anchor: `produkt-${product.id}` })),
   ];
   return { '@context': 'https://schema.org', '@type': 'ItemList', name: catalog.offer.title, itemListElement: entries.map((entry, index) => ({ '@type': 'ListItem', position: index + 1, item: { '@type': 'Product', name: entry.name, description: entry.description, ...(entry.image ? { image: entry.image } : {}), url: `https://wlasniewski.pl/karta-podarunkowa#${entry.anchor}`, offers: { '@type': 'Offer', priceCurrency: 'PLN', price: (entry.price / 100).toFixed(2), url: `https://wlasniewski.pl/karta-podarunkowa#${entry.anchor}` } } })) };
 }
@@ -58,7 +59,7 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
   }, [attempt]);
 
   useEffect(() => {
-    const available = !!catalog?.offer.enabled && (catalog.formats.some(format => format.active && format.unitAmount > 0) || catalog.products.some(product => product.price > 0 && (!product.deliveryMethods || product.deliveryMethods.some(method => catalog.delivery[method].enabled))));
+    const available = !!catalog?.offer.enabled && (catalog.formats.some(format => format.active && format.unitAmount > 0) || catalog.products.some(product => product.price > 0 && hasShopDelivery(catalog.delivery, product)));
     onAvailabilityChange?.(available, catalog?.offer.buttonLabel || '');
   }, [catalog, onAvailabilityChange]);
 
@@ -88,7 +89,7 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
   // An unpublished shop is not an invitation to purchase drafts or zero-price items.
   if (!catalog?.offer.enabled) return intent && mode === 'account' ? <div role="status" className={`rounded-2xl border border-stone-700 p-5 text-stone-300 ${className}`}>Ta oferta nie jest obecnie dostępna. Możesz nadal przeglądać swoje galerie.<button type="button" className={`${secondary} mt-3 block`} onClick={() => { setIntent(null); replaceShopIntent(null); }}>Zamknij wybór produktu</button></div> : null;
   const formats = catalog.formats.filter(format => format.active && format.unitAmount > 0);
-  const products = catalog.products.filter(product => product.price > 0 && (!product.deliveryMethods || product.deliveryMethods.some(method => catalog.delivery[method].enabled)));
+  const products = catalog.products.filter(product => product.price > 0 && hasShopDelivery(catalog.delivery, product));
   const chosen = intent?.kind === 'product' ? products.find(product => product.id === intent.productId) : intent?.kind === 'print' ? formats.find(format => format.id === intent.formatId) : null;
   const chosenTitle = chosen && ('title' in chosen ? chosen.title : chosen.label);
   const choose = (selection: ShopIntent) => {

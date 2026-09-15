@@ -6,4 +6,16 @@ const metadata={kind:'gallery_merchandise',version:1,lines:[{kind:'print',id:'p'
  await reset();
  await check('paid unified order exposes shipping and production and saves stage in the existing detail view',async()=>{let calls=[];global.fetch=async(url,init)=>{calls.push({url,body:JSON.parse(init.body)});return Response.json({success:true,metadata:{...metadata,fulfillment:{status:'ordered',trackingNumber:null}}});};await mount(Details,{order:{id:1,galleryId:26,total:3000,createdAt:'2026-09-14',paymentStatus:'paid',metadata}});assert.ok(button('Przygotuj pliki do produkcji'));assert.ok(button('Przesyłka InPost · zamówienie #1'));await set(document.querySelector('select'),'ordered');await click(button('Zapisz etap realizacji'));assert.equal(calls.length,1);assert.equal(calls[0].url,'/api/admin/galleries/26/shop/orders/1');assert.equal(calls[0].body.status,'ordered');assert.ok(document.querySelector('summary').textContent.includes('Zamówione u producenta'));});
  await reset();
+ await check('paid personal pickup shows ready/collected stages and production without InPost or tracking controls',async()=>{
+  const pickup={...metadata,delivery:{...metadata.delivery,method:'pickup',amount:0},fulfillment:{status:'packed',trackingNumber:null}};
+  const calls=[];global.fetch=async(url,init)=>{calls.push({url,body:JSON.parse(init.body)});return Response.json({success:true,metadata:{...pickup,fulfillment:{status:'collected',trackingNumber:null}}});};
+  await mount(Details,{order:{id:2,galleryId:26,total:500,createdAt:'2026-09-14',paymentStatus:'paid',metadata:pickup}});
+  assert.ok(document.body.textContent.includes('Odbiór osobisty'));assert.ok(button('Przygotuj pliki do produkcji'));
+  assert.ok(!document.body.textContent.includes('Przesyłka InPost'));assert.ok(!document.body.textContent.includes('Numer przesyłki'));assert.ok(!document.body.textContent.includes('Pobierz etykietę'));
+  assert.deepEqual([...document.querySelector('select').options].map(o=>o.value),['packed','collected']);
+  await set(document.querySelector('select'),'collected');assert.equal(button('Zapisz etap realizacji').disabled,false);await click(button('Zapisz etap realizacji'));
+  assert.equal(calls.length,1);assert.equal(calls[0].url,'/api/admin/galleries/26/shop/orders/2');assert.equal(calls[0].body.status,'collected');
+  assert.ok(document.querySelector('summary').textContent.includes('Odebrane przez klienta'));assert.deepEqual([...document.querySelector('select').options].map(o=>o.value),['collected']);
+ });
+ await reset();
 })().catch(e=>{console.error(e);process.exitCode=1});
