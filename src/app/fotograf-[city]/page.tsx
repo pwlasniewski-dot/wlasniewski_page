@@ -10,6 +10,7 @@ import { getPortfolioCategories } from '@/lib/portfolio';
 import { loadPhotoFunnelConfig } from '@/lib/marketing/photo-funnel.server';
 import { loadPublicMinimumPrices, loadPublicPricingSnapshot, publicPriceLabel, type PublicMinimumPricesInCents } from '@/lib/publicPackagePricing';
 import PromotionPriceBlock from '@/components/promotions/PromotionPriceBlock';
+import { getPublishedPage } from '@/lib/seo/published-page';
 
 // ─── City Data with FAQs ─────────────────────────────────────────
 interface CityInfo {
@@ -36,7 +37,7 @@ const CITIES: Record<string, CityInfo> = {
         city: 'Toruń',
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf w Toruniu — sesje rodzinne i śluby',
-        metaTitle: 'Fotograf Toruń | Sesje rodzinne i śluby — Właśniewski',
+        metaTitle: 'Sesje zdjęciowe w Toruniu — oferta i miejsca | Wlasniewski.pl',
         metaDescription: 'Fotograf w Toruniu. Sesje rodzinne i fotografia ślubna. Zobacz aktualne pakiety i sprawdź wolny termin online.',
         keywords: ['fotograf toruń', 'fotografia wizerunkowa toruń', 'fotograf portretowy toruń', 'fotograf toruń starówka', 'profesjonalna fotografia toruń', 'fotograf ślubny toruń', 'fotografia ślubna toruń', 'sesja zdjęciowa toruń', 'fotografia biznesowa toruń', 'sesja narzeczeńska toruń', 'sesja rodzinna toruń', 'plener ślubny toruń', 'zdjęcia biznesowe toruń', 'sesja w mieście toruń', 'fotograf bulwar filadelfijski'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
@@ -504,20 +505,22 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { city: citySlug } = await params;
     const key = getCityKey(citySlug);
-    if (!key) return { title: 'Strona nie znaleziona' };
+    if (!key) notFound();
     const data = CITIES[key];
+    const page = await getPublishedPage(data.slug);
     const publicMinimumPrices = DYNAMIC_PRICE_META_CITIES.has(key) ? await loadPublicMinimumPrices() : {};
-    const metaDescription = cityMetaDescription(key, data, publicMinimumPrices);
+    const metaTitle = page?.meta_title?.trim() || data.metaTitle;
+    const metaDescription = page?.meta_description?.trim() || cityMetaDescription(key, data, publicMinimumPrices);
 
     return {
-        title: data.metaTitle,
+        title: metaTitle,
         description: metaDescription,
-        keywords: data.keywords,
+        keywords: page?.meta_keywords?.trim() || data.keywords,
         alternates: {
             canonical: `https://wlasniewski.pl/${data.slug}`,
         },
         openGraph: {
-            title: data.metaTitle,
+            title: metaTitle,
             description: metaDescription,
             type: 'website',
             locale: 'pl_PL',
@@ -527,7 +530,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         },
         twitter: {
             card: 'summary_large_image',
-            title: data.metaTitle,
+            title: metaTitle,
             description: metaDescription,
             images: [data.heroImage],
         },
