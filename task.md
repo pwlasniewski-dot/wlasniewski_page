@@ -1,3 +1,11 @@
+## 2026-09-16 — naprawa SEO
+
+- [x] Potwierdzić soft 404 na produkcji i sprawdzić metadane oraz podział domen.
+- [x] Przygotować poprawkę i bramkę testów SEO.
+- [ ] Potwierdzić komplet testów, build i odpowiedzi HTTP na preview.
+- [ ] Zweryfikować zapis/odczyt SEO w panelu oraz publiczny HTML.
+- [ ] Wdrożyć i zweryfikować produkcję; nie deklarować publikacji bez dowodu.
+
 ## 2026-09-14 — poprawka zdarzeń panelu i wyboru odbitek po wdrożeniu
 
 - [x] Odczytać przyczyny 403 w kodzie i rozbieżne formaty/ceny dostawy w bazie.

@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "dev:b2b": "next dev -p 3001",
-    "build": "node scripts/pre-build-check.js && npm run test:portal-events && node tests/qa/gallery-storefront-ui.cjs && node scripts/backup-docs.js && node scripts/prisma-generate-local.js && next build",
+    "build": "node scripts/pre-build-check.js && npm run test:seo && npm run test:portal-events && node tests/qa/gallery-storefront-ui.cjs && node scripts/backup-docs.js && node scripts/prisma-generate-local.js && next build",
+    "test:seo": "node --import tsx --test tests/unit/seo-response-contract.test.ts tests/unit/seo-page-headings.test.ts tests/unit/sitemap-crawl-stability.test.ts tests/unit/b2b-domain-routing.test.ts",
+    "check:seo:http": "node scripts/check-seo-http.mjs",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",

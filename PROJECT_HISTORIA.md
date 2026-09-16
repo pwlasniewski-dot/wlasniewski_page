@@ -1,3 +1,7 @@
+## 2026-09-16 — SEO: statusy HTTP i metadane CMS
+
+Potwierdzono HTTP 200 dla nieistniejącego adresu na produkcji. Poprawka rozstrzyga notFound i przekierowanie B2B w metadanych przed wysłaniem nagłówków. Metadane stron miejskich czytają istniejące pola SEO CMS. Stary link fotografia-rodzinna kieruje trwale do sesja-rodzinna. Testy SEO dodano do bramki builda; scripts/check-seo-http.mjs sprawdza rzeczywiste HTTP po wdrożeniu. Status: implementacja lokalna, publikacja i kontrola preview/produkcji jeszcze niepotwierdzone. Nie zmieniano zamówień, galerii ani schematu bazy.
+
 ## 2026-09-14 — multimedia oferty produktów
 
 Wspólny podgląd admina, sklepu i prywatnej galerii obsługuje film MP4 uruchamiany na życzenie oraz przeglądanie przykładowych rozkładówek. Wykorzystuje istniejące pola GalleryProduct.video_url i sample_pages, bez migracji i bez zmiany cen. Chroniony zapis waliduje adresy, odczyt zachowuje zgodność ze starszymi produktami. Testy obejmują zapis/odczyt oraz render i nawigację. Publikacja i dalsze konfigurowanie katalogu wymagają osobnej weryfikacji produkcyjnej.

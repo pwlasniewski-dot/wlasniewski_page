@@ -1,3 +1,7 @@
+## 2026-09-16 — SEO stron miejskich
+
+Tytuł, opis i słowa kluczowe szablonu miasta odczytują pola SEO istniejącej strony w panelu Strony. Puste pola zachowują wartości domyślne; tytuł i opis są spójne z Open Graph/Twitter. Canonical pozostaje przypisany do domeny fotograficznej. B2B rozstrzygane jest osobno. Publikacja poprawki nie oznacza gwarancji pozycji ani natychmiastowej aktualizacji Google.
+
 ## 2026-09-14 — poprawka zdarzeń panelu i wyboru odbitek po wdrożeniu
 
 Zrzuty produkcji pokazały POST /api/user/events 403 oraz niedostępny wybór nphoto-15x21-silk w galerii 26. Odczyt bazy potwierdził lokalne identyfikatory formatu i stawki 15/20 zł przy wspólnej ofercie 17/25 zł. Przygotowano ograniczoną korektę formatów i dostawy tej galerii z kontrolą poprzedniej wartości; ceny odbitek 2,50/1,50 zł pozostają te same. Snapshot przed/po: docs/fixes/gallery-26-shop-2026-09-14.json. Historyczne zamówienia nie są modyfikowane.

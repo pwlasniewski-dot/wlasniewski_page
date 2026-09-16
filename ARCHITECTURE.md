@@ -1,3 +1,7 @@
+## 2026-09-16 — kontrakt HTTP SEO
+
+htmlLimitedBots obejmuje wszystkich klientów: generateMetadata kończy rozpoznawanie CMS/miasta/Aero przed wysłaniem nagłówków. Pozostawiono streaming treści i istniejące loading boundaries. Missing CMS/Aero zwraca notFound, nie metadane błędu z sukcesem HTTP. Wspólny resolver getPublishedPage zachowuje filtr publikacji, bez cache trwałego. Test check:seo:http służy do weryfikacji preview i produkcji; nie wykonuje zapisów.
+
 ## 2026-09-14 — poprawka zdarzeń panelu i wyboru odbitek po wdrożeniu
 
 Zrzuty produkcji pokazały POST /api/user/events 403 oraz niedostępny wybór nphoto-15x21-silk w galerii 26. Odczyt bazy potwierdził lokalne identyfikatory formatu i stawki 15/20 zł przy wspólnej ofercie 17/25 zł. Przygotowano ograniczoną korektę formatów i dostawy tej galerii z kontrolą poprzedniej wartości; ceny odbitek 2,50/1,50 zł pozostają te same. Snapshot przed/po: docs/fixes/gallery-26-shop-2026-09-14.json. Historyczne zamówienia nie są modyfikowane.

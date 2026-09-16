@@ -10,9 +10,9 @@ type PageProps = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { slug } = await params;
     const definition = getAeroPageDefinition(slug);
-    if (!definition) return { title: 'Strona nie istnieje', robots: { index: false, follow: false } };
+    if (!definition) notFound();
     const { page, status } = await loadAeroCmsPage(slug);
-    if (status === 'unpublished') return { title: 'Strona niedostępna', robots: { index: false, follow: false } };
+    if (status === 'unpublished') notFound();
     const url = `${AERO_SITE.url}/${slug}`;
     const title = page?.meta_title || definition.title;
     const description = page?.meta_description || definition.description;

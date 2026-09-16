@@ -1,6 +1,5 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import { Suspense } from 'react';
-import prisma from '@/lib/db/prisma';
 import PageRenderer from '@/components/PageRenderer';
 import { Metadata } from 'next';
 import Link from 'next/link';
@@ -15,6 +14,7 @@ import CityLeadForm from '@/components/CityLeadForm';
 import { loadPhotoFunnelConfig } from '@/lib/marketing/photo-funnel.server';
 import type { PhotoFunnelConfig } from '@/lib/marketing/photo-funnel';
 import { hasServerRenderedPrimaryHeading } from '@/lib/seo/page-headings';
+import { getPublishedPage as getPage } from '@/lib/seo/published-page';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -220,16 +220,6 @@ function getServiceLabelBySlug(slug: string) {
     return 'fotograf';
 }
 
-async function getPage(slug: string) {
-    const page = await prisma.page.findFirst({
-        where: {
-            slug: { equals: slug, mode: 'insensitive' },
-            is_published: true
-        },
-    });
-    return page;
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { slug } = await params;
     const page = await getPage(slug);
@@ -240,26 +230,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         if (slug.startsWith('fotograf-')) {
             return cityGenerateMetadata({ params: Promise.resolve({ city: slug.replace('fotograf-', '') }) });
         }
-        return {
-            title: 'Strona nie znaleziona',
-        };
+        notFound();
     }
 
     if (isB2bCmsPage(page)) {
         const canonical = `https://aeroanaliza.pl${b2bPublicPath(page.slug)}`;
-        return {
-            title: page.meta_title || page.title,
-            description: page.meta_description,
-            keywords: page.meta_keywords,
-            alternates: { canonical },
-            openGraph: {
-                title: page.meta_title || page.title,
-                description: page.meta_description || '',
-                type: 'website',
-                url: canonical,
-                images: page.hero_image ? [page.hero_image] : [],
-            },
-        };
+        permanentRedirect(canonical);
     }
 
     // City landing pages use rich metadata from the CityLandingPage component
