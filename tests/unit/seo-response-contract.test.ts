@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const record = {
@@ -29,6 +29,7 @@ test('CMS page resolver never exposes drafts and rereads subsequent CMS changes'
 });
 
 test('HTTP headers wait for metadata for browser and crawler user agents', async () => {
+    assert.equal(existsSync('src/app/loading.tsx'), false, 'Global loading must not flush 200 before route existence is resolved');
     const { default: config } = await import('../../next.config.mjs');
     for (const ua of ['Mozilla/5.0', 'Googlebot', 'AhrefsBot', 'curl/8', '']) {
         assert.equal(config.htmlLimitedBots.test(ua), true);

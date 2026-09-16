@@ -1,6 +1,6 @@
 ## 2026-09-16 — kontrakt HTTP SEO
 
-htmlLimitedBots obejmuje wszystkich klientów: generateMetadata kończy rozpoznawanie CMS/miasta/Aero przed wysłaniem nagłówków. Pozostawiono streaming treści i istniejące loading boundaries. Missing CMS/Aero zwraca notFound, nie metadane błędu z sukcesem HTTP. Wspólny resolver getPublishedPage zachowuje filtr publikacji, bez cache trwałego. Test check:seo:http służy do weryfikacji preview i produkcji; nie wykonuje zapisów.
+htmlLimitedBots obejmuje wszystkich klientów. Usunięto globalny app/loading.tsx: test HTTP preview wykazał, że samo blokowanie metadanych nie zapobiegało wysłaniu 200. Pozostawiono lokalne granice Suspense i loading dla konkretnych ekranów. Missing CMS/Aero zwraca notFound. Wspólny resolver getPublishedPage zachowuje filtr publikacji, bez cache trwałego. Test check:seo:http służy do weryfikacji preview i produkcji; nie wykonuje zapisów. Usunięty komponent pozostaje odzyskiwalny w Git.
 
 ## 2026-09-14 — poprawka zdarzeń panelu i wyboru odbitek po wdrożeniu
 
