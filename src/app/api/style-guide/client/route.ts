@@ -1,3 +1,5 @@
+import type { NextRequest } from 'next/server';
+import { verifyClientReadToken } from '@/lib/auth/client-preview';
 import prisma from '@/lib/db/prisma';
 import { verifyToken } from '@/lib/auth/jwt';
 import { publicStyleGuideCategoryFilter } from '@/lib/styleGuideAccess';
@@ -6,8 +8,8 @@ import { PREPARATION_GUIDE_PAGE_SLUG } from '@/lib/preparationGuideCms';
 
 export const dynamic = 'force-dynamic';
 
-export const GET = createClientPreparationGuideGetHandler({
-    verifyToken,
+export const GET = (request: NextRequest) => createClientPreparationGuideGetHandler({
+    verifyToken: token => verifyClientReadToken(token, request),
     findUser: (id) => prisma.user.findUnique({
             where: { id },
             select: { id: true, email: true, is_active: true, deleted_at: true },
@@ -77,4 +79,4 @@ export const GET = createClientPreparationGuideGetHandler({
         });
         return page?.content ?? null;
     },
-});
+})(request);

@@ -7,6 +7,7 @@ import PreparationGuide from './PreparationGuide';
 import type { ClientPreparationGuideData } from '@/types/preparation-guide';
 
 interface ClientStyleGuidePanelProps {
+    authToken?: string;
     offerId?: number;
     serviceType?: string;
     groupSize?: number;
@@ -14,12 +15,14 @@ interface ClientStyleGuidePanelProps {
 }
 
 export default function ClientStyleGuidePanel({
+    authToken,
     offerId,
     serviceType,
     groupSize,
     location,
 }: ClientStyleGuidePanelProps) {
-    const { token } = useAuth();
+    const { token: sessionToken } = useAuth();
+    const token = authToken ?? sessionToken;
     const [data, setData] = useState<ClientPreparationGuideData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);

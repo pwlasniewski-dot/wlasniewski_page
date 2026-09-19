@@ -1,3 +1,4 @@
+import { verifyClientReadToken } from '@/lib/auth/client-preview';
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { extractToken, verifyToken } from '@/lib/auth/jwt';
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
     let clientEmail: string | null = null;
     try {
         const token = extractToken(request.headers.get('authorization')) || request.cookies.get('client_token')?.value;
-        const identity = token ? await verifyToken(token) : null;
+        const identity = token ? await verifyClientReadToken(token, request) : null;
         if (!identity) return clientJson({ success: false, error: 'Unauthorized' }, { status: 401, correlationId: operation.correlationId });
         const client = await revalidateActiveClient(identity);
         if (!client) return clientJson({ success: false, error: 'Unauthorized' }, { status: 401, correlationId: operation.correlationId });

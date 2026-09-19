@@ -39,18 +39,21 @@ export async function generateToken(payload: { id: number; email: string; role?:
 }
 
 // Verify JWT token
-export async function verifyToken(token: string): Promise<{
+export async function verifyToken(token: string, options: { allowAdminPreview?: boolean } = {}): Promise<{
     id: number;
     email: string;
     role?: string;
     type?: string;
+    previewAdminId?: number;
 } | null> {
     try {
         const { payload } = await jwtVerify(token, getSecret());
+        if (payload.previewAdminId !== undefined && (!options.allowAdminPreview || !Number.isSafeInteger(payload.previewAdminId) || Number(payload.previewAdminId) < 1)) return null;
         if (typeof payload.id !== 'number' || typeof payload.email !== 'string') {
             return null;
         }
         return {
+            ...(payload.previewAdminId === undefined ? {} : { previewAdminId: Number(payload.previewAdminId) }),
             id: payload.id,
             email: payload.email,
             role: typeof payload.role === 'string' ? payload.role : undefined,
@@ -68,4 +71,10 @@ export function extractToken(authHeader: string | null): string | null {
         return null;
     }
     return authHeader.substring(7);
+}
+
+/** A preview credential is rejected by ordinary client authentication. */
+export async function generateClientPreviewToken(client: {id:number;email:string}, adminId:number) {
+    return new SignJWT({...client, role:'CLIENT', type:'client', previewAdminId:adminId})
+        .setProtectedHeader({alg:'HS256'}).setIssuedAt().setExpirationTime('10m').sign(getSecret());
 }

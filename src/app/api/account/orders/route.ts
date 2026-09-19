@@ -9,7 +9,7 @@ import { orderProductImages } from '@/lib/galleries/order-product-images';
 export async function GET(request: NextRequest) {
   const json = (data: unknown, status = 200) => NextResponse.json(data, { status, headers: { 'Cache-Control': 'private, no-store' } });
   try {
-    const client = await orderClient(request);
+    const client = await orderClient(request, true);
     if (!client) return json({ error: 'Zaloguj się, aby zobaczyć zamówienia.' }, 401);
     const requested = request.nextUrl.searchParams.get('order');
     if (requested !== null && !/^[1-9]\d{0,9}$/.test(requested)) return json({error:'Nieprawidłowy numer zamówienia.'},400);
