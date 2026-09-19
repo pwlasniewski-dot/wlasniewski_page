@@ -105,7 +105,7 @@ export default function MagazineLayout({
 
                             {content && (
                                 <div
-                                    className="home-editorial-richtext"
+                                    className="home-editorial-richtext text-[#625a51]"
                                     dangerouslySetInnerHTML={{ __html: semanticContent }}
                                 />
                             )}
