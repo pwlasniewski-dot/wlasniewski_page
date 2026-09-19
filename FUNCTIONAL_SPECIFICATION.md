@@ -1,3 +1,7 @@
+## 2026-09-19 — strona ślubna bez filmu
+
+Publiczna strona `/slub` przedstawia Przemysława Właśniewskiego jako fotografa. Nie oferuje na tej stronie filmu ani dopłaty za krótki film z drona. Opis obejmuje przygotowania, ceremonię, przyjęcie, oczepiny i sesję ślubną; zakres pakietu pozostaje ustalany przed rezerwacją. Podgląd linku w mediach społecznościowych używa zdjęcia przypisanego stronie: najpierw `hero_image`, a przy jego braku pierwszego obrazu z opublikowanych sekcji CMS. Tytuł, opis, obraz oraz ich wersje Open Graph/Twitter pozostają spójne i edytowalne w istniejącym panelu Strony.
+
 ## 2026-09-16 — SEO stron miejskich
 
 Tytuł, opis i słowa kluczowe szablonu miasta odczytują pola SEO istniejącej strony w panelu Strony. Puste pola zachowują wartości domyślne; tytuł i opis są spójne z Open Graph/Twitter. Canonical pozostaje przypisany do domeny fotograficznej. B2B rozstrzygane jest osobno. Publikacja poprawki nie oznacza gwarancji pozycji ani natychmiastowej aktualizacji Google.

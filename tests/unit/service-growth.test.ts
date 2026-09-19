@@ -19,6 +19,15 @@ test('wedding service page owns wedding intent and routes to the wedding booking
     assert.equal(config.bookingService, 'Ślub');
     assert.match(config.metaTitle, /Fotograf ślubny Toruń/i);
     assert.doesNotMatch(`${config.metaTitle} ${config.metaDescription}`, /\d+\s*zł/);
+    assert.match(`${config.metaDescription} ${config.intro} ${config.packageSummary}`, /fotograf|fotografi/i);
+    assert.doesNotMatch(`${config.metaDescription} ${config.intro} ${config.packageSummary}`, /film|wideo|video/i);
+});
+
+test('wedding page does not advertise the removed drone film add-on', async () => {
+    const source = await readFile(new URL('../../src/app/[slug]/page.tsx', import.meta.url), 'utf8');
+    assert.doesNotMatch(source, /Zdjęcia i krótki film z drona|fotografia-z-drona#slub/);
+    assert.match(source, /resolvePageSocialImage/);
+    assert.match(source, /twitter:/);
 });
 
 test('service SEO price is derived from active Package records at render time', async () => {
