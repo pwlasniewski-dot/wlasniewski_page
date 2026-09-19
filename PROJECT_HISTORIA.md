@@ -1,3 +1,7 @@
+## 2026-09-19 — ślub: poprawny podgląd społecznościowy i oferta fotograficzna
+
+Strona `/slub` otrzymuje obraz Open Graph/Twitter z materiałów przypisanych do tej strony w CMS zamiast globalnego zdjęcia rodzinnego. Metadane preferują edytowalne pola SEO strony, a podtytuł widoczny dla klienta korzysta z treści CMS. Usunięto ze strony ślubnej twardo wpisaną dopłatę za film z drona; oferta i opis mówią wyłącznie o fotografii. Nie zmieniano cen, rezerwacji, bazy ani osobnej oferty usług dronowych. Testy celowane: 16/16; typecheck i build: PASS, 262/262 stron.
+
 ## 2026-09-16 — SEO: statusy HTTP i metadane CMS
 
 Potwierdzono HTTP 200 dla nieistniejącego adresu na produkcji. Poprawka rozstrzyga notFound i przekierowanie B2B w metadanych przed wysłaniem nagłówków. Metadane stron miejskich czytają istniejące pola SEO CMS. Stary link fotografia-rodzinna kieruje trwale do sesja-rodzinna. Testy SEO dodano do bramki builda; scripts/check-seo-http.mjs sprawdza rzeczywiste HTTP po wdrożeniu. Status: implementacja lokalna, publikacja i kontrola preview/produkcji jeszcze niepotwierdzone. Nie zmieniano zamówień, galerii ani schematu bazy.

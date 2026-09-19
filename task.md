@@ -1,3 +1,11 @@
+## 2026-09-19 — strona ślubna i podgląd linku
+
+- [x] Ustalić przyczynę rodzinnego zdjęcia w podglądzie strony ślubnej.
+- [x] Powiązać Open Graph/Twitter z obrazem strony zarządzanym w CMS.
+- [x] Usunąć ze strony ślubnej ofertę filmu i poprawić opis fotografii.
+- [x] Dodać regresje, uruchomić testy celowane, typecheck i pełny build.
+- [ ] Opublikować zmianę i potwierdzić HTML oraz podgląd `/slub` na produkcji.
+
 ## 2026-09-16 — naprawa SEO
 
 - [x] Potwierdzić soft 404 na produkcji i sprawdzić metadane oraz podział domen.

@@ -23,12 +23,12 @@ const SERVICE_GROWTH_CONFIGS: Record<ServiceGrowthConfig['slug'], ServiceGrowthC
     slub: {
         slug: 'slub',
         metaTitle: 'Fotograf ślubny Toruń i okolice | Pakiety',
-        metaDescription: 'Fotografia ślubna w Toruniu i okolicy: ceremonia, przyjęcie lub pełny reportaż. Sprawdź wolny termin online.',
+        metaDescription: 'Fotograf ślubny w Toruniu i okolicy. Zdjęcia od przygotowań do oczepin, reportaż z przyjęcia i sesja ślubna. Sprawdź termin i zakres fotografii.',
         h1: 'Fotograf ślubny w Toruniu i okolicy',
         eyebrow: 'Fotografia ślubna',
-        intro: 'Fotografuję ceremonie, przyjęcia, przygotowania oraz krótkie sesje w dniu ślubu. Zakres ustalamy przed podpisaniem umowy — nie musicie wybierać większego pakietu, niż rzeczywiście potrzebujecie.',
+        intro: 'Fotografuję śluby od przygotowań do oczepin. Jestem blisko najważniejszych momentów, ale nie ustawiam całego dnia pod aparat. Przed podpisaniem umowy ustalamy zakres, liczbę godzin i sesję, żeby wszystko było jasne.',
         bookingService: 'Ślub',
-        packageSummary: 'Możecie wybrać samą ceremonię, ślub z kameralnym przyjęciem albo pełny reportaż. Zakres i cena są widoczne przed rezerwacją.',
+        packageSummary: 'Możecie wybrać samą ceremonię, ślub z kameralnym przyjęciem albo pełny reportaż od przygotowań do oczepin. Pakiety obejmują fotografię. Zakres i cena są widoczne przed rezerwacją.',
     },
 };
 

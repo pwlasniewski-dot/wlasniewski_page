@@ -15,6 +15,7 @@ import { loadPhotoFunnelConfig } from '@/lib/marketing/photo-funnel.server';
 import type { PhotoFunnelConfig } from '@/lib/marketing/photo-funnel';
 import { hasServerRenderedPrimaryHeading } from '@/lib/seo/page-headings';
 import { getPublishedPage as getPage } from '@/lib/seo/published-page';
+import { resolvePageSocialImage } from '@/lib/seo/page-social-image';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -245,6 +246,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     if (growthConfig) {
         const canonical = `https://wlasniewski.pl/${slug}`;
+        const socialImage = resolvePageSocialImage(page);
         let minimumPrice: number | null = null;
         try {
             const packages = await findPricedPublicPackages({ serviceName: growthConfig.bookingService });
@@ -253,10 +255,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             console.warn(`[service-growth] Metadata price unavailable for ${slug}`, error);
         }
         const priceSuffix = minimumPrice ? ` od ${formatPrice(minimumPrice)}` : ' i terminy';
-        const metaTitle = `${growthConfig.metaTitle}${priceSuffix}`;
-        const metaDescription = minimumPrice
+        const generatedTitle = `${growthConfig.metaTitle}${priceSuffix}`;
+        const generatedDescription = minimumPrice
             ? `${growthConfig.metaDescription} Aktywne pakiety od ${formatPrice(minimumPrice)}.`
             : growthConfig.metaDescription;
+        const metaTitle = page.meta_title?.trim() || generatedTitle;
+        const metaDescription = page.meta_description?.trim() || generatedDescription;
         return {
             title: metaTitle,
             description: metaDescription,
@@ -266,7 +270,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
                 description: metaDescription,
                 type: 'website',
                 url: canonical,
-                images: page.hero_image ? [page.hero_image] : [],
+                images: socialImage ? [{ url: socialImage, alt: page.title }] : [],
+            },
+            twitter: {
+                card: 'summary_large_image',
+                title: metaTitle,
+                description: metaDescription,
+                images: socialImage ? [socialImage] : [],
             },
         };
     }
@@ -387,7 +397,7 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
                         </p>
                         <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-tight md:text-6xl">{growthConfig.h1}</h1>
                         <p className={isEditorialService ? 'mt-7 max-w-3xl text-lg leading-relaxed text-[#686057]' : 'mt-7 max-w-3xl text-lg leading-relaxed text-zinc-300'}>
-                            {growthConfig.intro}
+                            {page.hero_subtitle || growthConfig.intro}
                         </p>
                         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                             <Link
@@ -471,19 +481,6 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
 
             {growthConfig && photoFunnelConfig?.display.serviceModuleEnabled && photoFunnelConfig.display.servicePosition === 'after_packages' && (
                 <ServiceInquirySection growthConfig={growthConfig} city={growthCity} funnelConfig={photoFunnelConfig} />
-            )}
-
-            {growthConfig?.slug === 'slub' && (
-                <section className={isEditorialService ? 'border-t border-[#d5cabd] bg-[#28221c] px-6 py-14 text-white' : 'border-t border-white/10 bg-zinc-900 px-6 py-14 text-white'}>
-                    <div className="mx-auto flex max-w-5xl flex-col justify-between gap-7 md:flex-row md:items-center">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#d4b77c]">Dodatek do reportażu</p>
-                            <h2 className="mt-3 text-2xl font-semibold md:text-3xl">Zdjęcia i krótki film z drona +690 zł</h2>
-                            <p className="mt-3 max-w-2xl leading-relaxed text-white/65">Miejsce ceremonii, sala i otoczenie pokazane z powietrza — jeśli pogoda, przestrzeń i warunki bezpieczeństwa pozwalają wykonać lot.</p>
-                        </div>
-                        <Link href="/fotografia-z-drona#slub" className="inline-flex shrink-0 items-center justify-center rounded-full border border-[#d4b77c] bg-[#d4b77c] px-7 py-3.5 text-sm font-semibold text-[#28221c] transition hover:border-white hover:bg-white">Zobacz zakres</Link>
-                    </div>
-                </section>
             )}
 
             {/* Local SEO reinforcement block for service intent + city coverage */}
