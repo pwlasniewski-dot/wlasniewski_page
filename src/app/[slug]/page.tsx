@@ -259,8 +259,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         const generatedDescription = minimumPrice
             ? `${growthConfig.metaDescription} Aktywne pakiety od ${formatPrice(minimumPrice)}.`
             : growthConfig.metaDescription;
-        const metaTitle = page.meta_title?.trim() || generatedTitle;
-        const metaDescription = page.meta_description?.trim() || generatedDescription;
+        const metaTitle = generatedTitle;
+        const metaDescription = generatedDescription;
         return {
             title: metaTitle,
             description: metaDescription,

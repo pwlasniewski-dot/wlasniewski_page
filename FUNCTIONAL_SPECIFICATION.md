@@ -1,6 +1,6 @@
 ## 2026-09-19 — strona ślubna bez filmu
 
-Publiczna strona `/slub` przedstawia Przemysława Właśniewskiego jako fotografa. Nie oferuje na tej stronie filmu ani dopłaty za krótki film z drona. Opis obejmuje przygotowania, ceremonię, przyjęcie, oczepiny i sesję ślubną; zakres pakietu pozostaje ustalany przed rezerwacją. Podgląd linku w mediach społecznościowych używa zdjęcia przypisanego stronie: najpierw `hero_image`, a przy jego braku pierwszego obrazu z opublikowanych sekcji CMS. Tytuł, opis, obraz oraz ich wersje Open Graph/Twitter pozostają spójne i edytowalne w istniejącym panelu Strony.
+Publiczna strona `/slub` przedstawia Przemysława Właśniewskiego jako fotografa. Nie oferuje na tej stronie filmu ani dopłaty za krótki film z drona. Opis obejmuje przygotowania, ceremonię, przyjęcie, oczepiny i sesję ślubną; zakres pakietu pozostaje ustalany przed rezerwacją. Podgląd linku w mediach społecznościowych używa zdjęcia przypisanego stronie: najpierw `hero_image`, a przy jego braku pierwszego obrazu z opublikowanych sekcji CMS. Tytuł i opis są wspólne dla SEO, Open Graph i Twitter oraz korzystają ze zweryfikowanej treści usługi i aktualnej ceny pakietu.
 
 ## 2026-09-16 — SEO stron miejskich
 

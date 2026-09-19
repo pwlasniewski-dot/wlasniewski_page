@@ -28,6 +28,8 @@ test('wedding page does not advertise the removed drone film add-on', async () =
     assert.doesNotMatch(source, /Zdjęcia i krótki film z drona|fotografia-z-drona#slub/);
     assert.match(source, /resolvePageSocialImage/);
     assert.match(source, /twitter:/);
+    assert.doesNotMatch(source, /const metaTitle = page\.meta_title/);
+    assert.doesNotMatch(source, /const metaDescription = page\.meta_description/);
 });
 
 test('service SEO price is derived from active Package records at render time', async () => {
