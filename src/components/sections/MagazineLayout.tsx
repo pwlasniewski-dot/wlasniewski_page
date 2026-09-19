@@ -35,7 +35,7 @@ export default function MagazineLayout({
 
     return (
         <section
-            className="home-editorial-section editorial-spacing overflow-hidden"
+            className="home-editorial home-editorial-section editorial-spacing overflow-hidden"
             style={{ backgroundColor }}
         >
             <div className="container mx-auto max-w-[1380px] px-5 sm:px-8">
@@ -105,7 +105,7 @@ export default function MagazineLayout({
 
                             {content && (
                                 <div
-                                    className="home-editorial-richtext text-[#625a51]"
+                                    className="home-editorial-richtext"
                                     dangerouslySetInnerHTML={{ __html: semanticContent }}
                                 />
                             )}
