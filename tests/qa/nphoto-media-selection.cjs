@@ -1,0 +1,13 @@
+const assert = require('node:assert/strict');
+const { appendProductImages } = require('../../src/lib/nphoto/media-selection.ts');
+const first = ['https://example.com/one.jpg'];
+assert.deepEqual(appendProductImages(first, ['https://example.com/two.webp', first[0]]), [first[0], 'https://example.com/two.webp']);
+assert.deepEqual(first, ['https://example.com/one.jpg']);
+assert.deepEqual(appendProductImages(first, []), first);
+for (const bad of ['https://example.com/template.psd','https://example.com/template.zip','https://example.com/doc.pdf','https://example.com/video.mp4','javascript:alert(1)','http://example.com/photo.jpg','https://user:pass@example.com/photo.jpg']) assert.throws(()=>appendProductImages(first,bad));
+const twelve = Array.from({length:12},(_,i)=>`https://example.com/${i}.png`);
+assert.equal(appendProductImages([],twelve).length,12);
+assert.equal(appendProductImages(twelve,twelve[0]).length,12);
+assert.throws(()=>appendProductImages(twelve,'https://example.com/extra.jpg'),/maksymalnie 12/);
+assert.deepEqual(appendProductImages([], 'https://example.com/photo.JPG?version=2'), ['https://example.com/photo.JPG?version=2']);
+console.log('PASS nPhoto media: append, stable order, deduplication, no mutation, invalid files and visible limit');
