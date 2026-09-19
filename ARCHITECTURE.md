@@ -1,6 +1,6 @@
 ## 2026-09-19 — metadane społecznościowe stron usługowych
 
-`src/lib/seo/page-social-image.ts` wybiera obraz społecznościowy wyłącznie z danych istniejącej strony CMS: `hero_image`, a następnie pierwsze obsługiwane pole obrazu w sekcjach. Resolver nie wprowadza nowego magazynu ani równoległego edytora. `src/app/[slug]/page.tsx` przekazuje ten sam obraz i tekst do Open Graph oraz Twitter, a przy braku obrazu nie dziedziczy przypadkowego zdjęcia z globalnej konfiguracji. Zmiana nie wymaga migracji bazy.
+`src/lib/seo/page-social-image.ts` wybiera obraz społecznościowy wyłącznie z danych istniejącej strony CMS: `hero_image`, a następnie pierwsze obsługiwane pole obrazu w sekcjach. Resolver nie wprowadza nowego magazynu ani równoległego edytora. `src/app/[slug]/page.tsx` przekazuje ten sam obraz i tekst do Open Graph oraz Twitter, a przy braku obrazu nie dziedziczy przypadkowego zdjęcia z globalnej konfiguracji. Dla stron kontrolowanych przez `serviceGrowth` tytuł i opis pochodzą ze zweryfikowanego szablonu usługi oraz aktywnej ceny; zapobiega to przejęciu podglądu przez historyczne, ogólne metadane CMS. Zmiana nie wymaga migracji bazy.
 
 ## 2026-09-16 — kontrakt HTTP SEO
 

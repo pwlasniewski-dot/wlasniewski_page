@@ -1,6 +1,6 @@
 ## 2026-09-19 — ślub: poprawny podgląd społecznościowy i oferta fotograficzna
 
-Strona `/slub` otrzymuje obraz Open Graph/Twitter z materiałów przypisanych do tej strony w CMS zamiast globalnego zdjęcia rodzinnego. Metadane preferują edytowalne pola SEO strony, a podtytuł widoczny dla klienta korzysta z treści CMS. Usunięto ze strony ślubnej twardo wpisaną dopłatę za film z drona; oferta i opis mówią wyłącznie o fotografii. Nie zmieniano cen, rezerwacji, bazy ani osobnej oferty usług dronowych. Testy celowane: 16/16; typecheck i build: PASS, 262/262 stron.
+Strona `/slub` otrzymuje obraz Open Graph/Twitter z materiałów przypisanych do tej strony w CMS zamiast globalnego zdjęcia rodzinnego. Tytuł i opis podglądu korzystają z konkretnego szablonu usługi i aktualnej ceny, aby stary ogólny wpis CMS nie osłabiał przekazu; podtytuł widoczny dla klienta nadal może pochodzić z CMS. Usunięto ze strony ślubnej twardo wpisaną dopłatę za film z drona; oferta i opis mówią wyłącznie o fotografii. Nie zmieniano cen, rezerwacji, bazy ani osobnej oferty usług dronowych. Testy celowane: 16/16; typecheck i build: PASS, 262/262 stron.
 
 ## 2026-09-16 — SEO: statusy HTTP i metadane CMS
 
