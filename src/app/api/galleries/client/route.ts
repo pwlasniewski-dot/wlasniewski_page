@@ -55,6 +55,8 @@ export async function GET(req: NextRequest) {
             galleries: galleries.map(g => ({
                 id: g.id,
                 access_code: g.access_code,
+                gallery_mode: g.gallery_mode,
+                group_access_code: g.group_access_code,
                 client_name: g.client_name,
                 standard_count: g.standard_count,
                 photo_count: g._count.photos,

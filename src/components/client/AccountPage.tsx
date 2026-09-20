@@ -786,6 +786,9 @@ export function AuthenticatedAccountPage({ user, token, logout, readOnly = false
     }
 
     function renderSessions() {
+        const galleryHref = (gallery: any) => gallery.gallery_mode === 'GROUP'
+            ? `/galeria/grupowa?code=${encodeURIComponent(gallery.group_access_code || gallery.access_code)}`
+            : `/galeria/${gallery.access_code}`;
         return (
             <div className="space-y-8">
                 <div className="max-w-3xl">
@@ -810,7 +813,9 @@ export function AuthenticatedAccountPage({ user, token, logout, readOnly = false
                                                 {gallery.client_name}
                                             </h4>
                                             <div className="flex items-center gap-2 text-sm text-zinc-500 mt-0.5">
-                                                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded text-[9px] uppercase font-black">Sesja Standard</span>
+                                                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded text-[9px] uppercase font-black">
+                                                    {gallery.gallery_mode === 'GROUP' ? 'Galeria grupowa' : 'Galeria indywidualna'}
+                                                </span>
                                                 <span>•</span>
                                                 <span className="flex items-center gap-1">
                                                     <Clock className="w-3 h-3" />
@@ -828,11 +833,13 @@ export function AuthenticatedAccountPage({ user, token, logout, readOnly = false
 
                                 <div className="flex flex-col justify-center gap-3">
                                     <Link
-                                        href={`/galeria/${gallery.access_code}`}
+                                        href={galleryHref(gallery)}
+                                        data-preview-kind="gallery"
+                                        data-preview-id={gallery.id}
                                         onClick={() => trackAction('gallery_open')}
                                         className="px-10 py-4 bg-gold-600 text-black font-black rounded-2xl hover:bg-gold-500 transition-all text-center flex items-center justify-center gap-3 shadow-xl shadow-gold-600/10"
                                     >
-                                        Wybierz i zapłać za zdjęcia
+                                        {gallery.gallery_mode === 'GROUP' ? 'Otwórz galerię grupową' : 'Wybierz i zapłać za zdjęcia'}
                                         <ChevronRight className="w-5 h-5" />
                                     </Link>
                                 </div>
@@ -972,7 +979,7 @@ export function AuthenticatedAccountPage({ user, token, logout, readOnly = false
                                         ? 'bg-gradient-to-br from-gold-500/15 via-zinc-900/80 to-zinc-900/50 backdrop-blur-xl border-2 border-gold-500/60 shadow-[0_0_40px_rgba(212,175,55,0.25)] animate-pulse-soft'
                                         : 'bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 hover:border-gold-500/40 hover:shadow-2xl hover:shadow-gold-500/10'}`}>
                                         {needsAction && (
-                                            <Link href={`/strefa-klienta/oferty/${offer.id}`} onClick={() => trackAction('offer_open')}
+                                            <Link href={`/strefa-klienta/oferty/${offer.id}`} data-preview-kind="offer" data-preview-id={offer.id} onClick={() => trackAction('offer_open')}
                                                 className="block bg-gradient-to-r from-gold-500 to-amber-500 text-zinc-950 px-6 py-3 font-bold text-sm flex items-center justify-between hover:from-gold-400 hover:to-amber-400 transition">
                                                 <span className="flex items-center gap-2">
                                                     <span className="relative flex h-2.5 w-2.5">
@@ -988,6 +995,8 @@ export function AuthenticatedAccountPage({ user, token, logout, readOnly = false
                                         )}
                                         <Link
                                             href={`/strefa-klienta/oferty/${offer.id}`}
+                                            data-preview-kind="offer"
+                                            data-preview-id={offer.id}
                                             onClick={() => trackAction('offer_open')}
                                             className="p-6 flex flex-col md:flex-row justify-between items-center gap-6 group hover:bg-white/[0.02] transition-all block"
                                         >
@@ -1088,6 +1097,8 @@ export function AuthenticatedAccountPage({ user, token, logout, readOnly = false
                                         <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-6 group">
                                             <Link
                                                 href={`/strefa-klienta/umowy/${contract.id}`}
+                                                data-preview-kind="contract"
+                                                data-preview-id={contract.id}
                                                 onClick={() => trackAction('contract_open')}
                                                 className="flex items-center gap-5 w-full md:w-auto text-left hover:opacity-80 transition-opacity"
                                             >
@@ -1108,6 +1119,8 @@ export function AuthenticatedAccountPage({ user, token, logout, readOnly = false
                                                 {/* PDF always available for signed contracts (dynamic generation) */}
                                                 <a
                                                     href={`/api/contracts/${contract.id}/pdf`}
+                                                    data-preview-kind="contract"
+                                                    data-preview-id={contract.id}
                                                     onClick={() => trackAction('contract_pdf_download')}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
@@ -1119,6 +1132,8 @@ export function AuthenticatedAccountPage({ user, token, logout, readOnly = false
                                                 </a>
                                                 <Link
                                                     href={`/strefa-klienta/umowy/${contract.id}`}
+                                                    data-preview-kind="contract"
+                                                    data-preview-id={contract.id}
                                                     onClick={() => trackAction('contract_open')}
                                                     className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:bg-gold-600 hover:text-black transition-all"
                                                 >
@@ -1720,6 +1735,8 @@ export function AuthenticatedAccountPage({ user, token, logout, readOnly = false
                                         <div className="font-mono text-zinc-500 text-xs tracking-widest">{card.code}</div>
                                         <Link
                                             href={`/karta-podarunkowa/dostep/${card.access_token}`}
+                                            data-preview-kind="gift-card"
+                                            data-preview-id={card.id}
                                             onClick={() => trackAction('voucher_open')}
                                             className="px-4 py-2 bg-gold-600 text-black text-[10px] font-black rounded-xl hover:bg-gold-500 transition-colors shadow-lg shadow-gold-600/10 uppercase tracking-widest"
                                         >
