@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyToken } from './jwt';
+import { revalidateActiveClient } from './active-client';
 
 const readPaths = new Set([
  '/api/user/action-summary', '/api/user/me', '/api/user/workshops',
@@ -15,4 +16,15 @@ export async function verifyClientReadToken(token:string, request:NextRequest) {
  const admin = await prisma.adminUser.findUnique({where:{id:identity.previewAdminId},select:{role:true}});
  if (admin?.role !== 'ADMIN') return null;
  return identity;
+}
+
+/** Authorizes one of the dedicated nested admin-preview GET endpoints.
+ * The preview credential remains a client identity bound to one client row;
+ * the administrator identity is revalidated independently on every read. */
+export async function verifyAdminClientPreviewToken(token:string, request:NextRequest, clientId:number) {
+ const identity = await verifyToken(token, {allowAdminPreview:true});
+ if (request.method !== 'GET' || !identity?.previewAdminId || identity.id !== clientId) return null;
+ const admin = await prisma.adminUser.findUnique({where:{id:identity.previewAdminId},select:{role:true}});
+ if (admin?.role !== 'ADMIN') return null;
+ return revalidateActiveClient(identity);
 }

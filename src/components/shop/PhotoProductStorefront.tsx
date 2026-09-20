@@ -8,7 +8,7 @@ import type { PublicShopCatalog } from '@/lib/galleries/public-offer';
 import type { ShopProduct } from '@/lib/galleries/merchandise';
 import PrintPriceTiers from '@/components/galleries/PrintPriceTiers';
 
-type ClientGallery = { id: number; access_code: string; client_name: string; photo_count: number; created_at: string };
+type ClientGallery = { id: number; access_code: string; client_name: string; photo_count: number; created_at: string; gallery_mode?: string };
 type Props = { mode?: 'public' | 'account'; token?: string; className?: string; onAvailabilityChange?: (available: boolean, label: string) => void; onAction?: (action: 'offer_open' | 'gallery_open') => void };
 const money = (value: number) => new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value / 100);
 const action = 'inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#d8c7a7] bg-[#d8c7a7] px-5 py-3 text-center text-sm font-semibold text-stone-950 transition-colors hover:bg-[#ecddc3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d8c7a7]';
@@ -79,7 +79,9 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
     fetch('/api/galleries/client', { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', signal: controller.signal }).then(async response => {
       const result = await response.json();
       if (!response.ok || !Array.isArray(result.galleries)) throw new Error(result.error || 'Nie udało się odczytać Twoich galerii.');
-      if (active) setGalleries(result.galleries.filter((gallery: ClientGallery) => gallery && Number.isSafeInteger(gallery.id) && gallery.id > 0 && typeof gallery.access_code === 'string' && /^[a-zA-Z0-9_-]{1,128}$/.test(gallery.access_code)));
+      // Group galleries use their own participant flow and cannot enter the
+      // individual gallery merchandise checkout from the account storefront.
+      if (active) setGalleries(result.galleries.filter((gallery: ClientGallery) => gallery && gallery.gallery_mode !== 'GROUP' && Number.isSafeInteger(gallery.id) && gallery.id > 0 && typeof gallery.access_code === 'string' && /^[a-zA-Z0-9_-]{1,128}$/.test(gallery.access_code)));
     }).catch(failure => { if (active) setGalleryError(failure instanceof Error ? failure.message : 'Nie udało się odczytać Twoich galerii.'); });
     return () => { active = false; controller.abort(); };
   }, [mode, token, intentKey, galleryAttempt]);
