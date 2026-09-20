@@ -1,3 +1,4 @@
+import { verifyClientReadToken } from '@/lib/auth/client-preview';
 /**
  * API: Klient dodaje/usuwa album jako dodatek do oferty.
  * Zapisuje w Offer.selected_addons (JSON) + email do fotografa.
@@ -53,7 +54,7 @@ async function getAuthorizedOffer(request: NextRequest, offerId: number, correla
     const token = extractToken(request.headers.get('authorization'))
         || request.cookies.get('client_token')?.value
         || request.cookies.get('user_token')?.value;
-    const decoded = token ? await verifyToken(token) : null;
+    const decoded = token ? await verifyClientReadToken(token, request) : null;
     if (!decoded) {
         return { response: errorResponse('Unauthorized', 401, correlationId) };
     }

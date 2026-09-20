@@ -726,6 +726,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                             </div>
                         </div>
                         <div className="ml-auto w-full sm:w-auto flex flex-wrap justify-start sm:justify-end gap-2">
+                            <NextLink href={`/admin/clients/${client.id}/preview`} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-2 rounded-lg bg-amber-200 px-4 py-2 font-bold text-black"><Eye className="h-4 w-4" />Zobacz jako klient</NextLink>
                             <button
                                 onClick={handleSendWelcomeEmail}
                                 disabled={sendingWelcomeEmail}

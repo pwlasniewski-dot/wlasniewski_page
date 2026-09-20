@@ -1,3 +1,4 @@
+import { verifyClientReadToken } from '@/lib/auth/client-preview';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
     try {
         const token = extractToken(req.headers.get('Authorization'));
         if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        const decoded = await verifyToken(token);
+        const decoded = await verifyClientReadToken(token, req);
         if (!decoded) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
 
         const user = await prisma.user.findUnique({ where: { id: decoded.id }, select: { email: true } });

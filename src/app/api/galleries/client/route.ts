@@ -1,3 +1,4 @@
+import { verifyClientReadToken } from '@/lib/auth/client-preview';
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
             return clientJson({ error: 'Unauthorized' }, { status: 401, correlationId: operation.correlationId });
         }
 
-        const decoded = await verifyToken(token);
+        const decoded = await verifyClientReadToken(token, req);
         if (!decoded) {
             return clientJson({ error: 'Invalid token' }, { status: 401, correlationId: operation.correlationId });
         }

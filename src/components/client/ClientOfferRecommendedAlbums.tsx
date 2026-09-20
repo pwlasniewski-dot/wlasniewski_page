@@ -64,10 +64,12 @@ function clientAuthHeaders(): Record<string, string> {
 }
 
 export default function ClientOfferRecommendedAlbums({
+    authToken,
     offerId,
     onAddonsChange,
     offerStatus,
 }: {
+    authToken?: string;
     offerId: number;
     onAddonsChange?: (addons: OfferAddon[]) => void;
     offerStatus?: string;
@@ -86,7 +88,7 @@ export default function ClientOfferRecommendedAlbums({
                 const [albRes, addRes] = await Promise.all([
                     fetch(`/api/offers/${offerId}/recommended-albums`),
                     fetch(`/api/client/offer-addons?offer_id=${offerId}`, {
-                        headers: clientAuthHeaders()
+                        headers: authToken ? {Authorization: `Bearer ${authToken}`} : clientAuthHeaders()
                     }),
                 ]);
                 const albJson = await albRes.json();
@@ -106,7 +108,7 @@ export default function ClientOfferRecommendedAlbums({
         })();
         return () => { cancelled = true; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [offerId]);
+    }, [authToken, offerId]);
 
     useEffect(() => {
         if (albums.length === 0) return;
