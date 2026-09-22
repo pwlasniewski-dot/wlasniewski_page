@@ -2,8 +2,8 @@ import { Suspense } from 'react';
 import HeroSlider from '@/components/HeroSlider';
 
 import HomeContent from "./HomeContent";
-import { loadPublicReviews } from "@/lib/public-reviews.server";
-import { loadPublicPricingSnapshot, publicPriceLabel } from '@/lib/publicPackagePricing';
+import { loadCachedPublicReviews } from "@/lib/public-reviews.server";
+import { loadCachedPublicPricingSnapshot, publicPriceLabel } from '@/lib/publicPackagePricing';
 import { Metadata } from "next";
 
 export const revalidate = 3600; // Cache for 1 hour
@@ -130,9 +130,9 @@ async function getPublicGuidePromo() {
 export default async function HomePage() {
     // Start independent reads now, but do not hold the first photograph for prices or reviews.
     const contentData = Promise.all([
-        loadPublicPricingSnapshot(),
+        loadCachedPublicPricingSnapshot(),
         getPublicGuidePromo(),
-        loadPublicReviews().catch(() => []),
+        loadCachedPublicReviews().catch(() => []),
     ]);
     const [{ page, cmsUnavailable }, intervalSetting] = await Promise.all([
         getHomePageData(),
@@ -283,7 +283,7 @@ export default async function HomePage() {
 }
 
 async function HomeBelowHero({ contentData, sections, homeData, orderedSections }: {
-    contentData: Promise<[Awaited<ReturnType<typeof loadPublicPricingSnapshot>>, Awaited<ReturnType<typeof getPublicGuidePromo>>, Awaited<ReturnType<typeof loadPublicReviews>>]>;
+    contentData: Promise<[Awaited<ReturnType<typeof loadCachedPublicPricingSnapshot>>, Awaited<ReturnType<typeof getPublicGuidePromo>>, Awaited<ReturnType<typeof loadCachedPublicReviews>>]>;
     sections: any[];
     homeData: any;
     orderedSections: any[];

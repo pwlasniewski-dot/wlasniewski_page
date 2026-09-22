@@ -33,4 +33,7 @@ test('root sitemap stays cacheable and independent from request headers', () => 
     assert.match(sitemapSource, /export const dynamic = ['"]force-static['"]/);
     assert.match(sitemapSource, /export const revalidate = 86_400/);
     assert.match(sitemapSource, /portfolioSessionSitemapUrl\(session\.category, session\.slug\)/);
+    assert.match(sitemapSource, /'\/slub'/);
+    assert.match(sitemapSource, /'\/sesja-rodzinna'/);
+    assert.match(sitemapSource, /!staticPages\.includes\(`\/\$\{page\.slug\}`\)/);
 });

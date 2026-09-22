@@ -7,8 +7,8 @@ import CityLeadSection from '@/components/CityLeadSection';
 import ParallaxSection from '@/components/ParallaxSection';
 import type { PageSection } from '@/components/admin/PageBuilder';
 import { getPortfolioCategories } from '@/lib/portfolio';
-import { loadPhotoFunnelConfig } from '@/lib/marketing/photo-funnel.server';
-import { loadPublicMinimumPrices, loadPublicPricingSnapshot, publicPriceLabel, type PublicMinimumPricesInCents } from '@/lib/publicPackagePricing';
+import { loadCachedPhotoFunnelConfig } from '@/lib/marketing/photo-funnel.server';
+import { loadCachedPublicPricingSnapshot, publicPriceLabel, type PublicMinimumPricesInCents } from '@/lib/publicPackagePricing';
 import PromotionPriceBlock from '@/components/promotions/PromotionPriceBlock';
 import { getPublishedPage } from '@/lib/seo/published-page';
 
@@ -466,7 +466,7 @@ function cityMetaDescription(key: string, data: CityInfo, prices: PublicMinimumP
     return `Fotograf ${data.city}. Sesje rodzinne: ${publicPriceLabel(prices, 'Sesja')}; fotografia ślubna: ${publicPriceLabel(prices, 'Ślub')}. Zobacz pakiety i terminy online.`;
 }
 
-function configuredBookingCta(config: Awaited<ReturnType<typeof loadPhotoFunnelConfig>>, service: 'Sesja' | 'Ślub') {
+function configuredBookingCta(config: Awaited<ReturnType<typeof loadCachedPhotoFunnelConfig>>, service: 'Sesja' | 'Ślub') {
     const serviceLabel = config.serviceOptions.find(option => option.value === service)?.label || service;
     return `${serviceLabel} — ${config.copy.packageBookingCtaLabel}`;
 }
@@ -508,7 +508,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!key) notFound();
     const data = CITIES[key];
     const page = await getPublishedPage(data.slug);
-    const publicMinimumPrices = DYNAMIC_PRICE_META_CITIES.has(key) ? await loadPublicMinimumPrices() : {};
+    const publicMinimumPrices = DYNAMIC_PRICE_META_CITIES.has(key)
+        ? (await loadCachedPublicPricingSnapshot()).minimumPrices
+        : {};
     const metaTitle = page?.meta_title?.trim() || data.metaTitle;
     const metaDescription = page?.meta_description?.trim() || cityMetaDescription(key, data, publicMinimumPrices);
 
@@ -633,8 +635,8 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
     if (!key) notFound();
     const data = CITIES[key];
     const [publicPricing, photoFunnelConfig] = await Promise.all([
-        loadPublicPricingSnapshot(),
-        loadPhotoFunnelConfig(),
+        loadCachedPublicPricingSnapshot(),
+        loadCachedPhotoFunnelConfig(),
     ]);
     const publicMinimumPrices = publicPricing.minimumPrices;
 

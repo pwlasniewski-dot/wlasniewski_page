@@ -1947,3 +1947,6 @@ Business Insights
 **Status:** ✅ **DONE**
 
 Media: tworzenie folderu używa pola tekstowego w panelu zamiast systemowego prompt; folder zostaje utrwalony po dodaniu plików.
+## 2026-09-22 — stabilizacja SEO po spadku wyświetleń
+
+Audyt po spadku GSC 96→34 wykazał sporadyczne 502 na `/fotograf-torun`, kosztowne odczyty danych marketingowych oraz historyczne adresy 404. Strony indeksowane korzystają teraz z krótkiego cache cen (60 s), opinii, konfiguracji lejka i dowodu lokalnego (5 min); checkout nadal sprawdza cenę na żywo. Zapisy oferty unieważniają wspólny tag cache. Usunięto globalne `htmlLimitedBots: /.*/`, dodano 301 dla `/fotografia-slubna` i `/portfolio/wedding`, a sitemap nie pozwala już rekordom CMS nadpisywać ważniejszych stron statycznych. Nie zmieniono cen, danych klientów ani produkcyjnej bazy. Publikacja i pomiar odpowiedzi produkcji pozostają do potwierdzenia.

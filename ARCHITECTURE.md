@@ -496,3 +496,6 @@ System jest oceniony jako **100% Ready for Production**. Wszystkie krytyczne bł
 *Ostatnia aktualizacja: 2026-02-19*
 
 Media: tworzenie folderu używa pola tekstowego w panelu zamiast systemowego prompt; folder zostaje utrwalony po dodaniu plików.
+## 2026-09-22 — cache publicznej warstwy marketingowej
+
+`publicPackagePricing`, `public-reviews.server`, `photo-funnel.server` i `city-proof` udostępniają krótkotrwałe loadery `unstable_cache` dla indeksowanych stron. Dynamiczne loadery `noStore` pozostają dostępne dla API i procesów wymagających danych w czasie rzeczywistym. Wspólny tag `public-offer` jest unieważniany przez `revalidatePublicOffer`; TTL stanowi zabezpieczenie dla granic czasowych promocji i zmian niezainicjowanych przez panel. Domyślne rozpoznawanie crawlerów Next.js zastępuje wcześniejsze globalne `htmlLimitedBots: /.*/`.
