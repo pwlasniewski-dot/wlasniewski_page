@@ -1,5 +1,6 @@
 import prisma from '@/lib/db/prisma';
-import { loadPublicReviews } from '@/lib/public-reviews.server';
+import { unstable_cache } from 'next/cache';
+import { loadCachedPublicReviews } from '@/lib/public-reviews.server';
 import { selectPublicReviews, summarizeGoogleReviews } from '@/lib/public-reviews';
 import { normalizeGoogleBusinessProfileUrl } from '@/lib/marketing/gallery-trust';
 
@@ -19,7 +20,7 @@ export interface CityProof {
  * Zbiera prawdziwe dane społecznego dowodu (social proof) dla strony miasta.
  * Wszystko bazuje na faktach z bazy — bez wymyślania liczb.
  */
-export async function getCityProof(cityName: string): Promise<CityProof> {
+async function loadCityProof(cityName: string): Promise<CityProof> {
     const cityLower = cityName.toLowerCase();
     const cityVariants = [cityName, cityLower, cityLower.replace('ą', 'a').replace('ę', 'e').replace('ó', 'o').replace('ł', 'l').replace('ń', 'n').replace('ś', 's').replace('ż', 'z').replace('ź', 'z')];
 
@@ -71,7 +72,7 @@ export async function getCityProof(cityName: string): Promise<CityProof> {
         : null;
 
     // Home, services, cities and booking use the same CMS collection and order.
-    const allReviews = await loadPublicReviews().catch(() => []);
+    const allReviews = await loadCachedPublicReviews().catch(() => []);
     const testimonials = selectPublicReviews(allReviews).slice(0, 3);
     const summary = summarizeGoogleReviews(allReviews);
     const reviewsTotal = summary?.count ?? 0;
@@ -97,4 +98,14 @@ export async function getCityProof(cityName: string): Promise<CityProof> {
         ratingSource: summary?.source ?? null,
         reviewsTotal,
     };
+}
+
+const loadCachedCityProof = unstable_cache(
+    loadCityProof,
+    ['public-city-proof'],
+    { revalidate: 300, tags: ['public-offer', 'city-proof'] },
+);
+
+export async function getCityProof(cityName: string): Promise<CityProof> {
+    return loadCachedCityProof(cityName);
 }

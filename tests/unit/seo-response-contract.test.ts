@@ -28,14 +28,14 @@ test('CMS page resolver never exposes drafts and rereads subsequent CMS changes'
     assert.equal(await getPublishedPage('fotograf-torun'), null);
 });
 
-test('HTTP headers wait for metadata for browser and crawler user agents', async () => {
+test('SEO redirects are permanent without forcing blocking metadata for every browser', async () => {
     assert.equal(existsSync('src/app/loading.tsx'), false, 'Global loading must not flush 200 before route existence is resolved');
     const { default: config } = await import('../../next.config.mjs');
-    for (const ua of ['Mozilla/5.0', 'Googlebot', 'AhrefsBot', 'curl/8', '']) {
-        assert.equal(config.htmlLimitedBots.test(ua), true);
-    }
+    assert.equal('htmlLimitedBots' in config, false, 'Use Next.js crawler defaults instead of treating every browser as a bot');
     const redirects = await config.redirects();
     assert.ok(redirects.some((r: any) => r.source === '/fotografia-rodzinna' && r.destination === '/sesja-rodzinna' && r.permanent));
+    assert.ok(redirects.some((r: any) => r.source === '/fotografia-slubna' && r.destination === '/slub' && r.permanent));
+    assert.ok(redirects.some((r: any) => r.source === '/portfolio/wedding' && r.destination === '/slub' && r.permanent));
 });
 
 test('CMS and Aero metadata use HTTP notFound/redirect instead of successful error metadata', () => {

@@ -1,5 +1,5 @@
 import prisma from '@/lib/db/prisma';
-import { unstable_noStore as noStore } from 'next/cache';
+import { unstable_cache, unstable_noStore as noStore } from 'next/cache';
 import { applyPublicPackagePrices } from '@/lib/packagePromotionPricing';
 import {
     loadActivePromotionsForPackages,
@@ -44,8 +44,7 @@ export async function findActivePublicPackages(filter: PublicPackageFilter = {})
 }
 
 /** Request-time pricing: an ended or scheduled promotion must not remain in ISR. */
-export async function findPricedPublicPackages(filter: PublicPackageFilter = {}) {
-    noStore();
+async function findPricedPublicPackagesFromDatabase(filter: PublicPackageFilter = {}) {
     const packages = await findActivePublicPackages(filter);
     let promotions = new Map<number, PublicPackagePromotion>();
     try {
@@ -54,6 +53,11 @@ export async function findPricedPublicPackages(filter: PublicPackageFilter = {})
         console.warn('[public-pricing] Promotions unavailable; using regular prices.', error);
     }
     return applyPublicPackagePrices(packages, promotions);
+}
+
+export async function findPricedPublicPackages(filter: PublicPackageFilter = {}) {
+    noStore();
+    return findPricedPublicPackagesFromDatabase(filter);
 }
 
 export function summarizeMinimumPrices(packages: PriceSourcePackage[]): PublicMinimumPricesInCents {
@@ -108,6 +112,40 @@ export async function loadPublicPricingSnapshot(): Promise<PublicPricingSnapshot
         return { minimumPrices: {}, minimumPromotions: {}, featuredPromotions: {} };
     }
 }
+
+/**
+ * Short-lived marketing cache for indexable pages. Checkout and public APIs
+ * continue to use the request-time loaders above, while SEO landing pages avoid
+ * turning every crawler request into a cold database-backed SSR invocation.
+ */
+export const loadCachedPublicPricingSnapshot = unstable_cache(
+    async (): Promise<PublicPricingSnapshot> => {
+        try {
+            const [packages, featuredPromotions] = await Promise.all([
+                findPricedPublicPackagesFromDatabase(),
+                loadFeaturedPromotionsByService().catch(promotionError => {
+                    console.warn('[public-pricing] Promotions unavailable; using regular prices.', promotionError);
+                    return {} as Record<string, PublicPackagePromotion>;
+                }),
+            ]);
+
+            const minimumPrices = summarizeMinimumPrices(packages);
+            const minimumPromotions: Record<string, PublicPackagePromotion> = {};
+            for (const pkg of packages) {
+                if (pkg.promotion && pkg.price === minimumPrices[pkg.service.name]
+                    && !minimumPromotions[pkg.service.name]) {
+                    minimumPromotions[pkg.service.name] = pkg.promotion;
+                }
+            }
+            return { minimumPrices, minimumPromotions, featuredPromotions };
+        } catch (error) {
+            console.warn('[public-pricing] Cached pricing snapshot unavailable.', error);
+            return { minimumPrices: {}, minimumPromotions: {}, featuredPromotions: {} };
+        }
+    },
+    ['public-marketing-pricing'],
+    { revalidate: 60, tags: ['public-offer', 'public-pricing'] },
+);
 
 export function publicPriceLabel(pricesInCents: PublicMinimumPricesInCents, serviceName: string): string {
     const priceInCents = pricesInCents[serviceName];

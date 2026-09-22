@@ -22,6 +22,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/rezerwacja',
         '/portfolio',
         '/blog',
+        '/slub',
+        '/sesja-rodzinna',
         '/kontakt',
         '/karta-podarunkowa',
         '/foto-wyzwanie',
@@ -118,6 +120,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                 !isB2bCmsPage(page)
                 && !page.slug.startsWith('fotograf-')
                 && !excludedSlugs.has(page.slug)
+                && !staticPages.includes(`/${page.slug}`)
             ))
             .map(page => ({
                 url: photographySitemapUrl(`/${sitemapPathSegment(page.slug)}`),

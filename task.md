@@ -438,3 +438,12 @@ W toku: mobilne hero/portfolio, wspólny lightbox, FB po zdjęciach i streaming 
 - [x] Produkcyjny build.
 - [ ] Deploy Preview i test formularza po publikacji.
 - [ ] Dług TypeScript i konfiguracja ESLint — osobny pakiet.
+## 2026-09-22 — stabilizacja SEO i 502
+
+- [x] Potwierdzić statusy, canonicale, robots, sitemap i sporadyczne 502.
+- [x] Oddzielić krótkotrwały cache marketingowy od aktualnej ceny checkoutu.
+- [x] Usunąć globalne blokowanie metadanych dla każdej przeglądarki.
+- [x] Naprawić kolizje sitemap i historyczne adresy 404.
+- [x] Uruchomić testy SEO, cen/oferty i pełny build bez produkcyjnego `DATABASE_URL`.
+- [ ] Utworzyć PR i sprawdzić deploy preview.
+- [ ] Po akceptacji scalić i potwierdzić TTFB/statusy produkcji oraz GSC po 3, 7 i 14 dniach.

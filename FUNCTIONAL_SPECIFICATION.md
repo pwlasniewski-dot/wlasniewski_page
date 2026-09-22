@@ -1279,3 +1279,6 @@ Niniejsza specyfikacja techniczna odzwierciedla stan faktyczny systemu na dzień
 ```
 
 Media: tworzenie folderu używa pola tekstowego w panelu zamiast systemowego prompt; folder zostaje utrwalony po dodaniu plików.
+## 2026-09-22 — dostępność publicznych stron SEO
+
+Strona główna i landingi miast odczytują tę samą ofertę, opinie oraz konfigurację co dotychczas, ale publiczna warstwa marketingowa może przechować wynik maksymalnie 60 sekund dla ceny i 5 minut dla pozostałych danych. Rezerwacja i checkout nie korzystają z tego cache i ponownie weryfikują aktualną cenę. Zapis oferty unieważnia cache. Historyczne adresy `/fotografia-slubna` i `/portfolio/wedding` kierują trwale do `/slub`. Sitemap preferuje jawne wpisy `/slub`, `/sesja-rodzinna` i `/blog` nad starszymi duplikatami CMS.

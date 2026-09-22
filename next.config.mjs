@@ -30,6 +30,16 @@ const nextConfig = {
                 destination: '/sesja-rodzinna',
                 permanent: true,
             },
+            {
+                source: '/fotografia-slubna',
+                destination: '/slub',
+                permanent: true,
+            },
+            {
+                source: '/portfolio/wedding',
+                destination: '/slub',
+                permanent: true,
+            },
             { source: '/start', destination: '/', permanent: true },
             { source: '/strona-glowna', destination: '/', permanent: true },
             { source: '/kontakt-', destination: '/kontakt', permanent: true },
@@ -93,9 +103,6 @@ const nextConfig = {
     // Dla statycznego eksportu (jeśli chcesz wrzucić na zwykły hosting)
     // output: 'export',
     output: 'standalone',
-    // Resolve route metadata/notFound/redirect before sending HTTP headers.
-    // Crawlers and browsers must receive the same status and initial head.
-    htmlLimitedBots: /.*/,
     compress: true,
 
     eslint: {
