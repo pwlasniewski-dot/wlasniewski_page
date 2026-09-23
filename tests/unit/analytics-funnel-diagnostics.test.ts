@@ -111,3 +111,12 @@ test('an all-day booking can progress through the canonical time and form stages
   assert.equal(result.funnel.find(step => step.event === 'v2_booking_form_started')?.sessions, 1);
   assert.equal(result.funnel.find(step => step.event === 'v2_booking_added_to_cart')?.sessions, 1);
 });
+
+test('promotional package selection reaches the existing package funnel stage', () => {
+  const result = diagnoseFunnel([
+    event('promotion', 'v2_booking_view'), event('promotion', 'v2_service_selected'),
+    event('promotion', 'v2_promotion_package_selected'), event('promotion', 'v2_date_selected'),
+  ]);
+  assert.equal(result.funnel[2].sessions, 1);
+  assert.equal(result.funnel[3].sessions, 1);
+});

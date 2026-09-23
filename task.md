@@ -1,3 +1,14 @@
+## 2026-09-23 — analityka wizyt i rezerwacji
+
+- [x] Potwierdzić brak szczegółów w projekcji V3 i ogólne nazwy przycisków.
+- [x] Uzgodnić zakres: wizyty na górze, mobilne karty, wybory i stany pól bez prywatnych wartości.
+- [x] Dodać bezpieczną projekcję sesji oraz testy sortowania, chronologii, filtracji danych i błędów.
+- [x] Ukończyć i zweryfikować instrumentację formularza oraz interakcje panelu.
+- [ ] Obejrzeć mobilny render na podglądzie HTTPS.
+- [x] Niezależny odbiór QA, 59 testów regresji, 10 grup DOM i build.
+- [ ] Przygotować PR i sprawdzić wdrożenie kontrolne.
+- [ ] Opublikować i potwierdzić produkcję po decyzji właściciela.
+
 ## 2026-09-19 — strona ślubna i podgląd linku
 
 - [x] Ustalić przyczynę rodzinnego zdjęcia w podglądzie strony ślubnej.

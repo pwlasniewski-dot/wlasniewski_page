@@ -1,3 +1,7 @@
+## 2026-09-23 — semantyczna analityka rezerwacji
+
+Istniejący `useAnalytics` i `POST /api/analytics/v2/track` współdzielą kontrakt `bookingJourneyContract`. Kontrakt ogranicza dane do konkretnych zdarzeń, kodów akcji, nazw katalogowych, daty/godziny oraz stanów pól; zachowuje istniejące warunki zgody, wykluczenia, autoryzacji i limitowania. `sessionJourney` buduje bezpieczną projekcję w istniejącym chronionym dashboardzie V3, bez zwracania surowych metadanych. Sesje są sortowane po ostatnim zapisanym zdarzeniu. Interfejs korzysta ze wspólnego `SessionJourney` oraz zakładek zamiast powielania raportów. Dane są nadal w `analytics_events`; brak migracji i nowych integracji.
+
 ## 2026-09-19 — metadane społecznościowe stron usługowych
 
 `src/lib/seo/page-social-image.ts` wybiera obraz społecznościowy wyłącznie z danych istniejącej strony CMS: `hero_image`, a następnie pierwsze obsługiwane pole obrazu w sekcjach. Resolver nie wprowadza nowego magazynu ani równoległego edytora. `src/app/[slug]/page.tsx` przekazuje ten sam obraz i tekst do Open Graph oraz Twitter, a przy braku obrazu nie dziedziczy przypadkowego zdjęcia z globalnej konfiguracji. Dla stron kontrolowanych przez `serviceGrowth` tytuł i opis pochodzą ze zweryfikowanego szablonu usługi oraz aktywnej ceny; zapobiega to przejęciu podglądu przez historyczne, ogólne metadane CMS. Zmiana nie wymaga migracji bazy.

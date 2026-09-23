@@ -169,7 +169,7 @@ test('full booking has one hour picker, early deposit disclosure and consented a
     assert.match(funnelConfig, /paymentSplitTemplate:\s*'Możesz wybrać zaliczkę/);
     assert.match(source, /const attribution = readConsentedClientAttribution\(\);/);
     assert.doesNotMatch(source, /await trackEvent\('service_selected'\);/);
-    assert.match(source, /onClick=\{\(\) => \{[\s\S]*?trackEvent\('service_selected'\)/);
+    assert.match(source, /onClick=\{\(\) => \{[\s\S]*?trackEvent\('service_selected', \{/);
     assert.match(source, /trackEvent\('booking_start'/);
     assert.match(source, /setSlot\(current => current \? \{ date: current\.date \} : null\)/);
     assert.match(source, /id="booking-start-time"/);

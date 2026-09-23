@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
+import { BOOKING_FIELDS, bookingFieldSnapshot, isBookingJourneyEvent, sanitizeBookingJourneyMetadata, safeAnalyticsCode, type BookingField, type BookingFieldState } from '@/lib/analytics/bookingJourneyContract';
 
 const USER_KEY = 'analytics_v2_user_id';
 const SESSION_KEY = 'analytics_v2_session';
@@ -86,6 +87,7 @@ function classifySource(referrer: string, utmSource?: string, utmMedium?: string
 function getOrCreateIdentity(): Identity | null {
   if (typeof window === 'undefined') return null;
   if (!hasAnalyticsConsent() || !isTrackablePath(window.location.pathname)) return null;
+  if (localStorage.getItem(EXCLUDE_KEY) === 'true') return null;
 
   let userId = localStorage.getItem(USER_KEY);
   if (!userId) {
@@ -201,14 +203,20 @@ export function useAnalytics() {
       await postEvent({
         ...common,
         event_type: normalizeEventType(eventType),
-        metadata: { ...baseMetadata, ...metadata, consent: true },
+        metadata: { ...baseMetadata, ...(isBookingJourneyEvent(eventType) ? sanitizeBookingJourneyMetadata(eventType, metadata) : metadata), consent: true },
       }, beacon);
     } catch (error) {
       console.error('[Analytics V2] Failed to track event', error);
     }
   }, [pathname, searchParams]);
 
-  return { trackEvent };
+  const resetBookingFields = useCallback((fields: readonly BookingField[]) => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('analytics-booking-fields-reset', { detail: fields }));
+    }
+  }, []);
+
+  return { trackEvent, resetBookingFields };
 }
 
 export function AnalyticsTracker() {
@@ -217,12 +225,15 @@ export function AnalyticsTracker() {
   const { trackEvent } = useAnalytics();
   const lastInteractionRef = useRef(0);
   const formStartedRef = useRef(new WeakSet<HTMLFormElement>());
+  const fieldStatesRef = useRef(new WeakMap<Element, BookingFieldState>());
   const previousPathRef = useRef<string | null>(null);
   const [consentVersion, setConsentVersion] = useState(0);
 
   useEffect(() => {
     const onConsent = () => {
       previousPathRef.current = null;
+      formStartedRef.current = new WeakSet();
+      fieldStatesRef.current = new WeakMap();
       setConsentVersion(value => value + 1);
     };
     window.addEventListener('cookie-consent-changed', onConsent);
@@ -251,20 +262,25 @@ export function AnalyticsTracker() {
     if (!hasAnalyticsConsent() || !isTrackablePath(pathname)) return;
 
     const markInteraction = () => {
+      if (!hasAnalyticsConsent() || localStorage.getItem(EXCLUDE_KEY) === 'true') return false;
       lastInteractionRef.current = Date.now();
       const identity = getOrCreateIdentity();
       if (identity) {
         identity.session.last_activity_at = Date.now();
         localStorage.setItem(SESSION_KEY, JSON.stringify(identity.session));
       }
+      return true;
     };
 
     const onClick = (event: MouseEvent) => {
-      markInteraction();
-      const target = (event.target as HTMLElement | null)?.closest('a,button,[role="button"],[data-analytics]') as HTMLElement | null;
+      if (!markInteraction()) return;
+      const target = (event.target as HTMLElement | null)?.closest('a,button,select,[role="button"],[data-analytics]') as HTMLElement | null;
       if (!target) return;
 
-      let analyticsId = target.getAttribute('data-analytics') || target.id || target.getAttribute('aria-label') || target.getAttribute('name') || '';
+      // Labels, textContent and IDs may contain visitor data. Only intentional,
+      // static data-analytics codes or a redacted navigation destination are used.
+      let analyticsId = safeAnalyticsCode(target.getAttribute('data-analytics'))
+        || safeAnalyticsCode(target.closest('[data-analytics]')?.getAttribute('data-analytics')) || '';
       if (!analyticsId && target instanceof HTMLAnchorElement) {
         if (target.protocol === 'mailto:') analyticsId = 'email_link';
         else if (target.protocol === 'tel:') analyticsId = 'phone_link';
@@ -272,7 +288,7 @@ export function AnalyticsTracker() {
           try { analyticsId = `link:${new URL(target.href).pathname}`; } catch { analyticsId = 'link'; }
         }
       }
-      if (!analyticsId && target instanceof HTMLButtonElement) analyticsId = `button:${target.type || 'button'}`;
+      if (!analyticsId && target instanceof HTMLButtonElement) analyticsId = `button_${target.type || 'button'}`;
 
       void trackEvent('click', {
         tag: target.tagName.toLowerCase(),
@@ -281,23 +297,60 @@ export function AnalyticsTracker() {
     };
 
     const onFocusIn = (event: FocusEvent) => {
-      markInteraction();
+      if (!markInteraction()) return;
       const input = event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
       const form = input?.closest('form');
       if (!form || formStartedRef.current.has(form)) return;
       formStartedRef.current.add(form);
       void trackEvent('form_start', {
-        form_id: form.id || form.getAttribute('name') || 'unnamed_form',
+        form_id: safeAnalyticsCode(form.id) || 'unnamed_form',
       });
     };
 
     const onSubmit = (event: SubmitEvent) => {
-      markInteraction();
+      if (!markInteraction()) return;
       const form = event.target as HTMLFormElement | null;
       if (!form) return;
       void trackEvent('form_submit', {
-        form_id: form.id || form.getAttribute('name') || 'unnamed_form',
+        form_id: safeAnalyticsCode(form.id) || 'unnamed_form',
       });
+      // Browser autofill need not emit blur/change for every field. Submission
+      // captures the final states too, using the same deduplication and no values.
+      if (pathname === '/rezerwacja') {
+        form.querySelectorAll('input[data-booking-field],select[data-booking-field],textarea[data-booking-field]')
+          .forEach(input => recordElementState(input as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement));
+      }
+    };
+
+    const recordElementState = (input: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, invalid = false) => {
+      const snapshot = bookingFieldSnapshot(input, invalid);
+      if (!snapshot || fieldStatesRef.current.get(input) === snapshot.state) return;
+      fieldStatesRef.current.set(input, snapshot.state);
+      void trackEvent('booking_field_state', snapshot);
+    };
+
+    const recordFieldState = (event: Event) => {
+      if (pathname !== '/rezerwacja' || !markInteraction()) return;
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement || input instanceof HTMLTextAreaElement)) return;
+      // Text is sampled only on blur/validation, never per keystroke.
+      if (event.type === 'change' && !(input instanceof HTMLSelectElement) && input.type !== 'checkbox') return;
+      recordElementState(input, event.type === 'invalid');
+    };
+
+    const onFieldReset = (event: Event) => {
+      if (pathname !== '/rezerwacja' || !markInteraction()) return;
+      const requested = (event as CustomEvent<unknown>).detail;
+      if (!Array.isArray(requested)) return;
+      for (const field of BOOKING_FIELDS) {
+        if (!requested.includes(field)) continue;
+        const input = document.querySelector(`[data-booking-field="${field}"]`);
+        if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement || input instanceof HTMLTextAreaElement)) continue;
+        const state: BookingFieldState = input.type === 'checkbox' ? 'unchecked' : 'empty';
+        if (fieldStatesRef.current.get(input) === state) continue;
+        fieldStatesRef.current.set(input, state);
+        void trackEvent('booking_field_state', { field, state });
+      }
     };
 
     const onVisibility = () => {
@@ -325,6 +378,10 @@ export function AnalyticsTracker() {
     document.addEventListener('click', onClick, true);
     document.addEventListener('focusin', onFocusIn, true);
     document.addEventListener('submit', onSubmit, true);
+    document.addEventListener('focusout', recordFieldState, true);
+    document.addEventListener('invalid', recordFieldState, true);
+    document.addEventListener('change', recordFieldState, true);
+    window.addEventListener('analytics-booking-fields-reset', onFieldReset);
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('pointerdown', markInteraction, { passive: true });
     window.addEventListener('touchstart', markInteraction, { passive: true });
@@ -337,6 +394,10 @@ export function AnalyticsTracker() {
       document.removeEventListener('click', onClick, true);
       document.removeEventListener('focusin', onFocusIn, true);
       document.removeEventListener('submit', onSubmit, true);
+      document.removeEventListener('focusout', recordFieldState, true);
+      document.removeEventListener('invalid', recordFieldState, true);
+      document.removeEventListener('change', recordFieldState, true);
+      window.removeEventListener('analytics-booking-fields-reset', onFieldReset);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pointerdown', markInteraction);
       window.removeEventListener('touchstart', markInteraction);
