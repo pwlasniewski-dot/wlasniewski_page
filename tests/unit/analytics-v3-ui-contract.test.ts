@@ -3,7 +3,10 @@ import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 
 test('V3 dashboard renders traffic sources, ingest quality and expandable session path', async () => {
-  const source = await readFile(new URL('../../src/app/admin/analytics/page.tsx', import.meta.url), 'utf8');
+  const source = (await Promise.all([
+    readFile(new URL('../../src/app/admin/analytics/page.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../../src/components/admin/analytics/SessionJourneys.tsx', import.meta.url), 'utf8'),
+  ])).join('\n');
   for (const contract of ['data.trafficSources', 'data.ingest', 'session.path', 'setExpandedSession', 'data-testid="traffic-sources-ingest"', 'data-testid="session-path"']) {
     assert.ok(source.includes(contract), `missing UI contract: ${contract}`);
   }

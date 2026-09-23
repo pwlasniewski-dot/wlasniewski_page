@@ -15,6 +15,7 @@ import {
 import { b2bPublicPath, isB2bCmsPage } from '@/lib/sites/b2b-routing';
 import { buildGscQueryReport } from '@/lib/analytics/gscQueryReport';
 import { isPhotoInquirySource } from '@/lib/analytics/salesAttribution';
+import { buildSessionJourneys } from '@/lib/analytics/sessionJourney';
 
 export const dynamic = 'force-dynamic';
 const MAX_RANGE_DAYS = 120;
@@ -44,7 +45,10 @@ async function fetchDashboardSource<T>(
 }
 
 function parseMetadata(raw: string | null): Record<string, unknown> {
-  try { return raw ? JSON.parse(raw) : {}; } catch { return {}; }
+  try {
+    const value: unknown = raw ? JSON.parse(raw) : null;
+    return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  } catch { return {}; }
 }
 
 function normalizePath(value: string | null | undefined) {
@@ -552,13 +556,7 @@ export async function GET(request: NextRequest) {
           : `Wiele URL-i dla jednego zapytania jest sygnałem do analizy, a nie automatycznym dowodem kanibalizacji. Raport zawiera wszystkie dostępne wiersze (${allSearchQueries.length}).`,
       },
       pages: pageRows,
-      recentSessions: Array.from(sessions.entries()).slice(-50).reverse().map(([sessionId, items]) => ({
-        sessionId, startedAt: items[0]?.created_at, landingPage: normalizePath(items.find(event => event.event_type === 'v2_page_view')?.page_url),
-        siteHost: safeAnalyticsSiteHost(items.find(event => event.event_type === 'v2_page_view')?.metadata.site_host),
-        pageViews: items.filter(event => event.event_type === 'v2_page_view').length,
-        bookingStarted: items.some(isSalesIntentStart), clientConversion: items.some(isClientConversion),
-        path: items.filter(event => ['v2_page_view', 'v2_click', 'v2_booking_start', 'v2_booking_form_started', 'v2_booking_created', 'v2_payment_success', 'v2_drone_booking_started', 'v2_drone_booking_submitted', 'v2_photo_inquiry_started', 'v2_photo_inquiry_submitted', 'v2_aero_inquiry_started', 'v2_aero_inquiry_submitted'].includes(event.event_type)).map(event => ({ at: event.created_at, event: event.event_type.replace(/^v2_/, ''), page: normalizePath(event.page_url) })).slice(0, 80),
-      })),
+      recentSessions: buildSessionJourneys(events, canonicalBookingAttempts),
       dataQuality: { syntheticValues: false, unavailableSources: Array.from(new Set(unavailableSources)), privacy: 'Zapytania GSC są dostępne wyłącznie w chronionym panelu administratora; Google może pomijać rzadkie zapytania.', gscFreshness: gsc.message },
     });
   } catch (error) {

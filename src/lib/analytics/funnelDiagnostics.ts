@@ -57,7 +57,8 @@ export function diagnoseFunnel(events: DiagnosticEvent[]): { funnel: Array<{ eve
     });
     let expected = 0;
     for (const { event } of rows) {
-      if (event.event_type !== FUNNEL_STEPS[expected]?.event) continue;
+      const eventType = event.event_type === 'v2_promotion_package_selected' ? 'v2_package_selected' : event.event_type;
+      if (eventType !== FUNNEL_STEPS[expected]?.event) continue;
       reachedByStep[expected].add(sessionId);
       expected++;
       if (expected === FUNNEL_STEPS.length) break;

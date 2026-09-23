@@ -1,3 +1,7 @@
+## 2026-09-23 — ścieżka wizyty i formularz rezerwacji
+
+Domyślny widok analityki pokazuje ostatnie wizyty z czasem ostatniego zapisu, źródłem, urządzeniem i rozwijanym przebiegiem. Nazwane akcje, usługi, pakiety, wybrany termin, stany uzupełnienia pól oraz błędy pozwalają ocenić postęp rezerwacji. Dane kontaktowe, uwagi i kody kart/rabatów nie są kopiowane do anonimowego rejestru. Zapisane rezerwacje pozostają źródłem właściwych danych klienta; powiązanie korzysta wyłącznie z istniejącego `analytics_session_id`. Brak zdarzenia nie oznacza pustego pola, porzucenia ani obecności online. Dawne kliknięcia bez etykiety pozostają jawnie nieopisane. Długa oś czasu zachowuje najnowsze 120 zdarzeń i informuje o pominiętych starszych krokach.
+
 ## 2026-09-19 — strona ślubna bez filmu
 
 Publiczna strona `/slub` przedstawia Przemysława Właśniewskiego jako fotografa. Nie oferuje na tej stronie filmu ani dopłaty za krótki film z drona. Opis obejmuje przygotowania, ceremonię, przyjęcie, oczepiny i sesję ślubną; zakres pakietu pozostaje ustalany przed rezerwacją. Podgląd linku w mediach społecznościowych używa zdjęcia przypisanego stronie: najpierw `hero_image`, a przy jego braku pierwszego obrazu z opublikowanych sekcji CMS. Tytuł i opis są wspólne dla SEO, Open Graph i Twitter oraz korzystają ze zweryfikowanej treści usługi i aktualnej ceny pakietu.

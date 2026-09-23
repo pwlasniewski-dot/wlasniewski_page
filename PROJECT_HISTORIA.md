@@ -1,3 +1,7 @@
+## 2026-09-23 — czytelne wizyty i diagnostyka rezerwacji
+
+Właściciel zgłosił nieczytelne kliknięcia w historii wizyty oraz ukrycie sesji na końcu długiej analityki. Przygotowana poprawka rozdziela panel na wizyty/rezerwacje, sprzedaż oraz Google/SEO. Rozbudowuje istniejący pomiar V2 i projekcję V3 o nazwane akcje, wybory katalogowe, stan pól i błędy. Nie odtwarza niezapisanych historycznych wartości i nie zapisuje treści prywatnych pól. Szczegóły i stan weryfikacji: `docs/ANALYTICS_JOURNEY_2026-09-23.md`. Zmiana nie wymaga migracji ani dodatkowej usługi. Publikacja produkcyjna niepotwierdzona.
+
 ## 2026-09-19 — ślub: poprawny podgląd społecznościowy i oferta fotograficzna
 
 Strona `/slub` otrzymuje obraz Open Graph/Twitter z materiałów przypisanych do tej strony w CMS zamiast globalnego zdjęcia rodzinnego. Tytuł i opis podglądu korzystają z konkretnego szablonu usługi i aktualnej ceny, aby stary ogólny wpis CMS nie osłabiał przekazu; podtytuł widoczny dla klienta nadal może pochodzić z CMS. Usunięto ze strony ślubnej twardo wpisaną dopłatę za film z drona; oferta i opis mówią wyłącznie o fotografii. Nie zmieniano cen, rezerwacji, bazy ani osobnej oferty usług dronowych. Testy celowane: 16/16; typecheck i build: PASS, 262/262 stron.

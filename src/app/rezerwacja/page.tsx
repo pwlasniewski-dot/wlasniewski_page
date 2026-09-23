@@ -94,6 +94,14 @@ interface AvailabilitySlot {
     reason?: string;
 }
 
+// Names come from the public catalog, not from the visitor's contact fields.
+const bookingSelection = (service: ServiceType | null, pkg: Package | null = null) => ({
+    service_id: service?.id,
+    service_name: service?.name,
+    package_id: pkg?.id,
+    package_name: pkg?.name,
+});
+
 const trackBookingEvent = (event: string, params: Record<string, unknown> = {}) => {
     if (typeof window !== 'undefined' && (window as any).gtag) {
         (window as any).gtag('event', event, params);
@@ -107,7 +115,7 @@ function formatDurationLabel(hours: number) {
 }
 
 export default function RezerwacjaPage() {
-    const { trackEvent } = useAnalytics();
+    const { trackEvent, resetBookingFields } = useAnalytics();
     const bookingFormStarted = useRef(false);
     const submissionLock = useRef(false);
     // Data from API
@@ -170,7 +178,7 @@ export default function RezerwacjaPage() {
         void trackEvent('booking_form_started', {
             area: 'booking_form',
             step,
-            service: selectedService || service?.name,
+            service_name: selectedService || service?.name,
         });
     };
 
@@ -247,7 +255,7 @@ export default function RezerwacjaPage() {
                         const requestedAddon = query.get('dron');
                         if (requestedAddon && catalog?.packages.some(pkg => pkg.slug === requestedAddon)) setSelectedDroneAddonSlug(requestedAddon);
                         trackBookingEvent('booking_view', { service: selected.name, source: query.get('source') || 'direct' });
-                        await trackEvent('booking_view', { package_count: active.reduce((sum: number, item: ServiceType) => sum + item.packages.filter(pkg => pkg.is_active).length, 0) });
+                        await trackEvent('booking_view', { ...bookingSelection(selected, preselectedPackage || null), package_count: active.reduce((sum: number, item: ServiceType) => sum + item.packages.filter(pkg => pkg.is_active).length, 0) });
                     }
                     if (active.length === 0) {
                         void trackEvent('service_load_result', { status: 'error', area: 'services', http_status: res.status, package_count: 0, reason_code: 'no_active_services' });
@@ -427,6 +435,7 @@ export default function RezerwacjaPage() {
         const normalizedCode = promoCode.trim().toUpperCase();
         if (!normalizedCode) return;
         if (chosenPackage?.promotion && !chosenPackage.promotion.allowPromoCode) {
+            void trackEvent('booking_code_result', { code_type: 'promo', status: 'failed', reason_code: 'promotion_conflict' });
             setDiscount(null);
             setCodeMessage('Ta promocja pakietu nie łączy się z kodami rabatowymi.');
             return;
@@ -451,19 +460,26 @@ export default function RezerwacjaPage() {
                         type: data.discount.type
                     });
                     setCodeMessage(`Kod "${normalizedCode}" zastosowany!`);
+                    void trackEvent('booking_code_result', { code_type: 'promo', status: 'ok', reason_code: 'accepted' });
                 } else if (data.success && data.giftCard) {
                     setGiftCard({
                         code: normalizedCode,
                         amount: data.giftCard.amount
                     });
                     setCodeMessage(`Karta o wartości ${data.giftCard.amount} zł zastosowana!`);
-                } else setCodeMessage("Kod nie znaleziony lub wygasł");
+                    void trackEvent('booking_code_result', { code_type: 'gift_card', status: 'ok', reason_code: 'accepted' });
+                } else {
+                    setCodeMessage("Kod nie znaleziony lub wygasł");
+                    void trackEvent('booking_code_result', { code_type: 'promo', status: 'failed', reason_code: 'invalid_code' });
+                }
             } else {
                 const data = await res.json().catch(() => null);
                 setCodeMessage(typeof data?.message === 'string' ? data.message : "Kod nie znaleziony lub wygasł");
+                void trackEvent('booking_code_result', { code_type: 'promo', status: res.status >= 500 ? 'error' : 'failed', reason_code: res.status >= 500 ? 'http_error' : 'invalid_code' });
             }
         } catch (error) {
             setCodeMessage("Nie udało się sprawdzić kodu. Spróbuj ponownie.");
+            void trackEvent('booking_code_result', { code_type: 'promo', status: 'error', reason_code: 'network_error' });
         } finally {
             setCheckingCode(false);
         }
@@ -491,16 +507,21 @@ export default function RezerwacjaPage() {
                         amount: data.giftCard.amount
                     });
                     setGiftCardMessage(`Karta o wartości ${data.giftCard.amount} zł dodana!`);
+                    void trackEvent('booking_code_result', { code_type: 'gift_card', status: 'ok', reason_code: 'accepted' });
                 } else if (data.discount) {
                     setGiftCardMessage("To jest kod rabatowy, wpisz go powyżej");
+                    void trackEvent('booking_code_result', { code_type: 'gift_card', status: 'failed', reason_code: 'wrong_code_type' });
                 } else {
                     setGiftCardMessage("Karta nie znaleziona lub już użyta");
+                    void trackEvent('booking_code_result', { code_type: 'gift_card', status: 'failed', reason_code: 'invalid_code' });
                 }
             } else {
                 setGiftCardMessage("Nieprawidłowy kod karty podarunkowej");
+                void trackEvent('booking_code_result', { code_type: 'gift_card', status: res.status >= 500 ? 'error' : 'failed', reason_code: res.status >= 500 ? 'http_error' : 'invalid_code' });
             }
         } catch (error) {
             setGiftCardMessage("Błąd połączenia");
+            void trackEvent('booking_code_result', { code_type: 'gift_card', status: 'error', reason_code: 'network_error' });
         } finally {
             setCheckingGiftCard(false);
         }
@@ -570,11 +591,10 @@ export default function RezerwacjaPage() {
                 package: chosenPackage.name,
             });
             void trackEvent('booking_start', {
-                service_id: service?.id,
-                package_id: chosenPackage.id,
-                amount_grosze: finalPrice,
+                ...bookingSelection(service, chosenPackage),
+                booking_date: slot.date,
+                booking_time: slot.start,
             });
-            void trackEvent('booking_added_to_cart', { item_count: 1, amount_bucket: finalPrice < 50000 ? 'under_500' : finalPrice < 100000 ? '500_999' : '1000_plus' });
 
             addItem({
                 type: 'booking',
@@ -584,6 +604,10 @@ export default function RezerwacjaPage() {
                 price: finalPrice,
                 quantity: 1,
                 metadata: bookingData
+            });
+            void trackEvent('booking_added_to_cart', {
+                ...bookingSelection(service, chosenPackage), booking_date: slot.date, booking_time: slot.start,
+                item_count: 1, amount_bucket: finalPrice < 50000 ? 'under_500' : finalPrice < 100000 ? '500_999' : '1000_plus',
             });
         } finally {
             window.setTimeout(() => {
@@ -634,6 +658,7 @@ export default function RezerwacjaPage() {
                         <div className="flex flex-col md:flex-row gap-4">
                             <input
                                 type="text"
+                                data-booking-field="gift_card_code"
                                 value={giftCardCode}
                                 onChange={(e) => setGiftCardCode(e.target.value.toUpperCase())}
                                 disabled={!!giftCard}
@@ -643,9 +668,11 @@ export default function RezerwacjaPage() {
                             {giftCard ? (
                                 <button
                                     type="button"
+                                    data-analytics="gift_card_remove"
                                     onClick={() => {
                                         setGiftCard(null);
                                         setGiftCardCode("");
+                                        resetBookingFields(['gift_card_code']);
                                         setGiftCardMessage("");
                                     }}
                                     className="px-6 py-3 bg-red-900/40 text-red-200 border border-red-500/30 rounded-full font-semibold hover:bg-red-900/60 transition-colors flex items-center gap-2 justify-center"
@@ -655,6 +682,7 @@ export default function RezerwacjaPage() {
                             ) : (
                                 <button
                                     type="button"
+                                    data-analytics="gift_card_apply"
                                     onClick={handleCheckGiftCard}
                                     disabled={!giftCardCode || checkingGiftCard}
                                     className="px-8 py-3 bg-[#5b554e] text-white rounded-full font-semibold hover:bg-[#403b36] disabled:opacity-50 transition-all flex items-center gap-2 justify-center shadow-lg shadow-black/10"
@@ -707,6 +735,7 @@ export default function RezerwacjaPage() {
                                 </div>
                                 <button
                                     type="button"
+                                    data-analytics="photographer_change"
                                     onClick={() => setPreselectedPhotographer(null)}
                                     className="text-[#514b44] hover:text-[#25221f] text-xs underline"
                                 >
@@ -728,6 +757,7 @@ export default function RezerwacjaPage() {
                                     <button
                                         key={svc.id}
                                         type="button"
+                                        data-analytics="service_select"
                                         onClick={() => {
                                             markBookingFormStarted('service', svc.name);
                                             setService(svc);
@@ -740,6 +770,7 @@ export default function RezerwacjaPage() {
                                             setSelectedDroneAddonSlug(null);
                                             setDroneGoal('');
                                             setDroneTermsAccepted(false);
+                                            resetBookingFields(['promo_code', 'drone_goal', 'drone_terms']);
                                             setSlot(null);
                                             const url = new URL(window.location.href);
                                             url.searchParams.set('service', svc.name);
@@ -747,7 +778,7 @@ export default function RezerwacjaPage() {
                                             url.searchParams.delete('dron');
                                             window.history.replaceState({}, '', url);
                                             trackBookingEvent('booking_service_select', { service: svc.name });
-                                            void trackEvent('service_selected');
+                                            void trackEvent('service_selected', { ...bookingSelection(svc), analytics_id: 'service_select' });
                                         }}
                                         className={`p-4 rounded-xl border transition-all text-left ${service?.id === svc.id
                                             ? "border-[#8d7f6d] bg-[#8d7f6d]/10"
@@ -779,12 +810,14 @@ export default function RezerwacjaPage() {
                                         <button
                                             key={pkg.id}
                                             type="button"
+                                            data-analytics="package_select"
                                             onClick={() => {
                                                 markBookingFormStarted('package', service.name);
                                                 setChosenPackage(pkg);
                                                 if (pkg.promotion && !pkg.promotion.allowPromoCode) {
                                                     setDiscount(null);
                                                     setPromoCode('');
+                                                    resetBookingFields(['promo_code']);
                                                     setCodeMessage('Promocja pakietu została zastosowana automatycznie i nie łączy się z kodami rabatowymi.');
                                                 }
                                                 setSelectedStart('');
@@ -792,9 +825,8 @@ export default function RezerwacjaPage() {
                                                 trackBookingEvent('booking_package_select', { service: service.name, package: pkg.name, value: pkg.price / 100, currency: 'PLN' });
                                                 void trackEvent(pkg.promotion ? 'promotion_package_selected' : 'package_selected', {
                                                     promotion_id: pkg.promotion?.id,
-                                                    package_id: pkg.id,
-                                                    service: service.name,
-                                                    placement: 'booking',
+                                                    ...bookingSelection(service, pkg),
+                                                    analytics_id: 'package_select',
                                                     amount_bucket: pkg.price < 50000 ? 'under_500' : pkg.price < 100000 ? '500_999' : '1000_plus',
                                                 });
                                             }}
@@ -849,7 +881,11 @@ export default function RezerwacjaPage() {
                                         <div className="grid gap-3 md:grid-cols-2">
                                             <button
                                                 type="button"
-                                                onClick={() => setSelectedDroneAddonSlug(null)}
+                                                data-analytics="drone_addon_remove"
+                                                onClick={() => {
+                                                    setSelectedDroneAddonSlug(null);
+                                                    void trackEvent('drone_addon_selected', { selected: false, analytics_id: 'drone_addon_remove' });
+                                                }}
                                                 className={`rounded-xl border p-4 text-left ${!selectedDroneAddonSlug ? 'border-[#8d7f6d] bg-[#8d7f6d]/10' : 'border-[#ddd6cc] bg-white'}`}
                                             >
                                                 <span className="font-bold text-[#25221f]">Bez drona</span>
@@ -857,10 +893,12 @@ export default function RezerwacjaPage() {
                                             </button>
                                             {eligibleDroneAddons.map(item => (
                                                 <button
+                                                    data-analytics="drone_addon_select"
                                                     key={item.slug}
                                                     type="button"
                                                     onClick={() => {
                                                         setSelectedDroneAddonSlug(item.slug);
+                                                        void trackEvent('drone_addon_selected', { package_name: item.name, selected: true, analytics_id: 'drone_addon_select' });
                                                         trackBookingEvent('drone_addon_selected', { service: service.name, package: item.name, value: item.price });
                                                     }}
                                                     className={`rounded-xl border p-4 text-left ${selectedDroneAddonSlug === item.slug ? 'border-[#8d7f6d] bg-[#8d7f6d]/10' : 'border-[#ddd6cc] bg-white'}`}
@@ -886,14 +924,17 @@ export default function RezerwacjaPage() {
                                 <h2 className="text-2xl font-bold text-[#25221f] mb-6">{photoFunnelConfig.bookingCopy.dateHeading}</h2>
 
                                 {/* Calendar */}
-                                <div className="mb-8">
+                                <div className="mb-8" data-analytics="booking_calendar">
                                     <h3 className="text-lg font-bold text-[#25221f] mb-4">{photoFunnelConfig.bookingCopy.dayHeading}</h3>
                                     <BookingCalendar
                                         onSlotSelect={(selected: { date: string; start?: string; end?: string } | null) => {
                                             markBookingFormStarted('date', service?.name);
                                             setSlot(selected);
                                             if (selected?.date) trackBookingEvent('booking_date_select', { service: service?.name, package: chosenPackage?.name, date: selected.date });
-                                            if (selected?.date) void trackEvent('date_selected');
+                                            void trackEvent('date_selected', {
+                                                service_id: service?.id, package_id: chosenPackage?.id,
+                                                booking_date: selected?.date, selection_cleared: !selected?.date, analytics_id: 'date_select',
+                                            });
                                         }}
                                         selectedSlot={slot}
                                         service={(service?.name as "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny" | "Dron") || 'Sesja'}
@@ -938,6 +979,7 @@ export default function RezerwacjaPage() {
                                                 </label>
                                                 <select
                                                     id="booking-start-time"
+                                                    data-analytics="time_select"
                                                     value={selectedStart}
                                                     onChange={event => {
                                                         const selected = bookableSlots.find(item => item.start === event.target.value);
@@ -950,7 +992,11 @@ export default function RezerwacjaPage() {
                                                                 endDayOffset: selected.endDayOffset,
                                                             }
                                                             : prev ? { date: prev.date } : null);
-                                                        if (selected) void trackEvent('time_selected');
+                                                        void trackEvent('time_selected', {
+                                                            service_id: service?.id, package_id: chosenPackage?.id,
+                                                            booking_date: slot.date, booking_time: selected?.start,
+                                                            selection_cleared: !selected, analytics_id: 'time_select',
+                                                        });
                                                     }}
                                                     className="min-h-12 w-full rounded-xl border border-[#b9ae9f] bg-white px-4 py-3 text-base font-medium text-[#25221f] outline-none transition focus:border-[#8d7f6d] focus:ring-2 focus:ring-[#8d7f6d]/20"
                                                 >
@@ -1005,6 +1051,7 @@ export default function RezerwacjaPage() {
                                             <input
                                                 type="text"
                                                 required
+                                                data-booking-field="name"
                                                 value={name}
                                                 onChange={(e) => setName(e.target.value)}
                                                 className="w-full px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] focus:ring-2 focus:ring-[#8d7f6d] outline-none"
@@ -1018,6 +1065,7 @@ export default function RezerwacjaPage() {
                                             <input
                                                 type="email"
                                                 required
+                                                data-booking-field="email"
                                                 value={email}
                                                 onChange={(e) => setEmail(e.target.value)}
                                                 className="w-full px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] focus:ring-2 focus:ring-[#8d7f6d] outline-none"
@@ -1032,6 +1080,7 @@ export default function RezerwacjaPage() {
                                         </label>
                                         <input
                                             type="tel"
+                                            data-booking-field="phone"
                                             value={phone}
                                             onChange={(e) => setPhone(e.target.value)}
                                             className="w-full px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] focus:ring-2 focus:ring-[#8d7f6d] outline-none"
@@ -1044,6 +1093,7 @@ export default function RezerwacjaPage() {
                                             <label className="block text-sm font-medium text-[#514b44] mb-2">Firma (opcjonalnie)</label>
                                             <input
                                                 type="text"
+                                                data-booking-field="company"
                                                 value={companyName}
                                                 onChange={(e) => setCompanyName(e.target.value.slice(0, 120))}
                                                 maxLength={120}
@@ -1062,6 +1112,7 @@ export default function RezerwacjaPage() {
                                                 <input
                                                     type="text"
                                                     required={!!needsVenue}
+                                                    data-booking-field="venue_city"
                                                     value={venueCity}
                                                     onChange={(e) => setVenueCity(e.target.value)}
                                                     className="w-full px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] focus:ring-2 focus:ring-[#8d7f6d] outline-none"
@@ -1075,6 +1126,7 @@ export default function RezerwacjaPage() {
                                                 <input
                                                     type="text"
                                                     required={!!needsVenue}
+                                                    data-booking-field="venue_place"
                                                     value={venuePlace}
                                                     onChange={(e) => setVenuePlace(e.target.value)}
                                                     className="w-full px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] focus:ring-2 focus:ring-[#8d7f6d] outline-none"
@@ -1091,6 +1143,7 @@ export default function RezerwacjaPage() {
                                             </label>
                                             <select
                                                 required
+                                                data-booking-field="drone_goal"
                                                 value={droneGoal}
                                                 onChange={(e) => setDroneGoal(e.target.value)}
                                                 className="w-full px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] focus:ring-2 focus:ring-[#8d7f6d] outline-none"
@@ -1107,6 +1160,7 @@ export default function RezerwacjaPage() {
                                         </label>
                                         <textarea
                                             rows={3}
+                                            data-booking-field="notes"
                                             value={notes}
                                             onChange={(e) => setNotes(e.target.value.slice(0, 500))}
                                             className="w-full px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] focus:ring-2 focus:ring-[#8d7f6d] outline-none"
@@ -1123,6 +1177,7 @@ export default function RezerwacjaPage() {
                                         <div className="flex gap-2">
                                             <input
                                                 type="text"
+                                                data-booking-field="promo_code"
                                                 value={promoCode}
                                                 onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                                                 disabled={!!discount}
@@ -1132,9 +1187,11 @@ export default function RezerwacjaPage() {
                                             {discount ? (
                                                 <button
                                                     type="button"
+                                                    data-analytics="promo_remove"
                                                     onClick={() => {
                                                         setDiscount(null);
                                                         setPromoCode("");
+                                                        resetBookingFields(['promo_code']);
                                                         setCodeMessage("");
                                                     }}
                                                     className="px-4 py-2 bg-red-900/30 text-red-400 border border-red-900/50 rounded-lg font-medium hover:bg-red-900/50"
@@ -1144,6 +1201,7 @@ export default function RezerwacjaPage() {
                                             ) : (
                                                 <button
                                                     type="button"
+                                                    data-analytics="promo_apply"
                                                     onClick={handleCheckPromoCode}
                                                     disabled={!promoCode || checkingCode}
                                                     className="px-6 py-2 bg-[#ece7e0] text-[#25221f] rounded-lg font-medium hover:bg-white disabled:opacity-50"
@@ -1203,6 +1261,7 @@ export default function RezerwacjaPage() {
                                     <label className="flex items-start gap-3 cursor-pointer group mt-6 rounded-xl border border-[#d2cabf] bg-[#f4f1eb] p-4">
                                         <input
                                             type="checkbox"
+                                            data-booking-field="drone_terms"
                                             checked={droneTermsAccepted}
                                             onChange={(e) => setDroneTermsAccepted(e.target.checked)}
                                             required
@@ -1216,6 +1275,7 @@ export default function RezerwacjaPage() {
                                 <label className="flex items-start gap-3 cursor-pointer group mt-6">
                                     <input
                                         type="checkbox"
+                                        data-booking-field="rodo"
                                         checked={rodo}
                                         onChange={(e) => setRodo(e.target.checked)}
                                         required
@@ -1229,6 +1289,7 @@ export default function RezerwacjaPage() {
                                 {/* Submit Button */}
                                 <button
                                     type="submit"
+                                    data-analytics="add_to_cart"
                                     disabled={submitting}
                                     className={`w-full mt-6 py-4 rounded-full font-semibold text-lg transition-all shadow-lg ${isReadyToSubmit
                                         ? "bg-[#5b554e] text-white hover:bg-[#403b36] shadow-black/10"
