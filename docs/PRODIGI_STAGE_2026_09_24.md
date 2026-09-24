@@ -2,7 +2,9 @@
 
 Status: kod przygotowany i sprawdzony lokalnie; nie wdrożono produkcyjnego zakupu Prodigi.
 Baza: `9c10ac613d6521c7da5b857b2d1b55e20959930c`. Gałąź: `feat/prodigi-sandbox-economics`.
-Dokument nadrzędny: `Plan_integracji_Prodigi_Wlasniewski.pdf`, aktualizacja v7, aneks od strony 77.
+Dokument nadrzędny: `Plan_integracji_Prodigi_Wlasniewski.pdf`. Historia v7 od strony 77;
+v8 B2B/spacery na stronach 89–95; v9 lokalna bramka druku i QA na stronach 96–98.
+Najnowszy zakres kodu i ograniczenia: `PRODIGI_RELEASE_GATE.md`.
 
 ## Korekta decyzji biznesowej
 
