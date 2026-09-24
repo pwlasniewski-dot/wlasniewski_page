@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import SessionJourneys, { journeyDate } from '@/components/admin/analytics/SessionJourneys';
+import FinanceActuals from '@/components/admin/analytics/FinanceActuals';
+import PodRevenueSimulator from '@/components/admin/analytics/PodRevenueSimulator';
 import type { SessionJourney } from '@/lib/analytics/sessionJourneyTypes';
 import { Activity, AlertTriangle, BarChart3, CheckCircle2, Eye, MousePointerClick, RefreshCcw, Search, Users } from 'lucide-react';
 
@@ -104,6 +106,7 @@ export default function AnalyticsPage() {
     <div role="tablist" aria-label="Raporty analityki" className="grid grid-cols-3 gap-1 rounded-xl border border-zinc-800 bg-zinc-900 p-1">{TABS.map((tab, index) => <button key={tab.id} id={`analytics-tab-${tab.id}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls={`analytics-panel-${tab.id}`} tabIndex={activeTab === tab.id ? 0 : -1} onClick={() => setActiveTab(tab.id)} onKeyDown={event => { let next = index; if (event.key === 'ArrowRight') next = (index + 1) % TABS.length; else if (event.key === 'ArrowLeft') next = (index + TABS.length - 1) % TABS.length; else if (event.key === 'Home') next = 0; else if (event.key === 'End') next = TABS.length - 1; else return; event.preventDefault(); setActiveTab(TABS[next].id); document.getElementById(`analytics-tab-${TABS[next].id}`)?.focus(); }} className={`min-h-14 min-w-0 rounded-lg px-2 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 ${activeTab === tab.id ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-100'}`}>{tab.label}</button>)}</div>
     {error && <div role="alert" className="rounded-xl border border-red-800 bg-red-950/30 p-4 text-sm text-red-200">{error}{data && rangeMatches && <p className="mt-2">Nie udało się odświeżyć. Poniżej pozostaje poprzedni odczyt.</p>}<button type="button" onClick={() => void load()} disabled={loading} className="mt-3 block min-h-11 rounded-lg border border-red-700 px-3 disabled:opacity-60">Spróbuj ponownie</button></div>}
     {loading && <p role="status" className="text-sm text-zinc-400">{data && rangeMatches ? 'Odświeżanie zapisanych zdarzeń…' : 'Pobieranie analityki…'}</p>}
+    {activeTab === 'sales' && <div className="space-y-5" aria-label="Finanse i symulator sprzedaży"><FinanceActuals startDate={start} endDate={end}/><PodRevenueSimulator/></div>}
     {data && rangeMatches && <>
       <div id="analytics-panel-visits" role="tabpanel" aria-labelledby="analytics-tab-visits" hidden={activeTab !== 'visits'} className="space-y-5">
         <SessionJourneys sessions={data.recentSessions} unavailable={data.dataQuality.unavailableSources.includes('analytics-current')}/>

@@ -1,0 +1,14 @@
+PASS POD-A01 auth before config or provider
+PASS POD-A02 config says configured, not connected, no secret
+PASS POD-A03 Origin and JSON checks before network
+PASS POD-A04 malformed and streamed oversized body
+PASS POD-A05 rate limit and missing key
+PASS POD-A06 actual handler -> adapter -> sanitized provider result
+PASS POD-U00 diagnostics stays idle until opened
+PASS POD-U01 unconfigured blocks queries
+PASS POD-U02 lookup -> quantity -> quote uses full variant and displays sandbox costs
+PASS POD-U03 failure clears old quote and allows retry
+PASS POD-U04 changing SKU invalidates product and quote
+PASS POD-U05 QA correction: incomplete required print areas block quote
+PASS POD-U06 QA correction: stalled initial config has timeout
+13 sandbox route/DOM scenarios PASS; auth and transport simulated, no external call.

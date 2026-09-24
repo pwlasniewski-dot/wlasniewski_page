@@ -9,6 +9,7 @@ import { appendProductImages } from '@/lib/nphoto/media-selection';
 import NphotoOfferImporter from './NphotoOfferImporter';
 import PublicShopOfferSettings from './PublicShopOfferSettings';
 import ShopIntegrationCheck from './ShopIntegrationCheck';
+import ProdigiSandboxPanel from './ProdigiSandboxPanel';
 import { validateProductEdit, productEditSnapshot } from '@/lib/galleries/product-edit';
 import {visibleOfferCount} from '@/lib/galleries/shop-publication';
 import Link from 'next/link';
@@ -153,6 +154,7 @@ export default function GalleryShopAdmin({ galleryId, photos = [] }: { galleryId
             </fieldset>
             <fieldset id={`shop-${galleryId}-delivery`} disabled={busy} className={panelClass}><legend className="px-2 text-lg font-semibold text-white">Dostawa od Foto-Dron do klienta</legend>
                 {isDefault && <ShopIntegrationCheck />}
+                {isDefault && <ProdigiSandboxPanel />}
                 <p className="text-sm text-amber-200">Ustal cenę dostawy, którą klient zobaczy w podsumowaniu. Dane do wysyłki zapiszą się przy zamówieniu. Po skonfigurowaniu integracji InPost możesz w panelu „Rezerwacje → Zamówienia” utworzyć przesyłkę, pobrać etykietę i sprawdzić jej status.</p>
                 <div className="grid gap-4 sm:grid-cols-2">{(['locker', 'courier'] as const).map(key => { const label = key === 'locker' ? 'Paczkomat' : 'Kurier'; return <div key={key} className="rounded-xl border border-zinc-700 p-4"><label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={config.delivery[key].enabled} onChange={e => update({ delivery: { ...config.delivery, [key]: { ...config.delivery[key], enabled: e.target.checked } } })} />{label} dostępny</label><label className="text-sm">Cena dostawy {label} (zł)<input className={inputClass} type="number" min="0" step="0.01" value={moneyValue(config.delivery[key].amount)} onChange={e => update({ delivery: { ...config.delivery, [key]: { ...config.delivery[key], amount: amountFromInput(e.target.value) } } })} /></label></div>; })}</div>
             <div className="space-y-3 rounded-xl border border-zinc-700 p-4"><label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={(config.delivery.pickup ?? defaultPickupDelivery()).enabled} onChange={e => update({ delivery: { ...config.delivery, pickup: { ...(config.delivery.pickup ?? defaultPickupDelivery()), enabled: e.target.checked } } })} />Odbiór osobisty dostępny · bezpłatnie</label><label className="block text-sm">Informacja o odbiorze osobistym<textarea className={inputClass} rows={3} maxLength={2000} value={(config.delivery.pickup ?? defaultPickupDelivery()).instructions} onChange={e => update({ delivery: { ...config.delivery, pickup: { ...(config.delivery.pickup ?? defaultPickupDelivery()), instructions: e.target.value } } })} /></label><p className="text-xs text-zinc-400">Wpisz miejsce i sposób ustalenia terminu. Informacja będzie widoczna przy zamówieniu i zapisana wraz z nim.</p></div>
