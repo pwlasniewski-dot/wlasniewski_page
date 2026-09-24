@@ -6,7 +6,10 @@ const { buildSessionJourneys } = require('../../src/lib/analytics/sessionJourney
 const { dashboard, session, historical } = require('../fixtures/analytics-journey.cjs');
 const clone = value => JSON.parse(JSON.stringify(value));
 let responseBody = dashboard, status = 200, calls = [];
-global.fetch = async (url, init) => { calls.push({ url, init }); return { ok: status < 400, status, json: async () => clone(responseBody) }; };
+global.fetch = async (url, init) => {
+  if (String(url).startsWith('/api/admin/analytics/finance')) return new Response(JSON.stringify({ success: true, data: { receivedPaymentsGross: 0, refundsGross: 0, receivedPaymentsNet: 0, currency: 'PLN', unit: 'minor', coverageStartedAt: null, details: { ledgerPaymentsGross: 0, legacyPaymentsGross: 0, notes: ['Dane syntetyczne testu.'] } }, generatedAt: '2026-09-24T12:00:00Z', range: { startDate: new URL(String(url),'http://localhost').searchParams.get('startDate'), endDate: new URL(String(url),'http://localhost').searchParams.get('endDate'), timeZone: 'Europe/Warsaw' } }));
+  calls.push({ url, init }); return { ok: status < 400, status, json: async () => clone(responseBody) };
+};
 const sessionToggle = index => document.querySelectorAll('[data-testid="session-path"] article > button')[index];
 
 (async () => {
@@ -66,7 +69,7 @@ const sessionToggle = index => document.querySelectorAll('[data-testid="session-
   });
   await check('odświeżenie z błędem zachowuje oznaczony poprzedni odczyt, ponowienie usuwa błąd', async () => {
     status = 503; responseBody = { success: false, message: 'Chwilowo niedostępne' };
-    await click(button('Odśwież'));
+    await click(button('Odśwież ruch i rezerwacje'));
     assert.ok(document.querySelector('[role="alert"]').textContent.includes('poprzedni odczyt'));
     assert.equal(document.querySelectorAll('[data-testid="session-path"] article').length, 2);
     status = 200; responseBody = { ...dashboard, recentSessions: [historical] };
@@ -86,12 +89,30 @@ const sessionToggle = index => document.querySelectorAll('[data-testid="session-
   });
   await check('niedozwolony odczyt nie pozostawia danych klientów; niepoprawne daty nie uruchamiają zapytania', async () => {
     status = 401; responseBody = { success: false, message: 'Zaloguj się ponownie' };
-    await click(button('Odśwież'));
+    await click(button('Odśwież ruch i rezerwacje'));
     assert.equal(document.querySelector('[data-testid="session-path"]'), null);
     const count = calls.length;
     await set(field('Data początkowa'), '2099-01-01');
     assert.equal(calls.length, count);
     assert.ok(document.querySelector('[role="alert"]').textContent.includes('poprawny zakres dat'));
+  });
+  await check('nowe finanse należą do stale dostępnej zakładki; przełączenie nie gubi szkicu', async () => {
+    await reset(); status = 503; responseBody = { success: false, message: 'Awaria v3' };
+    await mount(AnalyticsPage); await click(button('Wyniki sprzedaży'));
+    const sales = document.getElementById('analytics-panel-sales');
+    assert.ok(sales.querySelector('[data-testid="finance-actuals"]'));
+    const simulator = sales.querySelector('[data-testid="pod-simulator"]'); assert.ok(simulator);
+    assert.equal(simulator.closest('details').open, false);
+    await click(simulator.closest('details').querySelector('summary'));
+    await set(document.getElementById('pod-monthlyVisits'), '4321');
+    await click(button('Wizyty i rezerwacje')); await click(button('Wyniki sprzedaży'));
+    assert.equal(document.getElementById('pod-monthlyVisits').value, '4321');
+    assert.equal(document.querySelectorAll('#analytics-panel-sales').length, 1);
+  });
+  await check('skrót z oferty otwiera właściwy raport sprzedaży', async () => {
+    await reset(); window.history.replaceState({}, '', '/admin/analytics?view=sales');
+    await mount(AnalyticsPage); assert.equal(document.getElementById('analytics-panel-sales').hidden, false);
+    window.history.replaceState({}, '', '/admin/analytics');
   });
   await check('brak sesji ma czytelny stan pusty bez sugerowania porzuconej rezerwacji', async () => {
     await reset(); await mount(SessionJourneys, { sessions: [] });

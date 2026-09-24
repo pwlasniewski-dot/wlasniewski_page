@@ -133,3 +133,48 @@ Sprawdzone24.09.2026:
 - https://www.prodigi.com/faq/payments-and-pricing/ — kontekst kosztów konta.
 - https://www.prodigi.com/faq/shipping/ — logistyka wymagająca kwalifikacji.
 - PDF v6 strony1–76 i repo main9c10ac6, AGENTS.md — stan i reguły projektu.
+
+## R5 — restrykcyjny audyt admina i responsywności po uwagach właściciela
+
+Kod zapisany zdalnie w draft PR https://github.com/pwlasniewski-dot/wlasniewski_page/pull/91.
+Pierwszy checkpoint e147959. Poniższa runda zastępuje opis początkowego rozmieszczenia paneli.
+
+Produkcja: cloud browser /admin oraz /admin/login pokazały502 z Connection refused, bez dotarcia do logowania.
+Niezależny anonimowy HEAD /admin z kontenera zwrócił HTTP200 i nagłówki Netlify. Hosting pokazał aktywne ready.
+Nie jest to dowód awarii strony u klientów. Dokładnej przyczyny odmowy połączenia w cloud browser nie ustalono.
+Nie wprowadzano zmian w działającym hostingu; nie odczytano produkcyjnych danych administratora.
+
+Ustalenia i wykonane poprawki:
+- UX-001: utrata niezapisanego scenariusza po zmianie zakładki → jeden trwały panel sales; szkic pozostaje.
+- UX-002: raporty poza panelem wskazanym przez aria-controls → poprawna przynależność i panel także przy awarii v3.
+- UX-003: kalkulator wypierał fakty → dane wpłat i istniejące KPI najpierw; symulator domyślnie zwinięty.
+- UX-004: diagnostyka Prodigi w sekcji wysyłki Foto-Dron → osobny rozwijany blok przy nagłówku wspólnej oferty.
+  Skróty Test Prodigi i Wpłaty i rentowność; drugi skrót otwiera /admin/analytics?view=sales.
+- UX-005: dwuznaczny główny refresh → Odśwież ruch i rezerwacje; finanse zachowują swój przycisk.
+- UX-006: błędna nazwa/suma walut w zamówieniach → Wartość opłaconych zamówień PLN, jawny zakres wszystkich
+  wczytanych bez filtrów i bez rozliczenia zwrotów; ostrzeżenie innych walut i link do finansów.
+- UX-007: zbyt wąskie kolumny przy sidebarze/tablecie → siatka zależna od dostępnej szerokości w finansach
+  i wariantach symulatora; układ SKU dopiero od lg; łamanie długiej nazwy klucza; czytelny loading Prodigi.
+- FIN-007: niepełny kontrakt odpowiedzi powodował crash → walidacja wszystkich używanych pól i kwot, dat,
+  zakresu zgodnego z żądaniem, notes;17 błędnych payloadów przeszło test odmowy bez crasha.
+- FIN-008: wiszący odczyt finansów → timeout20s i retry, brak spóźnionego sukcesu po abort.
+
+Końcowy test: npm run test:prodigi-foundation obejmuje83 przypadki/grupy (48 Node,13 API/DOM Prodigi,
+8 DOM symulatora,12 istniejących i rozszerzonych grup analityki,2 grupy karty zamówień).
+Nie sumujemy83 z wcześniejszymi67; to rozszerzony zestaw po poprawkach.
+
+Nadal OPEN w całym istniejącym adminie, poza odebranym etapem:
+- mobilna tabela zamówień: siedem kolumn, akcje daleko z prawej; potrzebne mobilne karty z detalami;
+- zamknięte menu boczne używa transformacji bez zarządzania fokusem/inert; Escape, powrót fokusu,44px;
+- stare katalogi nPhoto i starszy edytor wymagają czytelnych oznaczeń i linków do wspólnej oferty;
+- powrót z galerii ma stałą trasę CRM, nie zachowuje kontekstu wejścia;
+- nie wykonano pomiaru renderu320/390/768/1440, testu klawiatury całego admina ani zoom200% w przeglądarce.
+
+Próba lokalnego wizualnego harnessu nie jest PASS: cloud browser odrzucił protokół file jako niedozwolony.
+Nie użyto obejścia blokady. Wcześniejsza instalacja lokalnego Chromium także się nie powiodła.
+Testy React DOM są wykonane; wizualny odbiór responsywności, prawdziwe logowanie i produkcyjny UX pozostają BLOCKED.
+Nie deklarujemy „maksymalnie responsywnego” całego admina na podstawie samych klas CSS.
+
+Potwierdzenie końcowe R5: pełny zestaw83 i regresja koszyka PASS. Typecheck po wszystkich zmianach:
+103 diagnostyki/56 różnych, dokładnie jak baza; brak nowych. Dowód: typecheck-final-4gb.log i typecheck-comparison.json.
+Aneks v7 PDF obejmuje strony77–88; zachowano tekst i zawartość każdej z pierwszych76 stron, sprawdzono render wszystkich12 nowych stron.

@@ -3,20 +3,20 @@ npm warn Unknown env config "http-proxy". This will stop working in the next maj
 > fotograf-nextjs@2.0.0 test:gallery-shop
 > node --import tsx --test tests/unit/gallery-shop-domain.test.ts && node tests/qa/gallery-shop-save.cjs && node tests/qa/gallery-shop-rounds.cjs && node tests/qa/gallery-shop-server.cjs && node tests/qa/gallery-shipment-server.cjs && node tests/qa/inpost-picker.cjs && node tests/qa/nphoto-offer-import.cjs && node tests/qa/nphoto-offer-ui.cjs && node tests/qa/nphoto-launch-catalog.cjs && node tests/qa/gallery-public-offer.cjs && node tests/qa/gallery-storefront-ui.cjs && node tests/qa/gallery-product-media.cjs && node tests/qa/unified-merchandise-orders.cjs && node tests/qa/unified-merchandise-ui.cjs && node tests/qa/shop-launch-readiness.cjs && node tests/qa/gallery-pickup.cjs
 
-✔ batch prints: server uses catalog price, supports same photo in two formats plus product (1.542464ms)
-✔ quantity must be bounded integer; reject 0, negative, fractional, huge, nonfinite (0.419563ms)
-✔ only authorized gallery photos can be ordered, including product cover (0.216777ms)
-✔ reject unavailable format, product, disabled shop, disabled delivery (0.215905ms)
-✔ reject bad crop, unconfirmed prints, duplicate line identifiers, empty cart (0.261183ms)
-✔ reject product image count outside bounds (0.188444ms)
-✔ delivery data required and courier address validated (0.320663ms)
-✔ updated price is recalculated server side, never supplied client price (0.231299ms)
-✔ merchandise lab export preserves quantity and paper; album photos are not extra prints (0.969601ms)
-✔ product snapshot retains ordered specification after catalog edits (0.412071ms)
-✔ print tiers count all photos of a format, never products or another format (0.348936ms)
-✔ tier validation rejects ambiguous or invalid price schedules (0.509778ms)
-✔ pickup is free, strips shipping data and snapshots current admin instructions (0.287654ms)
-✔ legacy config enables pickup; pickup-only shop validates and courier-only products can be collected (0.517199ms)
+✔ batch prints: server uses catalog price, supports same photo in two formats plus product (1.861805ms)
+✔ quantity must be bounded integer; reject 0, negative, fractional, huge, nonfinite (0.542076ms)
+✔ only authorized gallery photos can be ordered, including product cover (0.231168ms)
+✔ reject unavailable format, product, disabled shop, disabled delivery (0.214844ms)
+✔ reject bad crop, unconfirmed prints, duplicate line identifiers, empty cart (0.271749ms)
+✔ reject product image count outside bounds (0.148494ms)
+✔ delivery data required and courier address validated (0.412461ms)
+✔ updated price is recalculated server side, never supplied client price (0.231599ms)
+✔ merchandise lab export preserves quantity and paper; album photos are not extra prints (0.937593ms)
+✔ product snapshot retains ordered specification after catalog edits (0.379031ms)
+✔ print tiers count all photos of a format, never products or another format (0.309637ms)
+✔ tier validation rejects ambiguous or invalid price schedules (0.631261ms)
+✔ pickup is free, strips shipping data and snapshots current admin instructions (0.262355ms)
+✔ legacy config enables pickup; pickup-only shop validates and courier-only products can be collected (0.328595ms)
 ℹ tests 14
 ℹ suites 0
 ℹ pass 14
@@ -24,7 +24,7 @@ npm warn Unknown env config "http-proxy". This will stop working in the next maj
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 205.638874
+ℹ duration_ms 217.603082
 PASS checkbox on/off/revert activates the one save and preserves drafts until saved
 PASS hiding saves and disappears from the real client product selector after reload
 PASS products, media, prices, photo limits and delivery commit together
