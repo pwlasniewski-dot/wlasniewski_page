@@ -126,12 +126,14 @@ export default function AdminOrdersPage() {
 
     const stats = useMemo(() => {
         const paid = orders.filter((order) => order.status === 'paid' || order.status === 'completed');
+        const paidPln = paid.filter(order => order.currency === 'PLN');
         const pending = orders.filter((order) => order.status === 'pending');
         const gallery = orders.filter((order) => order.type === 'gallery_photo');
         return {
             allCount: orders.length,
-            paidRevenue: paid.reduce((sum, order) => sum + order.amount, 0),
-            paidCount: paid.length,
+            paidOrderValuePln: paidPln.reduce((sum, order) => sum + order.amount, 0),
+            paidPlnCount: paidPln.length,
+            excludedPaidCurrencyCount: paid.length - paidPln.length,
             pendingCount: pending.length,
             galleryCount: gallery.length,
             giftCount: orders.length - gallery.length,
@@ -362,10 +364,13 @@ export default function AdminOrdersPage() {
 
                     {/* KPI */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-                        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-                            <div className="text-xs uppercase tracking-wider text-zinc-500 mb-2">Przychód opłacony</div>
-                            <div className="text-2xl font-black text-emerald-300">{formatMoney(stats.paidRevenue)}</div>
-                            <div className="mt-2 text-xs text-zinc-400 flex items-center gap-1"><CircleDollarSign size={13} /> {stats.paidCount} opłaconych zamówień</div>
+                        <div data-testid="paid-order-value-pln" className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                            <div className="text-xs uppercase tracking-wider text-zinc-400 mb-2">Wartość opłaconych zamówień · PLN</div>
+                            <div className="text-2xl font-black text-emerald-300">{formatMoney(stats.paidOrderValuePln)}</div>
+                            <div className="mt-2 text-xs text-zinc-400 flex items-center gap-1"><CircleDollarSign size={13} /> {stats.paidPlnCount} zamówień w PLN: opłacone lub zakończone</div>
+                            <p className="mt-2 text-xs leading-relaxed text-zinc-400">Wszystkie wczytane zamówienia, bez zastosowania filtrów. Wartość bez rozliczenia zwrotów.</p>
+                            {stats.excludedPaidCurrencyCount > 0 && <p className="mt-2 text-xs text-amber-200">Pominięte opłacone zamówienia w innych lub nieustalonych walutach: {stats.excludedPaidCurrencyCount}.</p>}
+                            <Link href="/admin/analytics?view=sales" className="mt-2 inline-flex min-h-11 items-center text-sm text-emerald-300 underline underline-offset-4">Analityka → Sprzedaż: wpłaty i zwroty</Link>
                         </div>
                         <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
                             <div className="text-xs uppercase tracking-wider text-zinc-500 mb-2">Wszystkie zamówienia</div>

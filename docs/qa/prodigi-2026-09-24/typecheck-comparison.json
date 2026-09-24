@@ -1,0 +1,10 @@
+{
+  "baseline": "9c10ac613d6521c7da5b857b2d1b55e20959930c",
+  "baselineCount": 103,
+  "currentCount": 103,
+  "baselineDistinct": 56,
+  "currentDistinct": 56,
+  "new": [],
+  "removed": [],
+  "environment": "Node 24.19.0; heap 4096 MB; full typecheck FAIL on both, not a production gate pass"
+}

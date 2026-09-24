@@ -1,0 +1,110 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { createRequire } from 'node:module';
+import { build } from 'esbuild';
+
+const require = createRequire(import.meta.url);
+const { JSDOM, VirtualConsole } = require('jsdom');
+const bundle = build({
+    stdin: { contents: `import React, {act} from 'react'; import {createRoot} from 'react-dom/client'; import FinanceActuals from './src/components/admin/analytics/FinanceActuals'; window.IS_REACT_ACT_ENVIRONMENT=true; window.__act=act; const root=createRoot(document.getElementById('root')); window.__mount=(startDate,endDate)=>root.render(<FinanceActuals startDate={startDate} endDate={endDate}/>); window.__unmount=()=>root.unmount();`, loader: 'tsx', resolveDir: process.cwd() },
+    bundle: true, write: false, platform: 'browser', format: 'iife', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"development"' },
+}).then(result => result.outputFiles[0].text);
+const body = (amount = 123450, startDate = '2026-09-01', endDate = '2026-09-30') => ({ success: true, data: { receivedPaymentsGross: amount, refundsGross: 500, receivedPaymentsNet: amount - 500, currency: 'PLN', unit: 'minor', coverageStartedAt: null, details: { ledgerPaymentsGross: amount, legacyPaymentsGross: 0, notes: ['Zwroty częściowe mogą być niepełne.'] } }, range: { startDate, endDate, timeZone: 'Europe/Warsaw' }, generatedAt: '2026-09-24T12:00:00.000Z' });
+const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status });
+
+test('actual React finance clears stale amounts across date changes, ignores old responses, then clears on access denial and retries', async () => {
+    const errors: string[] = []; const vc = new VirtualConsole(); vc.on('jsdomError', (error: Error) => errors.push(error.message));
+    const dom = new JSDOM('<div id="root"></div>', { url: 'https://test.local/admin/analytics', runScripts: 'dangerously', virtualConsole: vc });
+    const win = dom.window as any;
+    win.MessageChannel = class { port1: { onmessage: (() => void) | null } = { onmessage: null }; port2 = { postMessage: () => setTimeout(() => this.port1.onmessage?.(), 0) }; };
+    win.localStorage.setItem('admin_token', 'qa-admin');
+    const requests: Array<{ path: string; init: RequestInit; resolve: (value: Response) => void }> = [];
+    win.fetch = (path: string, init: RequestInit) => new Promise(resolve => requests.push({ path, init, resolve }));
+    win.eval(await bundle);
+    const flush = async (fn = () => {}) => win.__act(async () => { fn(); await new Promise(resolve => setImmediate(resolve)); });
+    const text = () => win.document.body.textContent as string;
+    await flush(() => win.__mount('2026-09-01', '2026-09-30'));
+    assert.equal(requests.length, 1); assert.equal(requests[0].init.cache, 'no-store'); assert.equal(new Headers(requests[0].init.headers).get('Authorization'), 'Bearer qa-admin');
+    await flush(() => requests[0].resolve(json(body())));
+    assert.match(text(), /1\s?234,50/); assert.match(text(), /Niedostępne — brak pełnych danych/);
+    await flush(() => win.__mount('2026-08-01', '2026-08-31'));
+    assert.doesNotMatch(text(), /1\s?234,50/); assert.match(text(), /Odczytuję/);
+    await flush(() => win.__mount('2026-07-01', '2026-07-31'));
+    assert.equal(requests[1].init.signal?.aborted, true);
+    await flush(() => requests[1].resolve(json(body(999999))));
+    assert.doesNotMatch(text(), /9\s?999,99/);
+    await flush(() => requests[2].resolve(json({ error: 'Forbidden' }, 403)));
+    assert.match(text(), /Zaloguj się ponownie/); assert.doesNotMatch(text(), /1\s?234,50|0,00/);
+    await flush(() => win.document.querySelector('button').click());
+    await flush(() => requests[3].resolve(json(body(5050, '2026-07-01', '2026-07-31'))));
+    assert.match(text(), /50,50/); assert.doesNotMatch(text(), /Zaloguj się ponownie/);
+    await flush(() => win.__unmount()); dom.window.close(); assert.deepEqual(errors, []);
+});
+
+test('actual React rejects incomplete response contracts and invalid dates without rendering false values or crashing', async () => {
+    const errors: string[] = []; const vc = new VirtualConsole(); vc.on('jsdomError', (error: Error) => errors.push(error.message));
+    const dom = new JSDOM('<div id="root"></div>', { url: 'https://test.local/admin/analytics', runScripts: 'dangerously', virtualConsole: vc });
+    const win = dom.window as any;
+    win.MessageChannel = class { port1: { onmessage: (() => void) | null } = { onmessage: null }; port2 = { postMessage: () => setTimeout(() => this.port1.onmessage?.(), 0) }; };
+    const valid = body();
+    const invalidBodies = [
+        null, [], { success: true, data: { receivedPaymentsGross: 100, refundsGross: 0, receivedPaymentsNet: 100, currency: 'PLN', unit: 'minor' } },
+        { ...valid, range: undefined }, { ...valid, data: { ...valid.data, details: undefined } },
+        { ...valid, data: { ...valid.data, details: { ...valid.data.details, notes: 'wrong' } } },
+        { ...valid, data: { ...valid.data, details: { ...valid.data.details, notes: [null] } } },
+        { ...valid, data: { ...valid.data, details: { ...valid.data.details, notes: [] } } },
+        { ...valid, data: { ...valid.data, details: { ...valid.data.details, ledgerPaymentsGross: -1 } } },
+        { ...valid, data: { ...valid.data, details: { ...valid.data.details, legacyPaymentsGross: 100 } } },
+        { ...valid, data: { ...valid.data, receivedPaymentsNet: 0 } },
+        { ...valid, data: { ...valid.data, coverageStartedAt: 'not-a-date' } },
+        { ...valid, data: { ...valid.data, coverageStartedAt: '2026-02-30T00:00:00Z' } },
+        { ...valid, range: { ...valid.range, startDate: '2026-02-30' } },
+        { ...valid, range: { ...valid.range, endDate: '2026-09-01' } },
+        { ...valid, range: { ...valid.range, timeZone: 'UTC' } },
+        { ...valid, generatedAt: 'not-a-date' },
+    ];
+    let nextBody: unknown = invalidBodies[0]; win.fetch = async () => json(nextBody);
+    win.eval(await bundle);
+    const flush = async (fn = () => {}) => win.__act(async () => { fn(); await new Promise(resolve => setImmediate(resolve)); });
+    for (let i = 0; i < invalidBodies.length; i++) {
+        nextBody = invalidBodies[i];
+        await flush(() => i === 0 ? win.__mount('2026-09-01', '2026-09-30') : win.document.querySelector('button').click());
+        assert.match(win.document.querySelector('[role="alert"]')?.textContent || '', /nieprawidłowe lub niepełne/, `invalid body ${i}`);
+        assert.equal(win.document.querySelectorAll('dl').length, 0, `no money for invalid body ${i}`);
+        assert.equal(win.document.querySelector('button').disabled, false);
+    }
+    nextBody = { ...valid, data: { ...valid.data, coverageStartedAt: '2026-08-31T22:00:00.000Z' } };
+    await flush(() => win.document.querySelector('button').click());
+    assert.equal(win.document.querySelector('[role="alert"]'), null);
+    assert.match(win.document.body.textContent, /1\s?234,50/);
+    assert.match(win.document.querySelector('dl').style.gridTemplateColumns, /auto-fit.*minmax.*200px/);
+    await flush(() => win.__unmount()); dom.window.close(); assert.deepEqual(errors, []);
+});
+
+test('actual React timeout releases retry, ignores a late success and accepts the fresh response', async () => {
+    const errors: string[] = []; const vc = new VirtualConsole(); vc.on('jsdomError', (error: Error) => errors.push(error.message));
+    const dom = new JSDOM('<div id="root"></div>', { url: 'https://test.local/admin/analytics', runScripts: 'dangerously', virtualConsole: vc });
+    const win = dom.window as any;
+    win.MessageChannel = class { port1: { onmessage: (() => void) | null } = { onmessage: null }; port2 = { postMessage: () => setTimeout(() => this.port1.onmessage?.(), 0) }; };
+    const timers: Array<() => void> = []; const nativeTimer = win.setTimeout.bind(win);
+    win.setTimeout = (callback: () => void, delay: number, ...args: unknown[]) => delay === 20_000 ? (timers.push(callback), 900000 + timers.length) : nativeTimer(callback, delay, ...args);
+    const requests: Array<{ signal: AbortSignal; resolve: (value: Response) => void }> = [];
+    // Deliberately ignores AbortSignal: the component must also reject a late response itself.
+    win.fetch = (_path: string, init: RequestInit) => new Promise(resolve => requests.push({ signal: init.signal as AbortSignal, resolve }));
+    win.eval(await bundle);
+    const flush = async (fn = () => {}) => win.__act(async () => { fn(); await new Promise(resolve => setImmediate(resolve)); });
+    await flush(() => win.__mount('2026-09-01', '2026-09-30'));
+    assert.equal(win.document.querySelector('button').disabled, true);
+    assert.equal(timers.length, 1);
+    await flush(() => timers[0]());
+    assert.equal(requests[0].signal.aborted, true);
+    assert.equal(win.document.querySelector('button').disabled, false);
+    assert.match(win.document.querySelector('[role="alert"]').textContent, /Przekroczono czas odczytu/);
+    await flush(() => requests[0].resolve(json(body())));
+    assert.equal(win.document.querySelectorAll('dl').length, 0);
+    await flush(() => win.document.querySelector('button').click());
+    await flush(() => requests[1].resolve(json(body(5050))));
+    assert.equal(win.document.querySelector('[role="alert"]'), null);
+    assert.match(win.document.body.textContent, /50,50/);
+    await flush(() => win.__unmount()); dom.window.close(); assert.deepEqual(errors, []);
+});

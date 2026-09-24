@@ -1,0 +1,266 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> fotograf-nextjs@2.0.0 test:gallery-shop
+> node --import tsx --test tests/unit/gallery-shop-domain.test.ts && node tests/qa/gallery-shop-save.cjs && node tests/qa/gallery-shop-rounds.cjs && node tests/qa/gallery-shop-server.cjs && node tests/qa/gallery-shipment-server.cjs && node tests/qa/inpost-picker.cjs && node tests/qa/nphoto-offer-import.cjs && node tests/qa/nphoto-offer-ui.cjs && node tests/qa/nphoto-launch-catalog.cjs && node tests/qa/gallery-public-offer.cjs && node tests/qa/gallery-storefront-ui.cjs && node tests/qa/gallery-product-media.cjs && node tests/qa/unified-merchandise-orders.cjs && node tests/qa/unified-merchandise-ui.cjs && node tests/qa/shop-launch-readiness.cjs && node tests/qa/gallery-pickup.cjs
+
+✔ batch prints: server uses catalog price, supports same photo in two formats plus product (1.861805ms)
+✔ quantity must be bounded integer; reject 0, negative, fractional, huge, nonfinite (0.542076ms)
+✔ only authorized gallery photos can be ordered, including product cover (0.231168ms)
+✔ reject unavailable format, product, disabled shop, disabled delivery (0.214844ms)
+✔ reject bad crop, unconfirmed prints, duplicate line identifiers, empty cart (0.271749ms)
+✔ reject product image count outside bounds (0.148494ms)
+✔ delivery data required and courier address validated (0.412461ms)
+✔ updated price is recalculated server side, never supplied client price (0.231599ms)
+✔ merchandise lab export preserves quantity and paper; album photos are not extra prints (0.937593ms)
+✔ product snapshot retains ordered specification after catalog edits (0.379031ms)
+✔ print tiers count all photos of a format, never products or another format (0.309637ms)
+✔ tier validation rejects ambiguous or invalid price schedules (0.631261ms)
+✔ pickup is free, strips shipping data and snapshots current admin instructions (0.262355ms)
+✔ legacy config enables pickup; pickup-only shop validates and courier-only products can be collected (0.328595ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 217.603082
+PASS checkbox on/off/revert activates the one save and preserves drafts until saved
+PASS hiding saves and disappears from the real client product selector after reload
+PASS products, media, prices, photo limits and delivery commit together
+PASS validation, failed transaction and failed authorization keep drafts and leave every stored value unchanged
+PASS product-only save keeps an inherited gallery on the shared price list
+PASS server rejects foreign products, duplicate edits, invalid later edits and stale concurrent edits atomically
+PASS confirmed save followed by failed refresh reports saved state instead of offering a stale duplicate write
+PASS own product create, media edit, publish, archive and restore in the same admin for three rounds
+PASS archive rejects unauthorized, foreign and stale requests, is repeatable and blocks stale publication
+9 unified shop save groups: PASS (database and authentication mocked).
+PASS Runda 1: admin cena 4,25 PLN -> zapis/odczyt -> klient
+PASS Runda 1: 4 zdjęcia x2, produkt, powrót, 2 zdjęcia inny format
+PASS Runda 2: admin opis i odczyt, klient usuwanie/undo/ilości/readd
+PASS Runda 3: admin produkt hide/save/read oraz ponowna publikacja
+PASS Runda 3: granice ilości, anulowanie wyboru, ponowne dodanie
+PASS Dodatkowo: refresh odtwarza koszyk, Escape podglądu nie zamyka zakupów
+PASS Dodatkowo: zmiana ceny409 wymaga świadomego ponowienia z aktualną sumą
+PASS Dodatkowo: synchroniczny podwójny click dodania nie duplikuje zdjęć
+PASS Dodatkowo: powrót płatności pending blokuje, cancelled zachowuje, paid usuwa opłacony snapshot
+PASS Dodatkowo: zmiana galerii A→B→A izoluje koszyk; uszkodzony szkic pomijany
+PASS Dodatkowo: niepewna płatność blokuje nowe zamówienie także po zmianie koszyka
+PASS Ceny ilościowe: koszyk przelicza różne zdjęcia po zmianie ilości, zgodnie z serwerem
+{
+  "checks": [
+    "Runda 1: admin cena 4,25 PLN -> zapis/odczyt -> klient",
+    "Runda 1: 4 zdjęcia x2, produkt, powrót, 2 zdjęcia inny format",
+    "Runda 2: admin opis i odczyt, klient usuwanie/undo/ilości/readd",
+    "Runda 3: admin produkt hide/save/read oraz ponowna publikacja",
+    "Runda 3: granice ilości, anulowanie wyboru, ponowne dodanie",
+    "Dodatkowo: refresh odtwarza koszyk, Escape podglądu nie zamyka zakupów",
+    "Dodatkowo: zmiana ceny409 wymaga świadomego ponowienia z aktualną sumą",
+    "Dodatkowo: synchroniczny podwójny click dodania nie duplikuje zdjęć",
+    "Dodatkowo: powrót płatności pending blokuje, cancelled zachowuje, paid usuwa opłacony snapshot",
+    "Dodatkowo: zmiana galerii A→B→A izoluje koszyk; uszkodzony szkic pomijany",
+    "Dodatkowo: niepewna płatność blokuje nowe zamówienie także po zmianie koszyka",
+    "Ceny ilościowe: koszyk przelicza różne zdjęcia po zmianie ilości, zgodnie z serwerem"
+  ],
+  "orders": [
+    {
+      "id": 1,
+      "total": 18000,
+      "lines": 7
+    },
+    {
+      "id": 2,
+      "total": 13525,
+      "lines": 4
+    },
+    {
+      "id": 3,
+      "total": 14600,
+      "lines": 2
+    },
+    {
+      "id": 4,
+      "total": 2500,
+      "lines": 2
+    },
+    {
+      "id": 5,
+      "total": 2500,
+      "lines": 2
+    },
+    {
+      "id": 6,
+      "total": 2500,
+      "lines": 2
+    },
+    {
+      "id": 7,
+      "total": 2442,
+      "lines": 2
+    }
+  ],
+  "postAttempts": 8,
+  "requests": 54
+}
+PASS auth rejects unauthorized private gallery before order creation
+PASS physical shop authorizes own group participant even when digital extras are disabled
+PASS auth rejects participant ID mismatch
+PASS nonstandard unpaid photo not orderable in private gallery
+PASS real server stale price returns409 and creates no order
+PASS real server creates snapshot and replay uses same order/payment
+PASS changed cart cannot reuse key; failed-init replay cannot recreate payment
+PASS fingerprint includes qty, gallery and participant but ignores property order
+PASS getShopOrder scope and legacy-kind protection
+PASS real admin route rejects auth, unpaid, jump/backwards and shipped without tracking
+PASS pickup fulfillment authorizes, requires payment, preserves stages and completes without tracking
+PASS pickup fulfillment refuses concurrent metadata or payment changes instead of overwriting them
+PASS payment validates total/currency/provider and isolates legacy order
+PASS payment canceled/rejected then completed is idempotent; late cancel never reverses paid
+PASS real admin PUT auth denied/invalid config and valid save GET reread
+PASS real admin product PATCH rejects item from other gallery
+PASS group order persists participant and never grants paid digital photo IDs
+PASS global config inherited by new gallery, local override remains independent
+PASS shared products appear in all galleries; private and inactive products stay scoped
+PASS global PATCH scoped to shared products, gallery PATCH cannot mutate global
+PASS product media save reread preserves galleries and rejects invalid URLs; zero price is draft only
+PASS admin delete override restores shared settings without deleting products or orders
+PASS empty published catalog stays hidden; physical-only or product-only offer remains visible
+PASS authenticated owner returns to account order; group and shared checkout retain their own flow
+{
+  "checks": [
+    "auth rejects unauthorized private gallery before order creation",
+    "physical shop authorizes own group participant even when digital extras are disabled",
+    "auth rejects participant ID mismatch",
+    "nonstandard unpaid photo not orderable in private gallery",
+    "real server stale price returns409 and creates no order",
+    "real server creates snapshot and replay uses same order/payment",
+    "changed cart cannot reuse key; failed-init replay cannot recreate payment",
+    "fingerprint includes qty, gallery and participant but ignores property order",
+    "getShopOrder scope and legacy-kind protection",
+    "real admin route rejects auth, unpaid, jump/backwards and shipped without tracking",
+    "pickup fulfillment authorizes, requires payment, preserves stages and completes without tracking",
+    "pickup fulfillment refuses concurrent metadata or payment changes instead of overwriting them",
+    "payment validates total/currency/provider and isolates legacy order",
+    "payment canceled/rejected then completed is idempotent; late cancel never reverses paid",
+    "real admin PUT auth denied/invalid config and valid save GET reread",
+    "real admin product PATCH rejects item from other gallery",
+    "group order persists participant and never grants paid digital photo IDs",
+    "global config inherited by new gallery, local override remains independent",
+    "shared products appear in all galleries; private and inactive products stay scoped",
+    "global PATCH scoped to shared products, gallery PATCH cannot mutate global",
+    "product media save reread preserves galleries and rejects invalid URLs; zero price is draft only",
+    "admin delete override restores shared settings without deleting products or orders",
+    "empty published catalog stays hidden; physical-only or product-only offer remains visible",
+    "authenticated owner returns to account order; group and shared checkout retain their own flow"
+  ],
+  "orders": 4,
+  "payuCalls": 4
+}
+PASS InPost auth/ownership/unpaid block before any remote call
+PASS InPost requires explicit charge consent and parcel validation
+PASS InPost durable unique reservation stops concurrent and replay POST
+PASS InPost refresh and binary label use original shipment
+PASS InPost cannot cancel paid label
+PASS InPost environment switch cannot operate on sandbox shipment
+PASS InPost timeout remains reserved and cannot create duplicate
+PASS InPost reconciliation refuses another order reference then restores exact match
+PASS InPost pickup charge has durable single dispatch lock
+PASS personal pickup blocks every shipment action without remote calls
+10 InPost groups PASS. Transport and database mocked; no real shipment purchased.
+PASS InPost: invalid query does not reach carrier
+PASS InPost: actual filters, bounded output and unavailable-point rejection
+PASS InPost: carrier error is safe and public config never exposes shipping token
+PASS InPost: customer searches and selects real point without manually typing code
+PASS InPost: map loads on demand and official onpoint callback selects a point
+PASS InPost: DOM selection event survives three map open/select cycles without stale listeners
+PASS InPost: failed script can be retried without duplicated styles
+PASS InPost: checkout rejects closed and unknown points, verifies exact authenticated result
+PASS InPost: private gallery CSP permits the official map frame and rejects unrelated hosts
+PASS InPost: admin settings expose a dedicated Geowidget field wired to server storage
+InPost picker: 10 groups PASS
+PASS strict product URL allowlist blocks SSRF, credentials, query, category and account paths
+PASS product parser uses verified DOM fields, filters promos/related media and never executes HTML
+PASS unrecognised pages fail closed, missing optional fields yield explicit warnings
+PASS images reject executable, external, credentialed, tracking or traversal URLs
+PASS bounded public fetch uses manual redirects without cookies and stops offsite targets
+PASS fetch rejects non HTML, blocked pages and oversized decoded streams without fallback
+PASS 8-second deadline also aborts an unresponsive supplier
+PASS draft validation requires media rights and valid photographer choices, strips markup
+PASS preview and draft routes authenticate before fetch or persistence
+PASS draft save atomically persists inactive shared offer and rules without changing publication settings
+PASS re-import preserves existing merchant prices, content, rules and original source observations
+PASS oversized incoming payload is rejected before persistence
+PASS invalid existing shared config is preserved without inserting an orphan offer
+{"checks":13,"products":1,"fetchCalls":1,"transactionCalls":3}
+PASS nPhoto UI: odczyt URL nie zapisuje ani nie publikuje produktu
+PASS nPhoto UI: własny wariant, liczba stron i kolejność mediów w podglądzie
+PASS nPhoto UI: niezapisane ustawienia blokują import bez utraty szkicu
+PASS nPhoto UI: podgląd klienta, drugie zdjęcie, Escape i powrót fokusu
+PASS nPhoto UI: admin zapisuje i ponownie pokazuje listę zdjęć produktu
+5 grup testów UI nPhoto: PASS
+PASS launch contains five requested families, correct Lite name, canvas media and courier-only rule
+PASS route authenticates before touching configuration or suppliers
+PASS unknown key and invalid media confirmation type fail before writes
+PASS one transaction creates four inactive zero-price products and exactly one 15×21 format
+PASS three repeat imports preserve prices, descriptions, rules and visibility without any write
+PASS canonical URL deduplication recognises prior URL importer and preserves local products
+PASS marker identity preserves merchant-edited source URL
+PASS invalid existing configuration fails closed and is never reset
+PASS transaction failure rolls back partial batch including product rules and markers
+PASS format limit prevents invalid configuration and rolls back the batch
+PASS legacy calendar and three-format import remain available without overwriting 15×21
+PASS serializable conflict returns actionable409 with no retry or external side effects
+PASS unconfirmed media creates safe empty-image drafts; replay cannot silently add supplier images
+PASS admin UI defaults to safe no-media import and offers explicit optional media confirmation
+PASS UI error keeps unsaved view and never reloads after failed import
+PASS parent dirty-state lock prevents imports and supplier calls
+{"checks":16,"transactionCalls":23,"fetchCalls":3,"liveSupplierCalls":0,"liveDatabaseWrites":0}
+PASS old shop config remains valid and public presentation is opt-in
+PASS public presentation validates IDs, media, content and layout
+PASS actual admin save is authorized; reread and public endpoint use same prices and ordered data
+PASS price edits propagate to public and new galleries; existing local overrides are preserved
+PASS mixed basket requires courier for large canvas, validates on server, and preserves print pricing
+PASS hidden or removed products immediately disappear and an empty public offer renders nothing
+PASS courier-only product stays available for pickup, hidden only when neither method is available
+PASS CMS edits and ordering controls update serializable public settings
+PASS temporary catalogue failure is explicit and does not leak internals
+{"checks":9,"externalOrders":0}
+PASS Storefront route: actual redirects resolve both shop aliases to the page containing gift cards and 5 shared offers
+PASS Storefront route: gift card request may remain pending without blocking the five photo offers
+PASS Storefront route: gift card fetch failure preserves photo offers and existing card fallback
+PASS Storefront: safe intent rejects ambiguous IDs, hostile paths and redirects; login roundtrip
+PASS Storefront: admin config save/reread renders same names, prices, CTA and structured data
+PASS Storefront: unpublished, zero-price and incompatible-delivery offers never invite purchase
+PASS Storefront: account product selection only lists authenticated own galleries and tracks existing actions
+PASS Storefront: account offer is compact until opened; no gallery request without a selection
+PASS Storefront: no-gallery message comes from CMS and empty account never gets another client gallery
+PASS Storefront: product intent opens correct photo selection, never auto-adds or orders
+PASS Storefront: print intent uses current gallery price, no stale public amount
+PASS Storefront: missing or disabled gallery product is explained and never silently replaced
+PASS Storefront: transient network failure preserves intent; retry opens the selected product
+PASS Storefront: payment return has priority and does not consume an outstanding product choice
+PASS Storefront: exact 16-photo product explains 3/16 and 15/16, enables 16/16, and reports excess selection
+PASS Storefront: Wall Decor selects exactly one photo and offers courier or pickup with correct total
+PASS Storefront: a cart with no compatible delivery cannot submit payment
+PASS Storefront: production gallery repair restores public print intent, cart prices and 17/25 delivery
+18 grup testów storefront: PASS
+PASS product media: video only mounts on request and never autoplays
+PASS product media: sample spreads have bounded navigation and are labelled as examples
+PASS unified orders reject unauthenticated access
+PASS one list preserves gifts and legacy orders and maps merchandise once from its paid snapshot
+PASS unpaid unified order exposes neither shipment nor production nor status mutation
+PASS paid unified order exposes shipping and production and saves stage in the existing detail view
+PASS paid personal pickup shows ready/collected stages and production without InPost or tracking controls
+PASS preview warning survives rewritten Netlify request URLs
+PASS publication explains empty active shop and offers explicit grouped activation
+PASS publication is authenticated, atomic, shared-only, repeatable and leaves zero-price prints hidden
+PASS integration check proves independent provider access without purchases or leaking credentials
+PASS isolated QA blocks production shipment mutations and suppresses outbound emails
+PASS missing Geowidget token is never presented as configured
+Shop launch readiness: 6 groups PASS (provider transport and database mocked).
+PASS shop invitation has finite gentle animation only when reduced motion is not requested
+PASS admin pickup instructions save/read and on/off control
+PASS pickup round 1: locker/courier/pickup, cart return, refresh, submit
+PASS pickup round 2: locker/courier/pickup, cart return, refresh, submit
+PASS pickup round 3: locker/courier/pickup, cart return, refresh, submit
+Pickup DOM checks passed.

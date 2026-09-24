@@ -1,0 +1,21 @@
+✔ POD-S01: no key means no network, flag is configuration not connection (2.88774ms)
+✔ POD-S02: rejects host, URL, order action, unsafe SKU and invalid quantities before network (3.460435ms)
+✔ POD-S03: SKU lookup uses fixed sandbox and server-only secret, sanitized response (10.657327ms)
+✔ POD-S04: multi-product quote has PL/PLN, no recipient, photo URL or orders request (2.916464ms)
+✔ POD-S05: warnings block acceptance even on HTTP 200 (1.556014ms)
+✔ POD-S06: invalid, empty, foreign-currency and missing costs do not become zero (3.773486ms)
+✔ POD-S07: mismatched SKU is not shown as requested product (0.794177ms)
+✔ POD-S08: provider credentials, rate limits, failures never expose body or key (1.161641ms)
+✔ POD-S09: transport failure gives controlled error without retry or secret (0.251008ms)
+✔ POD-S10: JSON byte limit handles chunked bodies and invalid UTF8 (0.616438ms)
+✔ POD-S11: malformed provider JSON is a provider failure, not a user 400 (0.338059ms)
+✔ POD-S12: QA correction — missing shipping, zero product cost and nested issues rejected (1.95814ms)
+✔ POD-S13: QA correction — books and additional print areas need separate qualification (0.288615ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 597.113996
