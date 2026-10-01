@@ -1,0 +1,13 @@
+PASS wizyty są domyślnym pierwszym raportem; pozostałe raporty pozostają w zakładkach
+PASS klawiatura przełącza zakładkę wraz z fokusem
+PASS rozwiniecie wizyty pokazuje konkretne kroki, wybory, pola i obcięcie historii
+PASS filtry rezerwacji, problemów i domeny oraz wyszukiwarka działają razem
+PASS odświeżenie z błędem zachowuje oznaczony poprzedni odczyt, ponowienie usuwa błąd
+PASS Dzisiaj wysyła zakres jednego polskiego dnia; stare dane nie udają nowego okresu
+PASS niedozwolony odczyt nie pozostawia danych klientów; niepoprawne daty nie uruchamiają zapytania
+PASS nowe finanse należą do stale dostępnej zakładki; przełączenie nie gubi szkicu
+PASS skrót z oferty otwiera właściwy raport sprzedaży
+PASS brak sesji ma czytelny stan pusty bez sugerowania porzuconej rezerwacji
+PASS rzeczywisty serializer: filtr zachowuje rezerwację po obcięciu osi czasu i pomija samo zapytanie
+PASS awaria źródła zdarzeń pojawia się na głównym widoku zamiast fałszywego zera wizyt
+12 grup testów analityki: PASS

@@ -1,0 +1,155 @@
+internal_scripts/list-pages.ts(1,20): error TS2307: Cannot find module './src/lib/db/prisma' or its corresponding type declarations.
+src/app/admin/pages/strona-glowna/page.tsx(477,29): error TS2353: Object literal may only specify known properties, and 'enabled' does not exist in type 'PageSection'.
+src/app/admin/pages/strona-glowna/page.tsx(498,29): error TS2353: Object literal may only specify known properties, and 'enabled' does not exist in type 'PageSection'.
+src/app/admin/pages/strona-glowna/page.tsx(508,29): error TS2353: Object literal may only specify known properties, and 'enabled' does not exist in type 'PageSection'.
+src/app/admin/pages/strona-glowna/page.tsx(527,29): error TS2353: Object literal may only specify known properties, and 'enabled' does not exist in type 'PageSection'.
+src/app/admin/pages/strona-glowna/page.tsx(537,29): error TS2353: Object literal may only specify known properties, and 'enabled' does not exist in type 'PageSection'.
+src/app/admin/pages/strona-glowna/page.tsx(550,29): error TS2353: Object literal may only specify known properties, and 'enabled' does not exist in type 'PageSection'.
+src/app/admin/pages/strona-glowna/page.tsx(1147,103): error TS7006: Parameter '_' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(1147,106): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(1189,75): error TS7006: Parameter '_' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(1189,78): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(1226,83): error TS7006: Parameter '_' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(1226,86): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(1797,69): error TS7006: Parameter 'feature' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(1797,78): error TS7006: Parameter 'fIndex' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(1812,73): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(1812,79): error TS7006: Parameter 'iIndex' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2382,79): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2382,85): error TS7006: Parameter 'mIndex' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2510,84): error TS7006: Parameter 'photo' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2510,91): error TS7006: Parameter 'pIndex' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2515,119): error TS7006: Parameter '_' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2515,122): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2585,84): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2585,90): error TS7006: Parameter 'iIndex' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2612,109): error TS7006: Parameter 'photo' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2612,116): error TS7006: Parameter 'pIdx' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2616,141): error TS7006: Parameter '_' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2616,144): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2770,82): error TS7006: Parameter 'story' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2770,89): error TS7006: Parameter 'sIdx' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2820,109): error TS7006: Parameter '_' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2820,112): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2884,92): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2884,98): error TS7006: Parameter 'cIdx' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2889,119): error TS7006: Parameter '_' implicitly has an 'any' type.
+src/app/admin/pages/strona-glowna/page.tsx(2889,122): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/app/admin/umowy/[id]/page.tsx(134,29): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | null'.
+  Type 'undefined' is not assignable to type 'string | null'.
+src/app/admin/umowy/[id]/page.tsx(135,29): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | null'.
+  Type 'undefined' is not assignable to type 'string | null'.
+src/app/admin/umowy/[id]/page.tsx(136,29): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | null'.
+  Type 'undefined' is not assignable to type 'string | null'.
+src/app/api/admin/clients/[id]/route.ts(298,21): error TS2322: Type '{ permissions?: Record<string, unknown> | undefined; name: any; email: string; phone: any; address: any; city: any; postal_code: any; is_active: any; }' is not assignable to type '(Without<UserUpdateInput, UserUncheckedUpdateInput> & UserUncheckedUpdateInput) | (Without<...> & UserUpdateInput)'.
+  Type '{ permissions?: Record<string, unknown> | undefined; name: any; email: string; phone: any; address: any; city: any; postal_code: any; is_active: any; }' is not assignable to type 'Without<UserUncheckedUpdateInput, UserUpdateInput> & UserUpdateInput'.
+    Type '{ permissions?: Record<string, unknown> | undefined; name: any; email: string; phone: any; address: any; city: any; postal_code: any; is_active: any; }' is not assignable to type 'UserUpdateInput'.
+      Types of property 'permissions' are incompatible.
+        Type 'Record<string, unknown> | undefined' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+          Type 'Record<string, unknown>' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+            Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+src/app/api/admin/incidents/route.ts(61,42): error TS2345: Argument of type '{ by: "status"[]; _count: { _all: true; }; }' is not assignable to parameter of type '{ where?: AdminIncidentWhereInput | undefined; orderBy?: AdminIncidentOrderByWithAggregationInput | AdminIncidentOrderByWithAggregationInput[] | undefined; ... 8 more ...; _max?: AdminIncidentMaxAggregateInputType | undefined; } & { ...; }'.
+  Property 'orderBy' is missing in type '{ by: "status"[]; _count: { _all: true; }; }' but required in type '{ orderBy: AdminIncidentOrderByWithAggregationInput | AdminIncidentOrderByWithAggregationInput[] | undefined; }'.
+src/app/api/admin/incidents/route.ts(65,42): error TS2345: Argument of type '{ by: "severity"[]; _count: { _all: true; }; where: { status: { not: "RESOLVED"; }; }; }' is not assignable to parameter of type '{ where?: AdminIncidentWhereInput | undefined; orderBy?: AdminIncidentOrderByWithAggregationInput | AdminIncidentOrderByWithAggregationInput[] | undefined; ... 8 more ...; _max?: AdminIncidentMaxAggregateInputType | undefined; } & { ...; }'.
+  Property 'orderBy' is missing in type '{ by: "severity"[]; _count: { _all: true; }; where: { status: { not: "RESOLVED"; }; }; }' but required in type '{ orderBy: AdminIncidentOrderByWithAggregationInput | AdminIncidentOrderByWithAggregationInput[] | undefined; }'.
+src/app/api/admin/incidents/route.ts(82,86): error TS18048: 'item._count' is possibly 'undefined'.
+src/app/api/admin/incidents/route.ts(82,98): error TS2339: Property '_all' does not exist on type 'true | { id?: number | undefined; severity?: number | undefined; category?: number | undefined; status?: number | undefined; reason_code?: number | undefined; summary?: number | undefined; ... 13 more ...; _all?: number | undefined; }'.
+  Property '_all' does not exist on type 'true'.
+src/app/api/admin/incidents/route.ts(83,97): error TS18048: 'item._count' is possibly 'undefined'.
+src/app/api/admin/incidents/route.ts(83,109): error TS2339: Property '_all' does not exist on type 'true | { id?: number | undefined; severity?: number | undefined; category?: number | undefined; status?: number | undefined; reason_code?: number | undefined; summary?: number | undefined; ... 13 more ...; _all?: number | undefined; }'.
+  Property '_all' does not exist on type 'true'.
+src/app/api/blog/[id]/route.ts(87,125): error TS2345: Argument of type '{ content: string; id: number; slug: string; title: string; meta_title: string | null; meta_description: string | null; updated_at: Date; created_at: Date; status: string; published_at: Date | null; ... 5 more ...; author_id: number | null; }' is not assignable to parameter of type '{ slug: string; category?: string | undefined; page_type?: string | null | undefined; }'.
+  Types of property 'category' are incompatible.
+    Type 'string | null' is not assignable to type 'string | undefined'.
+      Type 'null' is not assignable to type 'string | undefined'.
+src/app/api/blog/route.ts(120,125): error TS2345: Argument of type '{ content: string; id: number; slug: string; title: string; meta_title: string | null; meta_description: string | null; updated_at: Date; created_at: Date; status: string; published_at: Date | null; ... 5 more ...; author_id: number | null; }' is not assignable to parameter of type '{ slug: string; category?: string | undefined; page_type?: string | null | undefined; }'.
+  Types of property 'category' are incompatible.
+    Type 'string | null' is not assignable to type 'string | undefined'.
+      Type 'null' is not assignable to type 'string | undefined'.
+src/app/api/blog/route.ts(178,125): error TS2345: Argument of type '{ content: string; id: number; slug: string; title: string; meta_title: string | null; meta_description: string | null; updated_at: Date; created_at: Date; status: string; published_at: Date | null; ... 5 more ...; author_id: number | null; }' is not assignable to parameter of type '{ slug: string; category?: string | undefined; page_type?: string | null | undefined; }'.
+  Types of property 'category' are incompatible.
+    Type 'string | null' is not assignable to type 'string | undefined'.
+      Type 'null' is not assignable to type 'string | undefined'.
+src/app/api/gift-cards/shop/route.ts(90,40): error TS2345: Argument of type 'string' is not assignable to parameter of type '"Reportaż ślubny" | "Sesja rodzinna Start" | "Sesja rodzinna Plus" | "Rodzinne pokolenia" | "Sesja dla dwojga" | "Sesja ciążowa" | "Portret premium" | "Sesja wizerunkowa" | ... 6 more ... | "Komunia i przyjęcie"'.
+src/app/api/gift-cards/shop/route.ts(90,81): error TS2345: Argument of type 'string' is not assignable to parameter of type '"Reportaż ślubny" | "Sesja rodzinna Start" | "Sesja rodzinna Plus" | "Rodzinne pokolenia" | "Sesja dla dwojga" | "Sesja ciążowa" | "Portret premium" | "Sesja wizerunkowa" | ... 6 more ... | "Komunia i przyjęcie"'.
+src/app/providers.tsx(3,31): error TS2307: Cannot find module 'next-themes' or its corresponding type declarations.
+src/app/sklep/albumy/[slug]/page.tsx(28,27): error TS2339: Property 'cover_image' does not exist on type '{ id: number; slug: string; title: string; updated_at: Date; created_at: Date; is_active: boolean; description: string | null; category: string; subtitle: string | null; occasion: string[]; ... 27 more ...; sort_order: number; }'.
+src/app/sklep/albumy/[slug]/page.tsx(28,48): error TS2339: Property 'cover_image' does not exist on type '{ id: number; slug: string; title: string; updated_at: Date; created_at: Date; is_active: boolean; description: string | null; category: string; subtitle: string | null; occasion: string[]; ... 27 more ...; sort_order: number; }'.
+src/app/strefa-klienta/oferty/[id]/page.tsx(1132,61): error TS2322: Type '{ senderName: any; recipientName: string; packageName: any; packagePriceLabel: string; hidePrice: boolean; sessionDate: string; sessionTime: string; location: string; verificationCode: string; qrTarget: string; }' is not assignable to type 'IntrinsicAttributes & FamilyOfferVoucherPreviewProps'.
+  Property 'verificationCode' does not exist on type 'IntrinsicAttributes & FamilyOfferVoucherPreviewProps'.
+src/components/admin/offers/OfferForm.tsx(156,45): error TS7006: Parameter '_' implicitly has an 'any' type.
+src/components/admin/offers/OfferForm.tsx(156,48): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/components/admin/offers/OfferForm.tsx(177,87): error TS7006: Parameter '_' implicitly has an 'any' type.
+src/components/admin/offers/OfferForm.tsx(177,90): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/components/admin/offers/OfferForm.tsx(271,50): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/components/admin/offers/OfferForm.tsx(271,55): error TS7006: Parameter 'section' implicitly has an 'any' type.
+src/components/admin/offers/OfferForm.tsx(272,44): error TS7006: Parameter 'sectionSum' implicitly has an 'any' type.
+src/components/admin/offers/OfferForm.tsx(272,56): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/components/admin/offers/OfferForm.tsx(465,45): error TS7006: Parameter 'section' implicitly has an 'any' type.
+src/components/admin/offers/OfferForm.tsx(465,54): error TS7006: Parameter 'sectionIndex' implicitly has an 'any' type.
+src/components/admin/offers/OfferForm.tsx(500,53): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/components/admin/offers/OfferForm.tsx(500,59): error TS7006: Parameter 'itemIndex' implicitly has an 'any' type.
+src/components/sections/PointCloudSections.tsx(512,38): error TS2339: Property 'modelUrl' does not exist on type 'PointCloudServiceItem'.
+src/components/sections/PointCloudSections.tsx(516,58): error TS2339: Property 'modelUrl' does not exist on type 'PointCloudServiceItem'.
+src/components/sections/PointCloudSections.tsx(517,45): error TS2322: Type '{ src: any; alt: string; autoRotate: true; className: string; }' is not assignable to type 'IntrinsicAttributes & ModelViewer3DProps'.
+  Property 'alt' does not exist on type 'IntrinsicAttributes & ModelViewer3DProps'.
+src/components/sklep/AlbumDetail.tsx(147,36): error TS2339: Property 'format' does not exist on type 'Album'.
+src/components/sklep/AlbumDetail.tsx(147,84): error TS2339: Property 'format' does not exist on type 'Album'.
+src/components/sklep/AlbumDetail.tsx(155,33): error TS2339: Property 'nphoto_api_data' does not exist on type 'Album'.
+src/components/sklep/AlbumDetail.tsx(155,87): error TS2532: Object is possibly 'undefined'.
+src/components/sklep/AlbumDetail.tsx(155,94): error TS2339: Property 'nphoto_api_data' does not exist on type 'Album'.
+src/components/sklep/AlbumDetail.tsx(161,38): error TS2532: Object is possibly 'undefined'.
+src/components/sklep/AlbumDetail.tsx(161,45): error TS2339: Property 'nphoto_api_data' does not exist on type 'Album'.
+src/components/sklep/AlbumsCatalog.tsx(206,32): error TS2339: Property 'format' does not exist on type 'Album'.
+src/components/sklep/AlbumsCatalog.tsx(206,99): error TS2339: Property 'format' does not exist on type 'Album'.
+src/lib/auth/client-login.ts(121,21): error TS2322: Type 'LoginTimingSnapshot' is not assignable to type 'InputJsonValue | null | undefined'.
+  Type 'LoginTimingSnapshot' is not assignable to type 'InputJsonObject'.
+    Index signature for type 'string' is missing in type 'LoginTimingSnapshot'.
+src/lib/auth/client-login.ts(186,80): error TS2322: Type 'LoginTimingSnapshot' is not assignable to type 'InputJsonValue | null | undefined'.
+  Type 'LoginTimingSnapshot' is not assignable to type 'InputJsonObject'.
+    Index signature for type 'string' is missing in type 'LoginTimingSnapshot'.
+src/lib/auth/client-login.ts(205,63): error TS2322: Type 'LoginTimingSnapshot' is not assignable to type 'InputJsonValue | null | undefined'.
+  Type 'LoginTimingSnapshot' is not assignable to type 'InputJsonObject'.
+    Index signature for type 'string' is missing in type 'LoginTimingSnapshot'.
+src/lib/auth/client-login.ts(333,21): error TS2322: Type 'LoginTimingSnapshot' is not assignable to type 'InputJsonValue | null | undefined'.
+  Type 'LoginTimingSnapshot' is not assignable to type 'InputJsonObject'.
+    Index signature for type 'string' is missing in type 'LoginTimingSnapshot'.
+src/lib/offers/familyVoucher.ts(1,25): error TS7016: Could not find a declaration file for module 'pdfkit'. '/workspace/scratch/d85cb956ddb2/wlasniewski_page/node_modules/pdfkit/js/pdfkit.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/pdfkit` if it exists or add a new declaration (.d.ts) file containing `declare module 'pdfkit';`
+src/lib/pdf/OfferDocument.tsx(134,46): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: PropsWithChildren<ViewProps>): View', gave the following error.
+    Type 'false | { backgroundColor: string; }' is not assignable to type 'Style'.
+      Type 'boolean' is not assignable to type 'Style'.
+        Type 'boolean' is not assignable to type 'MediaQueryStyle'.
+  Overload 2 of 2, '(props: PropsWithChildren<ViewProps>, context: any): View', gave the following error.
+    Type 'false | { backgroundColor: string; }' is not assignable to type 'Style'.
+      Type 'boolean' is not assignable to type 'Style'.
+        Type 'boolean' is not assignable to type 'MediaQueryStyle'.
+src/lib/photo-challenge/voucher.ts(9,25): error TS7016: Could not find a declaration file for module 'pdfkit'. '/workspace/scratch/d85cb956ddb2/wlasniewski_page/node_modules/pdfkit/js/pdfkit.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/pdfkit` if it exists or add a new declaration (.d.ts) file containing `declare module 'pdfkit';`
+src/lib/services/OfferDocument.tsx(520,66): error TS2345: Argument of type '{ textAlign: "left"; paddingLeft: number; }' is not assignable to parameter of type '{ padding: number; borderWidth: number; borderColor: string; fontSize: number; textAlign: "center"; justifyContent: "center"; } | { backgroundColor: string; fontSize: number; }'.
+  Type '{ textAlign: "left"; paddingLeft: number; }' is missing the following properties from type '{ padding: number; borderWidth: number; borderColor: string; fontSize: number; textAlign: "center"; justifyContent: "center"; }': padding, borderWidth, borderColor, fontSize, justifyContent
+src/lib/services/OfferDocument.tsx(521,62): error TS2345: Argument of type '{ backgroundColor: string; borderTopWidth: number; borderTopColor: string; borderLeftWidth: number; borderLeftColor: string; borderRightWidth: number; borderRightColor: string; paddingTop: number; }' is not assignable to parameter of type '{ padding: number; borderWidth: number; borderColor: string; fontSize: number; textAlign: "center"; justifyContent: "center"; } | { backgroundColor: string; fontSize: number; }'.
+  Property 'fontSize' is missing in type '{ backgroundColor: string; borderTopWidth: number; borderTopColor: string; borderLeftWidth: number; borderLeftColor: string; borderRightWidth: number; borderRightColor: string; paddingTop: number; }' but required in type '{ backgroundColor: string; fontSize: number; }'.
+src/lib/services/OfferDocument.tsx(542,71): error TS2345: Argument of type '{ textAlign: "left"; paddingLeft: number; }' is not assignable to parameter of type '{ padding: number; borderWidth: number; borderColor: string; fontSize: number; textAlign: "center"; justifyContent: "center"; }'.
+  Type '{ textAlign: "left"; paddingLeft: number; }' is missing the following properties from type '{ padding: number; borderWidth: number; borderColor: string; fontSize: number; textAlign: "center"; justifyContent: "center"; }': padding, borderWidth, borderColor, fontSize, justifyContent
+src/lib/services/OfferDocument.tsx(543,64): error TS2345: Argument of type '{ backgroundColor: string; borderLeftWidth: number; borderLeftColor: string; borderRightWidth: number; borderRightColor: string; }' is not assignable to parameter of type '{ padding: number; borderWidth: number; borderColor: string; fontSize: number; textAlign: "center"; justifyContent: "center"; }'.
+  Type '{ backgroundColor: string; borderLeftWidth: number; borderLeftColor: string; borderRightWidth: number; borderRightColor: string; }' is missing the following properties from type '{ padding: number; borderWidth: number; borderColor: string; fontSize: number; textAlign: "center"; justifyContent: "center"; }': padding, borderWidth, borderColor, fontSize, and 2 more.
+src/lib/services/OfferDocument.tsx(562,64): error TS2345: Argument of type '{ textAlign: "left"; paddingLeft: number; }' is not assignable to parameter of type '{ padding: number; borderWidth: number; borderColor: string; fontSize: number; textAlign: "center"; justifyContent: "center"; }'.
+  Type '{ textAlign: "left"; paddingLeft: number; }' is missing the following properties from type '{ padding: number; borderWidth: number; borderColor: string; fontSize: number; textAlign: "center"; justifyContent: "center"; }': padding, borderWidth, borderColor, fontSize, justifyContent
+src/lib/services/OfferDocument.tsx(563,60): error TS2345: Argument of type '{ backgroundColor: string; borderLeftWidth: number; borderLeftColor: string; borderRightWidth: number; borderRightColor: string; }' is not assignable to parameter of type '{ padding: number; borderWidth: number; borderColor: string; fontSize: number; textAlign: "center"; justifyContent: "center"; }'.
+  Type '{ backgroundColor: string; borderLeftWidth: number; borderLeftColor: string; borderRightWidth: number; borderRightColor: string; }' is missing the following properties from type '{ padding: number; borderWidth: number; borderColor: string; fontSize: number; textAlign: "center"; justifyContent: "center"; }': padding, borderWidth, borderColor, fontSize, and 2 more.
+src/lib/services/generateContractPDF.ts(1,25): error TS7016: Could not find a declaration file for module 'pdfkit'. '/workspace/scratch/d85cb956ddb2/wlasniewski_page/node_modules/pdfkit/js/pdfkit.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/pdfkit` if it exists or add a new declaration (.d.ts) file containing `declare module 'pdfkit';`
+src/lib/services/generateContractPDF.ts(42,29): error TS7006: Parameter 'chunk' implicitly has an 'any' type.
+src/lib/services/generateOfferPDF.ts(1,25): error TS7016: Could not find a declaration file for module 'pdfkit'. '/workspace/scratch/d85cb956ddb2/wlasniewski_page/node_modules/pdfkit/js/pdfkit.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/pdfkit` if it exists or add a new declaration (.d.ts) file containing `declare module 'pdfkit';`
+src/lib/services/generateOfferPDF.ts(79,30): error TS7006: Parameter 'err' implicitly has an 'any' type.
+src/lib/services/google-drive.ts(34,13): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+tests/unit/analytics-v3-gsc.test.ts(7,39): error TS2352: Conversion of type '{ GSC_SITE_URL_WLASNIEWSKI: string; GSC_SITE_URL_AEROANALIZA: string; }' to type 'ProcessEnv' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'NODE_ENV' is missing in type '{ GSC_SITE_URL_WLASNIEWSKI: string; GSC_SITE_URL_AEROANALIZA: string; }' but required in type 'ProcessEnv'.
+tests/unit/crm-client-delivery-flow.test.ts(337,56): error TS1501: This regular expression flag is only available when targeting 'es2018' or later.
+tests/unit/crm-client-delivery-flow.test.ts(355,69): error TS1501: This regular expression flag is only available when targeting 'es2018' or later.
+tests/unit/crm-client-delivery-flow.test.ts(733,99): error TS1501: This regular expression flag is only available when targeting 'es2018' or later.
+tests/unit/crm-client-delivery-flow.test.ts(752,156): error TS1501: This regular expression flag is only available when targeting 'es2018' or later.

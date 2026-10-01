@@ -1,0 +1,99 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> fotograf-nextjs@2.0.0 test:prodigi-foundation
+> node --import tsx --test tests/unit/prodigi-sandbox.test.ts tests/unit/pod-simulator.test.ts tests/unit/finance-actuals*.test.ts && node tests/qa/prodigi-sandbox.cjs && node tests/qa/pod-simulator.cjs && node tests/qa/analytics-journey-ui.cjs && node tests/qa/admin-orders-finance-card.cjs
+
+✔ anonymous request is denied without reading finance and cannot be cached (26.556217ms)
+✔ valid client token and nonexistent admin cannot access finance (7.286658ms)
+✔ authorized handler returns actual minor PLN amounts and Warsaw date filter only (17.465626ms)
+✔ authorized invalid dates fail before finance reads, including invalid end dates and unsupported timestamps (14.270151ms)
+[Finance actuals] Source unavailable; no amounts returned.
+✔ database failure exposes unavailable data, never zeros or connection details (2.591915ms)
+✔ actual React finance clears stale amounts across date changes, ignores old responses, then clears on access denial and retries (228.43311ms)
+✔ actual React rejects incomplete response contracts and invalid dates without rendering false values or crashing (161.952233ms)
+✔ actual React timeout releases retry, ignores a late success and accepts the fresh response (34.511438ms)
+✔ PLN sums are exact minor units and never presented as income (2.607739ms)
+✔ foreign ledger and legacy gift card amounts never mix into PLN (0.416868ms)
+✔ manual legacy booking deposit is deduplicated while unpaid ledger remainder remains counted once (0.392241ms)
+✔ ledger FULL payment prevents counting both legacy booking halves again (0.199951ms)
+✔ legacy photo and gift card fallbacks are deduplicated by resource even with missing provider ID (0.323087ms)
+✔ an earlier ledger event suppresses an incorrectly later legacy date (0.213221ms)
+✔ ledger plus legacy refund does not double count and missing ledger refund can use completed legacy record (0.352171ms)
+✔ refund ledger outside period suppresses legacy fallback; pending refund never counts (0.267984ms)
+✔ same CART provider transaction is counted once across matching order fallbacks (0.289646ms)
+✔ unmatched online records are disclosed instead of guessed, including Stripe (0.48482ms)
+✔ time interval is start inclusive / end exclusive and duplicate selected ledger IDs count once (0.18587ms)
+✔ invalid amounts fail closed instead of creating false zero finance (1.800322ms)
+✔ Warsaw range uses actual 23h/25h DST civil days (31.746783ms)
+✔ range validation rejects malformed endpoints, duplicate params, unsupported query and excessive ranges (5.463351ms)
+✔ scenario separates revenue, cash surplus and work-adjusted profit; advertising is deducted once (1.434601ms)
+✔ break-even and target round to enough complete orders, including ongoing work costs (0.332421ms)
+✔ ROI subtracts initial investment and uses explicit horizon; payback uses positive monthly profit (0.186121ms)
+✔ no traffic or zero conversion retains monthly overhead, never invents CAC or payback (0.210828ms)
+✔ zero and negative margin cannot fund positive fixed costs or target (0.191959ms)
+✔ zero costs and zero target have zero break-even, while free startup makes ROI undefined (0.176476ms)
+✔ 100% conversion is valid and percentages may reveal an unprofitable offer (0.137227ms)
+✔ fractional expected orders remain visible; only target thresholds are rounded (0.177337ms)
+✔ reject every nonfinite/negative numeric field, fractions in count fields and invalid percentages (19.292618ms)
+✔ cash versus net is explicit and does not secretly convert entered prices or operator fees (1.246809ms)
+✔ Polish decimal inputs parse, but blank controls and malformed numbers remain errors (1.583926ms)
+✔ local persisted scenario round-trips through schema/version validation and strips unknown keys (0.45163ms)
+✔ corrupt, unversioned, future-version and invalid local data never feed the calculator (0.423398ms)
+✔ POD-S01: no key means no network, flag is configuration not connection (3.695018ms)
+✔ POD-S02: rejects host, URL, order action, unsafe SKU and invalid quantities before network (3.043736ms)
+✔ POD-S03: SKU lookup uses fixed sandbox and server-only secret, sanitized response (10.141681ms)
+✔ POD-S04: multi-product quote has PL/PLN, no recipient, photo URL or orders request (2.665496ms)
+✔ POD-S05: warnings block acceptance even on HTTP 200 (1.514742ms)
+✔ POD-S06: invalid, empty, foreign-currency and missing costs do not become zero (3.552873ms)
+✔ POD-S07: mismatched SKU is not shown as requested product (0.790041ms)
+✔ POD-S08: provider credentials, rate limits, failures never expose body or key (1.051805ms)
+✔ POD-S09: transport failure gives controlled error without retry or secret (0.301895ms)
+✔ POD-S10: JSON byte limit handles chunked bodies and invalid UTF8 (0.632863ms)
+✔ POD-S11: malformed provider JSON is a provider failure, not a user 400 (0.267333ms)
+✔ POD-S12: QA correction — missing shipping, zero product cost and nested issues rejected (1.655254ms)
+✔ POD-S13: QA correction — books and additional print areas need separate qualification (0.219881ms)
+ℹ tests 48
+ℹ suites 0
+ℹ pass 48
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1719.6864
+PASS POD-A01 auth before config or provider
+PASS POD-A02 config says configured, not connected, no secret
+PASS POD-A03 Origin and JSON checks before network
+PASS POD-A04 malformed and streamed oversized body
+PASS POD-A05 rate limit and missing key
+PASS POD-A06 actual handler -> adapter -> sanitized provider result
+PASS POD-U00 diagnostics stays idle until opened
+PASS POD-U01 unconfigured blocks queries
+PASS POD-U02 lookup -> quantity -> quote uses full variant and displays sandbox costs
+PASS POD-U03 failure clears old quote and allows retry
+PASS POD-U04 changing SKU invalidates product and quote
+PASS POD-U05 QA correction: incomplete required print areas block quote
+PASS POD-U06 QA correction: stalled initial config has timeout
+13 sandbox route/DOM scenarios PASS; auth and transport simulated, no external call.
+PASS initial UI labels model versus facts, costs, work and device-only persistence
+PASS editing a Polish decimal changes calculated profit; empty input hides results and disables saving
+PASS save, edit, read and remount preserve explicitly saved scenario only
+PASS malformed local state does not overwrite active inputs; reset clears record and restores example
+PASS non-positive margin and zero conversion explain unreachable goals without NaN/Infinity
+PASS net basis retains numbers and clearly requires manual conversion of comparable costs
+PASS blocked storage reports real failure and does not claim a successful save/read/reset
+PASS three customer-independent admin edit/save/load cycles remain consistent
+PASS wizyty są domyślnym pierwszym raportem; pozostałe raporty pozostają w zakładkach
+PASS klawiatura przełącza zakładkę wraz z fokusem
+PASS rozwiniecie wizyty pokazuje konkretne kroki, wybory, pola i obcięcie historii
+PASS filtry rezerwacji, problemów i domeny oraz wyszukiwarka działają razem
+PASS odświeżenie z błędem zachowuje oznaczony poprzedni odczyt, ponowienie usuwa błąd
+PASS Dzisiaj wysyła zakres jednego polskiego dnia; stare dane nie udają nowego okresu
+PASS niedozwolony odczyt nie pozostawia danych klientów; niepoprawne daty nie uruchamiają zapytania
+PASS nowe finanse należą do stale dostępnej zakładki; przełączenie nie gubi szkicu
+PASS skrót z oferty otwiera właściwy raport sprzedaży
+PASS brak sesji ma czytelny stan pusty bez sugerowania porzuconej rezerwacji
+PASS rzeczywisty serializer: filtr zachowuje rezerwację po obcięciu osi czasu i pomija samo zapytanie
+PASS awaria źródła zdarzeń pojawia się na głównym widoku zamiast fałszywego zera wizyt
+12 grup testów analityki: PASS
+PASS orders finance card sums paid/completed PLN only, explains scope and links to actuals
+PASS filtering orders does not silently change the explicitly all-loaded PLN value; no mutation is sent

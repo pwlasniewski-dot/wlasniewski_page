@@ -1,0 +1,16 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> fotograf-nextjs@2.0.0 prisma:generate
+> node scripts/prisma-generate-local.js
+
+[prisma-generate] Local query engine not found; Prisma will use its standard engine resolution.
+[prisma-generate] Local schema engine not found; Prisma will use its standard engine resolution.
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v5.22.0) to ./node_modules/@prisma/client in 1.48s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to react to database changes in your app as they happen? Discover how with Pulse: https://pris.ly/tip-1-pulse
+
+[prisma-generate] Prisma Client generated successfully.

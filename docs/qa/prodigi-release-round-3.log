@@ -1,0 +1,41 @@
+✔ POD-QA-00: independent positive baseline includes only print IDs (6.567225ms)
+✔ POD-QA-01: foreign customer (0.910472ms)
+✔ POD-QA-02: cross order proof replay (2.311603ms)
+✔ POD-QA-03: quantity changed after approval (0.664661ms)
+✔ POD-QA-04: crop changed after approval (0.964523ms)
+✔ POD-QA-05: address changed after quote (0.624481ms)
+✔ POD-QA-06: one grosz refund after payment (0.339051ms)
+✔ POD-QA-07: unknown submission state (0.544651ms)
+✔ POD-QA-08: approval from future (0.580134ms)
+✔ POD-QA-09: quote expiry equality boundary (0.450568ms)
+✔ POD-QA-10: duplicate line ID across print and service (0.395005ms)
+✔ POD-QA-11: preview asset substituted for final (0.43096ms)
+✔ POD-QA-12: publication permission is not print approval (0.333964ms)
+✔ POD-R01: paid final approved print passes; session, tour and installation never become print submissions (6.227233ms)
+✔ POD-R02: paid pre-session buffer is blocked, even with final files and proof (1.118305ms)
+✔ POD-R03: cancellation, submitted, submitting and unknown submission block retries (4.040097ms)
+✔ POD-R04: publication consent is not print approval; print does not require publication (0.645533ms)
+✔ POD-R05: preview or missing asset cannot pass even after a new proof fingerprint (1.166327ms)
+✔ POD-R06: preflight pending/failed and foreign customer/order assets block (1.607372ms)
+✔ POD-R07: SKU, variant, crop, quantity, amount and final content changes invalidate proof and quote (2.908282ms)
+✔ POD-R08: copied proof does not apply to another order, customer or line (1.158716ms)
+✔ POD-R09: address or shipping service changes invalidate quote but not print proof (11.253515ms)
+✔ POD-R10: absent quote, expiry boundary and invalid quote chronology block (1.950278ms)
+✔ POD-R11: future proof timestamp blocks (0.341935ms)
+✔ POD-R12: underpayment, refund and dispute block; overpayment is allowed after refund reconciliation (1.104985ms)
+✔ POD-R13: required amount must equal all agreed lines plus shipping, never supplier cost (0.406543ms)
+✔ POD-R14: runtime input rejects negative, decimal, NaN, unsafe money, non-PLN and unknown fields (3.977763ms)
+✔ POD-R15: arithmetic overflow is rejected using exact integer addition (0.594596ms)
+✔ POD-R16: duplicate IDs and service-only orders cannot be submitted (0.655718ms)
+✔ POD-R17: multiple prints require each individual approval (1.209783ms)
+✔ POD-R18: proof and quote canonicalization ignore property order and print ordering (0.532602ms)
+✔ POD-R19: evaluation is deterministic, does not mutate or expose delivery, asset and payment (0.916601ms)
+✔ POD-R20: quantity bounds, crop bounds, unsupported print area and malformed digest fail closed (2.042107ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 33
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 339.962988

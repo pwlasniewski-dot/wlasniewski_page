@@ -1,0 +1,8 @@
+PASS initial UI labels model versus facts, costs, work and device-only persistence
+PASS editing a Polish decimal changes calculated profit; empty input hides results and disables saving
+PASS save, edit, read and remount preserve explicitly saved scenario only
+PASS malformed local state does not overwrite active inputs; reset clears record and restores example
+PASS non-positive margin and zero conversion explain unreachable goals without NaN/Infinity
+PASS net basis retains numbers and clearly requires manual conversion of comparable costs
+PASS blocked storage reports real failure and does not claim a successful save/read/reset
+PASS three customer-independent admin edit/save/load cycles remain consistent
