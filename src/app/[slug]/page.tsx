@@ -16,6 +16,8 @@ import type { PhotoFunnelConfig } from '@/lib/marketing/photo-funnel';
 import { hasServerRenderedPrimaryHeading } from '@/lib/seo/page-headings';
 import { getPublishedPage as getPage } from '@/lib/seo/published-page';
 import { resolvePageSocialImage } from '@/lib/seo/page-social-image';
+import PackageScope from '@/components/booking/PackageScope';
+import { formatPackageDuration, packageScopeLines } from '@/lib/packageScope';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -36,6 +38,8 @@ type GrowthPackage = {
     hours: number;
     price: number;
     subtitle: string | null;
+    description: string | null;
+    features: string | null;
     promotion: PublicPackagePromotion | null;
 };
 
@@ -88,8 +92,8 @@ function ServiceGrowthOffer({
     return (
         <section className={sectionClass} aria-labelledby={`${config.slug}-packages-heading`}>
             <div className="mx-auto max-w-6xl">
-                <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-                    <div>
+                <div className="grid gap-10">
+                    <div className="max-w-3xl">
                         <p className={`text-xs font-semibold uppercase tracking-[0.24em] ${editorial ? 'text-[#8a7048]' : 'text-gold-400'}`}>
                             Zakres i cena
                         </p>
@@ -126,22 +130,25 @@ function ServiceGrowthOffer({
                         </div>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-3">
-                        {packages.length > 0 ? packages.slice(0, 3).map((item) => (
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {packages.length > 0 ? packages.map((item) => (
                             <article
                                 key={item.id}
                                 className={`flex min-h-56 flex-col rounded-2xl border p-6 ${cardClass}`}
                             >
                                 <h3 className="text-xl font-semibold">{item.name}</h3>
                                 <p className={`mt-3 text-sm ${mutedClass}`}>
-                                    {item.hours === 1 ? '1 godzina fotografowania' : `${item.hours} godziny fotografowania`}
+                                    {formatPackageDuration(item.hours)} fotografowania
                                 </p>
                                 {item.subtitle && <p className={`mt-2 text-sm leading-relaxed ${mutedClass}`}>{item.subtitle}</p>}
-                                <div className="mt-auto pt-7">
+                                <div className="mt-5">
                                     {item.promotion ? (
                                         <PromotionPriceBlock promotion={item.promotion} variant="compact" tone={editorial ? 'light' : 'dark'} />
                                     ) : <span className="text-lg font-semibold">{formatPrice(item.price)}</span>}
-                                    <div className="mt-5 grid gap-2">
+                                </div>
+                                <PackageScope description={item.description} features={item.features} className={`mt-5 ${mutedClass}`} />
+                                <div className="mt-auto pt-6">
+                                    <div className="grid gap-2">
                                         <Link
                                             href={bookingHref(config, `${config.slug}-package`, city, item.id)}
                                             data-analytics="photo-cta-booking-package"
@@ -166,7 +173,7 @@ function ServiceGrowthOffer({
                                 </div>
                             </article>
                         )) : (
-                            <div className={`rounded-2xl border p-6 md:col-span-3 ${cardClass}`}>
+                            <div className={`rounded-2xl border p-6 md:col-span-2 xl:col-span-3 ${cardClass}`}>
                                 <p className="font-semibold">Aktualne pakiety i ceny są dostępne w rezerwacji.</p>
                             </div>
                         )}
@@ -379,6 +386,8 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
                 hours: item.hours,
                 price: item.price,
                 subtitle: item.subtitle,
+                description: item.description,
+                features: item.features,
                 promotion: item.promotion,
             }));
         } catch (error) {
@@ -459,6 +468,7 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
                             offers: growthPackages.map((pkg) => ({
                                 '@type': 'Offer',
                                 name: pkg.name,
+                                description: [formatPackageDuration(pkg.hours), ...packageScopeLines(pkg)].join('. '),
                                 price: (pkg.price / 100).toFixed(2),
                                 priceCurrency: 'PLN',
                                 ...(pkg.promotion?.endsAt ? { priceValidUntil: pkg.promotion.endsAt } : {}),
@@ -466,7 +476,7 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
                                 url: `https://wlasniewski.pl/rezerwacja?service=${encodeURIComponent(growthConfig?.bookingService || serviceLabel)}&package_id=${pkg.id}`,
                             })),
                         } : {}),
-                    }),
+                    }).replace(/</g, '\\u003c'),
                 }}
             />
             <PageRenderer sections={sections} />

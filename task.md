@@ -1,3 +1,17 @@
+## 2026-10-02 — pełny zakres pakietów oferty
+
+- [x] Potwierdzić utratę description/features w rendererze oferty i konflikty aktualnego katalogu.
+- [x] Uzgodnić description jako zakres klienta, features wyłącznie jako zapas.
+- [x] Połączyć ofertę, rezerwację i JSON-LD ze wspólnym bezpiecznym zakresem, zachowując ceny i CTA.
+- [x] Udostępnić zakres zapasowy w istniejącym edytorze admina, bez nowego CMS i migracji.
+- [x] Przejść 27 testów jednostkowych i 5 scenariuszy CMS/API/UI/SSR; niezależny odbiór kodu PASS.
+- [x] Domknąć formalną deltę typecheck HEAD: 106/106 identycznych diagnoz, brak nowych błędów.
+- [x] Przygotować mobilny podgląd offline rzeczywistego SSR i Tailwind.
+- [x] Wykonać build Node 22 bez produkcyjnej bazy: kompilacja i 262/262 stron PASS; pełny proces FAIL przy ENOTEMPTY w .next/export.
+- [ ] Potwierdzić pełny build i mobilny odbiór podglądu.
+- [ ] Opublikować przez standardowy git push i potwierdzić preview/produkcję; uwierzytelnienie GitHub blokuje publikację.
+- [ ] Uzgodnić brakujące parametry handlowe (liczby zdjęć ślubnych, album, termin oddania) przed ich dopisaniem.
+
 ## 2026-09-23 — analityka wizyt i rezerwacji
 
 - [x] Potwierdzić brak szczegółów w projekcji V3 i ogólne nazwy przycisków.

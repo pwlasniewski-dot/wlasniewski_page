@@ -9,6 +9,8 @@ import { buildICS } from '@/utils/ics';
 import TestimonialsSection from '@/components/TestimonialsSection';
 import BookingCalendar from '@/components/BookingCalendar';
 import BookingFunnelIntro from '@/components/booking/BookingFunnelIntro';
+import PackageScope from '@/components/booking/PackageScope';
+import { formatPackageDuration } from '@/lib/packageScope';
 import PageRenderer from '@/components/PageRenderer';
 import { PageSection } from '@/components/admin/PageBuilder';
 import { useCart } from '@/context/CartContext';
@@ -107,12 +109,6 @@ const trackBookingEvent = (event: string, params: Record<string, unknown> = {}) 
         (window as any).gtag('event', event, params);
     }
 };
-
-function formatDurationLabel(hours: number) {
-    if (hours === 1) return '1 godzina';
-    if (hours >= 2 && hours <= 4) return `${hours} godziny`;
-    return `${hours} godzin`;
-}
 
 export default function RezerwacjaPage() {
     const { trackEvent, resetBookingFields } = useAnalytics();
@@ -852,7 +848,7 @@ export default function RezerwacjaPage() {
                                             </div>
 
                                             <div className="mb-4 space-y-3">
-                                                <span className="inline-flex w-fit rounded-full border border-[#b7aa99]/55 bg-[#8d7f6d]/10 px-2.5 py-1 text-xs font-extrabold text-[#766958]">{pkg.hours}h</span>
+                                                <span className="inline-flex w-fit rounded-full border border-[#b7aa99]/55 bg-[#8d7f6d]/10 px-2.5 py-1 text-xs font-extrabold text-[#766958]">{formatPackageDuration(pkg.hours)}</span>
                                                 {pkg.promotion ? (
                                                     <PromotionPriceBlock promotion={pkg.promotion} variant="booking" />
                                                 ) : (
@@ -862,12 +858,11 @@ export default function RezerwacjaPage() {
                                                 )}
                                             </div>
 
-                                            {pkg.description && (
-                                                <div
-                                                    className="mt-auto border-t border-[#ddd6cc]/80 pt-4 text-[13px] leading-6 text-[#6b645c] prose prose-sm prose-p:my-0 prose-ul:my-2 prose-li:my-1 opacity-95"
-                                                    dangerouslySetInnerHTML={{ __html: pkg.description }}
-                                                />
-                                            )}
+                                            <PackageScope
+                                                description={pkg.description}
+                                                features={pkg.features}
+                                                className="mt-auto border-t border-[#ddd6cc]/80 pt-4 text-[#6b645c]"
+                                            />
                                         </button>
                                     ))}
                                 </div>
@@ -1020,7 +1015,7 @@ export default function RezerwacjaPage() {
                                                         </p>
                                                         <p className="mt-1 text-sm leading-6 text-[#6b645c]">
                                                             {formatPhotoFunnelTemplate(photoFunnelConfig.bookingCopy.slotDurationTemplate, {
-                                                                duration: formatDurationLabel(chosenPackage.hours),
+                                                                duration: formatPackageDuration(chosenPackage.hours),
                                                             })}
                                                         </p>
                                                     </div>

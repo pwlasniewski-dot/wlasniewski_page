@@ -1,3 +1,9 @@
+## 2026-10-02 — bezpieczny renderer zakresu Package
+
+`src/lib/packageScope.ts` jest lekkim wspólnym kontraktem opisu, zapasowej listy cech i polskiej odmiany czasu. `PackageScope` zamienia treść edytora na punkty renderowane jako tekst React, bez HTML injection. `src/app/[slug]/page.tsx` zachowuje pola opisu z `findPricedPublicPackages`, a `/rezerwacja` używa tego samego komponentu. Offer JSON-LD zawiera ten sam zakres i aktualną cenę; znaki `<` są escapowane przy serializacji. Formularz `/admin/rezerwacja` zapisuje listę cech przez dotychczasowy API i ponownie odczytuje zapisane dane. Nie zmieniono API, schematu bazy, płatności ani cache.
+
+Test `tests/qa/package-scope-cms.cjs` wykonuje prawdziwy zapis/odczyt route, istniejący admin, render oferty i mount rezerwacji na podstawionym magazynie pamięci; nie łączy się z Neon. `tests/unit/package-scope.test.ts` obejmuje sprzeczne i błędne dane oraz inertny render.
+
 ## 2026-09-23 — semantyczna analityka rezerwacji
 
 Istniejący `useAnalytics` i `POST /api/analytics/v2/track` współdzielą kontrakt `bookingJourneyContract`. Kontrakt ogranicza dane do konkretnych zdarzeń, kodów akcji, nazw katalogowych, daty/godziny oraz stanów pól; zachowuje istniejące warunki zgody, wykluczenia, autoryzacji i limitowania. `sessionJourney` buduje bezpieczną projekcję w istniejącym chronionym dashboardzie V3, bez zwracania surowych metadanych. Sesje są sortowane po ostatnim zapisanym zdarzeniu. Interfejs korzysta ze wspólnego `SessionJourney` oraz zakładek zamiast powielania raportów. Dane są nadal w `analytics_events`; brak migracji i nowych integracji.
