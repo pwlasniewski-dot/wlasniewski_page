@@ -5,6 +5,7 @@ import { getApiUrl } from '@/lib/api-config';
 import { Toaster, toast } from 'sonner';
 import RichTextEditor from '@/components/admin/RichTextEditor';
 import BookingAvailabilityEditor from '@/components/admin/BookingAvailabilityEditor';
+import { packageFeaturesEditorText } from '@/lib/packageScope';
 
 interface ServiceType {
     id: number;
@@ -395,6 +396,26 @@ export default function AdminPackagesPage() {
                                         onChange={(val) => setEditingPackage({ ...editingPackage, description: val })}
                                         placeholder="Szczegółowy opis pakietu..."
                                     />
+                                    <p className="mt-2 text-xs leading-relaxed text-zinc-400">
+                                        Ten opis jest pełnym zakresem widocznym na stronie oferty i w rezerwacji. Wpisz liczbę gotowych zdjęć, dodatki, parametry albumu oraz termin oddania, jeśli należą do pakietu.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="package-features" className="block text-sm font-medium text-zinc-300 mb-1">Zakres, gdy opis pełny jest pusty</label>
+                                    <textarea
+                                        id="package-features"
+                                        rows={5}
+                                        value={packageFeaturesEditorText(editingPackage.features)}
+                                        onChange={(e) => setEditingPackage({
+                                            ...editingPackage,
+                                            features: JSON.stringify(e.target.value.split('\n')),
+                                        })}
+                                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+                                    />
+                                    <p className="mt-2 text-xs leading-relaxed text-zinc-400">
+                                        Jeden element w wierszu. Lista jest używana tylko przy pustym opisie pełnym, aby klient nie otrzymał dwóch różnych zakresów.
+                                    </p>
                                 </div>
 
                                 <div className="rounded-lg border border-zinc-700 bg-zinc-800/70 p-4 text-sm text-zinc-300">

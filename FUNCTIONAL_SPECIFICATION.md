@@ -1,3 +1,7 @@
+## 2026-10-02 — wspólny zakres pakietu
+
+Karta pakietu oferty i wyboru rezerwacji pokazuje czas, aktualną cenę/promocję oraz pełny zakres zapisany w `Package.description`. Przy pustym opisie używa `Package.features` (tablica JSON lub tekst z elementami w osobnych wierszach). Nie łączy obu pól, aby historyczne sprzeczne wpisy nie tworzyły dodatkowych obietnic. Pusta lub uszkodzona lista nie generuje domyślnych liczb zdjęć, albumów ani terminów. Karty ofert pokazują wszystkie aktywne pakiety. Edycja zakresu pozostaje w istniejącym `/admin/rezerwacja`; pełny opis ma pierwszeństwo, pole zapasowe jest jasno oznaczone. Ceny i dostępność nadal pochodzą z istniejącego źródła rezerwacji.
+
 ## 2026-09-23 — ścieżka wizyty i formularz rezerwacji
 
 Domyślny widok analityki pokazuje ostatnie wizyty z czasem ostatniego zapisu, źródłem, urządzeniem i rozwijanym przebiegiem. Nazwane akcje, usługi, pakiety, wybrany termin, stany uzupełnienia pól oraz błędy pozwalają ocenić postęp rezerwacji. Dane kontaktowe, uwagi i kody kart/rabatów nie są kopiowane do anonimowego rejestru. Zapisane rezerwacje pozostają źródłem właściwych danych klienta; powiązanie korzysta wyłącznie z istniejącego `analytics_session_id`. Brak zdarzenia nie oznacza pustego pola, porzucenia ani obecności online. Dawne kliknięcia bez etykiety pozostają jawnie nieopisane. Długa oś czasu zachowuje najnowsze 120 zdarzeń i informuje o pominiętych starszych krokach.
