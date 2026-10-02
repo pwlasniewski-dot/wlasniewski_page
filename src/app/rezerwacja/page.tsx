@@ -10,7 +10,7 @@ import TestimonialsSection from '@/components/TestimonialsSection';
 import BookingCalendar from '@/components/BookingCalendar';
 import BookingFunnelIntro from '@/components/booking/BookingFunnelIntro';
 import PackageScope from '@/components/booking/PackageScope';
-import { formatPackageDuration } from '@/lib/packageScope';
+import { formatPackageDuration, packageScopeLines } from '@/lib/packageScope';
 import PageRenderer from '@/components/PageRenderer';
 import { PageSection } from '@/components/admin/PageBuilder';
 import { useCart } from '@/context/CartContext';
@@ -553,6 +553,7 @@ export default function RezerwacjaPage() {
             const bookingData = {
                 service: service?.name,
                 package: chosenPackage.name,
+                package_scope_lines: packageScopeLines(chosenPackage),
                 hours: chosenPackage.hours,
                 price: finalPrice,
                 originalPrice: (chosenPackage.regular_price ?? chosenPackage.price) + (selectedDroneAddon?.price || 0) * 100,

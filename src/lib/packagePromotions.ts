@@ -225,10 +225,10 @@ export function selectHomepagePromotionCandidates<T extends HomepagePromotionCan
     return selected;
 }
 
-export async function loadFeaturedPromotionsByService(
+export async function loadHomepagePromotionState(
     now = new Date(),
     db: PromotionDb = prisma,
-): Promise<Record<string, PublicPackagePromotion>> {
+): Promise<{ featuredPromotions: Record<string, PublicPackagePromotion>; hasActivePromotions: boolean }> {
     const [activeRows, scheduledFeaturedRows] = await Promise.all([
         db.$queryRaw<PromotionRow[]>(Prisma.sql`
             ${basePromotionSelect()}
@@ -260,7 +260,11 @@ export async function loadFeaturedPromotionsByService(
             result[promotion.serviceName] = promotion;
         }
     }
-    return result;
+    return { featuredPromotions: result, hasActivePromotions: activeRows.length > 0 };
+}
+
+export async function loadFeaturedPromotionsByService(now = new Date(), db: PromotionDb = prisma) {
+    return (await loadHomepagePromotionState(now, db)).featuredPromotions;
 }
 
 export type LowestPriceResolution = {

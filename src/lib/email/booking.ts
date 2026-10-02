@@ -2,6 +2,7 @@ import { sendEmail, getAdminEmail } from './sender';
 import { generateBookingConfirmedEmail, generateAdminEmail } from '@/lib/email-templates';
 import { Booking } from '@prisma/client';
 import { formatBookingTimeRange } from '@/lib/bookingSchedule';
+import { bookingSnapshotScopeLines } from '@/lib/bookingPackageScope';
 
 export async function sendBookingConfirmationEmail(booking: Booking) {
     const formattedDate = new Date(booking.date).toLocaleDateString('pl-PL', {
@@ -21,6 +22,7 @@ export async function sendBookingConfirmationEmail(booking: Booking) {
         clientName: booking.client_name,
         service: booking.service,
         packageName: booking.package,
+        packageScopeLines: bookingSnapshotScopeLines(booking.booking_snapshot),
         date: formattedDate,
         time: formatBookingTimeRange(booking.start_time, booking.end_time),
         location: booking.venue_city ? (booking.venue_place ? `${booking.venue_city}, ${booking.venue_place}` : booking.venue_city) : undefined,

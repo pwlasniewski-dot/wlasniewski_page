@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getApiUrl } from '@/lib/api-config';
 import { Toaster, toast } from 'sonner';
 import RichTextEditor from '@/components/admin/RichTextEditor';
@@ -40,6 +40,10 @@ export default function AdminPackagesPage() {
     const [showPackageForm, setShowPackageForm] = useState(false);
     const [editingServiceType, setEditingServiceType] = useState<ServiceType | null>(null);
     const [showServiceTypeForm, setShowServiceTypeForm] = useState(false);
+    const [savingPackage, setSavingPackage] = useState(false);
+    const packageSavePending = useRef(false);
+    const [packageSaveError, setPackageSaveError] = useState<string | null>(null);
+    const [packageSaveNotice, setPackageSaveNotice] = useState<string | null>(null);
 
     // Load service types and packages
     useEffect(() => {
@@ -63,14 +67,23 @@ export default function AdminPackagesPage() {
 
     // Save package
     const handleSavePackage = async (pkg: Package, serviceId: number) => {
+        if (packageSavePending.current) return;
+        setPackageSaveError(null);
+        setPackageSaveNotice(null);
         if (!pkg.name || !pkg.hours || pkg.price === undefined) {
+            setPackageSaveError('Uzupełnij wymagane pola: nazwę, czas i cenę.');
             toast.error('Uzupełnij wymagane pola');
             return;
         }
 
+        packageSavePending.current = true;
+        setSavingPackage(true);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30_000);
         try {
             const res = await fetch(getApiUrl('packages'), {
                 method: 'POST',
+                signal: controller.signal,
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -82,24 +95,39 @@ export default function AdminPackagesPage() {
                 })
             });
 
-            if (res.ok) {
-                const data = await res.json();
+            const data = await res.json().catch(() => null);
+            if (res.ok && data?.package) {
+                setPackageSaveNotice(pkg.id ? 'Pakiet zaktualizowany.' : 'Pakiet dodany.');
                 toast.success(pkg.id ? 'Pakiet zaktualizowany' : 'Pakiet dodany');
                 setEditingPackage(null);
                 setShowPackageForm(false);
 
                 // Reload data
-                const reloadRes = await fetch(`${getApiUrl('service-types')}?view=admin`);
-                if (reloadRes.ok) {
+                try {
+                    const reloadRes = await fetch(`${getApiUrl('service-types')}?view=admin`, { signal: controller.signal });
+                    if (!reloadRes.ok) throw new Error('Reload failed');
                     const reloadData = await reloadRes.json();
                     setServiceTypes(reloadData.serviceTypes || []);
+                } catch {
+                    setPackageSaveNotice('Pakiet zapisany. Nie udało się odświeżyć listy — odśwież stronę, aby zobaczyć aktualne dane.');
                 }
             } else {
-                toast.error('Błąd zapisu pakietu');
+                const detail = typeof data?.error === 'string' ? data.error : 'Nie udało się potwierdzić zapisu pakietu. Odśwież dane przed ponowną próbą.';
+                const code = typeof data?.code === 'string' ? ` · ${data.code}` : '';
+                const message = `${detail} (HTTP ${res.status}${code})`;
+                setPackageSaveError(message);
+                toast.error(message);
             }
         } catch (error) {
-            console.error('Error saving package:', error);
-            toast.error('Błąd zapisu');
+            const message = controller.signal.aborted
+                ? 'Przekroczono czas oczekiwania. Nie potwierdzono zapisu — odśwież dane przed ponowną próbą.'
+                : 'Błąd połączenia. Nie potwierdzono zapisu — odśwież dane przed ponowną próbą.';
+            setPackageSaveError(message);
+            toast.error(message);
+        } finally {
+            clearTimeout(timeout);
+            packageSavePending.current = false;
+            setSavingPackage(false);
         }
     };
 
@@ -200,6 +228,7 @@ export default function AdminPackagesPage() {
             <Toaster position="top-right" theme="dark" />
 
             <div className="max-w-6xl mx-auto">
+                {packageSaveNotice && <p role="status" className="mb-5 rounded-lg border border-emerald-700 bg-emerald-950 p-4 text-sm text-emerald-200">{packageSaveNotice}</p>}
                 <div className="flex flex-col gap-4 mb-8 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h1 className="text-4xl font-bold text-white">📦 Zarządzaj Ofertą</h1>
@@ -280,6 +309,7 @@ export default function AdminPackagesPage() {
                                             <button
                                                 onClick={() => {
                                                     setEditingPackage(pkg);
+                                                    setPackageSaveError(null);
                                                     setShowPackageForm(true);
                                                 }}
                                                 className="flex-1 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-500 transition"
@@ -300,6 +330,7 @@ export default function AdminPackagesPage() {
                             {/* Add Package Button */}
                             <button
                                 onClick={() => {
+                                    setPackageSaveError(null);
                                     setEditingPackage({
                                         id: 0,
                                         service_id: service.id,
@@ -331,7 +362,8 @@ export default function AdminPackagesPage() {
                                 {editingPackage.id ? '✏️ Edytuj pakiet' : '➕ Nowy pakiet'}
                             </h3>
 
-                            <div className="space-y-4">
+                            {packageSaveError && <p role="alert" className="mb-4 rounded-lg border border-red-700 bg-red-950 p-4 text-sm text-red-200">{packageSaveError}</p>}
+                            <fieldset disabled={savingPackage} aria-busy={savingPackage} className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-zinc-300 mb-1">Nazwa</label>
@@ -456,12 +488,13 @@ export default function AdminPackagesPage() {
                                     </button>
                                     <button
                                         onClick={() => handleSavePackage(editingPackage, editingPackage.service_id)}
-                                        className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-500 transition font-medium"
+                                        disabled={savingPackage}
+                                        className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-500 transition font-medium disabled:opacity-60"
                                     >
-                                        Zapisz
+                                        {savingPackage ? 'Zapisuję…' : 'Zapisz'}
                                     </button>
                                 </div>
-                            </div>
+                            </fieldset>
                         </div>
                     </div>
                 )}

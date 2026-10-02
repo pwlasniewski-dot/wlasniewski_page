@@ -303,6 +303,8 @@ async function HomeBelowHero({ contentData, sections, homeData, orderedSections 
                 Urodziny: publicPriceLabel(publicPricing.minimumPrices, 'Urodziny'),
             }}
             featuredPromotions={publicPricing.featuredPromotions}
+            hasActivePromotions={publicPricing.hasActivePromotions}
+            promotionsAvailable={publicPricing.promotionsAvailable}
             publicGuidePromo={publicGuidePromo}
         />
     );

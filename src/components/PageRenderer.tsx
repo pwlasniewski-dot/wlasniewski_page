@@ -45,12 +45,12 @@ const ParallaxVideo = dynamic(() => import('@/components/ParallaxVideo'), { ssr:
 const ThermalReportShowcase = dynamic(() => import('@/components/ThermalReportShowcase'), { ssr: false });
 // Editorial Components (Storytelling)
 const StoryHero = dynamic(() => import('@/components/sections/StoryHero'), { ssr: false });
-const MagazineLayout = dynamic(() => import('@/components/sections/MagazineLayout'), { ssr: false });
-const EditorialMasonry = dynamic(() => import('@/components/sections/MasonryGallery'), { ssr: false });
+import MagazineLayout from '@/components/sections/MagazineLayout';
+import EditorialMasonry from '@/components/sections/MasonryGallery';
 const ClientStory = dynamic(() => import('@/components/sections/ClientStory'), { ssr: false });
 const ProcessTimeline = dynamic(() => import('@/components/sections/ProcessTimeline'), { ssr: false });
 const InvestmentTeaser = dynamic(() => import('@/components/sections/InvestmentTeaser'), { ssr: false });
-const NarrativeText = dynamic(() => import('@/components/sections/NarrativeText'), { ssr: false });
+import NarrativeText from '@/components/sections/NarrativeText';
 const FeaturedCarousel = dynamic(() => import('@/components/sections/FeaturedCarousel'), { ssr: false });
 const StoriesGrid = dynamic(() => import('@/components/sections/StoriesGrid'), { ssr: false });
 const ChronologicalGallery = dynamic(() => import('@/components/sections/ChronologicalGallery'), { ssr: false });

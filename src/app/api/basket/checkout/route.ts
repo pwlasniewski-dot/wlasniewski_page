@@ -19,6 +19,7 @@ import { isBookingBlockingAvailability } from '@/lib/bookingStatus';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
 import { calculateFotoMatchDiscount } from '@/lib/fotoMatchDiscount';
 import { loadActivePromotionForPackage, type PublicPackagePromotion } from '@/lib/packagePromotions';
+import { packageScopeLines } from '@/lib/packageScope';
 
 class BookingConflictError extends Error {}
 class GiftCardUnavailableError extends Error {}
@@ -165,6 +166,7 @@ export async function POST(request: Request) {
                 let basePrice = 0;
                 let dronePackage: { slug: string; name: string; price: number } | null = null;
                 let selectedPackage: any = null;
+                let selectedScopeLines: string[] = [];
                 let packagePromotion: PublicPackagePromotion | null = null;
                 let regularPackagePrice = 0;
 
@@ -194,6 +196,19 @@ export async function POST(request: Request) {
                     });
                     if (!selectedPackage || !selectedPackage.service?.is_active) {
                         return NextResponse.json({ ok: false, message: 'Wybrany pakiet nie jest już dostępny.' }, { status: 400 });
+                    }
+                    selectedScopeLines = packageScopeLines(selectedPackage);
+                    // New carts include the displayed scope. An admin edit must be
+                    // reviewed by the client before checkout, even if price is unchanged.
+                    if (md.package_scope_lines !== undefined && (
+                        !Array.isArray(md.package_scope_lines)
+                        || md.package_scope_lines.some((line: unknown) => typeof line !== 'string')
+                        || JSON.stringify(md.package_scope_lines) !== JSON.stringify(selectedScopeLines)
+                        || (md.hours !== undefined && Number(md.hours) !== selectedPackage.hours)
+                    )) {
+                        return NextResponse.json({ ok: false,
+                            message: 'Zakres pakietu w koszyku został zmieniony. Odśwież rezerwację i sprawdź aktualny zakres przed płatnością.',
+                        }, { status: 409 });
                     }
                     serviceName = selectedPackage.service.name;
                     packageName = selectedPackage.name;
@@ -404,13 +419,14 @@ export async function POST(request: Request) {
                     flight_check_status: hasDrone ? 'PENDING' : null,
                     blocks_entire_day: packageBlocksEntireDay,
                     booking_snapshot: {
-                        version: 2,
+                        version: 3,
                         service: serviceName,
                         package: {
                             name: packageName,
                             regularPrice: regularPackagePrice || basePrice,
                             effectivePrice: basePrice,
                             hours: packageHours,
+                            scopeLines: selectedScopeLines,
                         },
                         promotion: packagePromotion ? {
                             id: packagePromotion.id,

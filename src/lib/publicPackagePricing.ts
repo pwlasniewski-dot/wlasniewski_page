@@ -3,7 +3,7 @@ import { unstable_cache, unstable_noStore as noStore } from 'next/cache';
 import { applyPublicPackagePrices } from '@/lib/packagePromotionPricing';
 import {
     loadActivePromotionsForPackages,
-    loadFeaturedPromotionsByService,
+    loadHomepagePromotionState,
     type PublicPackagePromotion,
 } from '@/lib/packagePromotions';
 
@@ -19,6 +19,8 @@ export type PublicPricingSnapshot = {
     minimumPrices: PublicMinimumPricesInCents;
     minimumPromotions: Record<string, PublicPackagePromotion>;
     featuredPromotions: Record<string, PublicPackagePromotion>;
+    hasActivePromotions: boolean;
+    promotionsAvailable: boolean;
 };
 
 type PriceSourcePackage = {
@@ -86,11 +88,11 @@ export async function loadPublicMinimumPrices(
  */
 export async function loadPublicPricingSnapshot(): Promise<PublicPricingSnapshot> {
     try {
-        const [packages, featuredPromotions] = await Promise.all([
+        const [packages, promotionState] = await Promise.all([
             findPricedPublicPackages(),
-            loadFeaturedPromotionsByService().catch(promotionError => {
+            loadHomepagePromotionState().then(state => ({ ...state, promotionsAvailable: true })).catch(promotionError => {
                 console.warn('[public-pricing] Promotions unavailable; using regular prices.', promotionError);
-                return {} as Record<string, PublicPackagePromotion>;
+                return { featuredPromotions: {} as Record<string, PublicPackagePromotion>, hasActivePromotions: false, promotionsAvailable: false };
             }),
         ]);
 
@@ -105,11 +107,11 @@ export async function loadPublicPricingSnapshot(): Promise<PublicPricingSnapshot
         return {
             minimumPrices,
             minimumPromotions,
-            featuredPromotions,
+            ...promotionState,
         };
     } catch (error) {
         console.warn('[public-pricing] Pricing snapshot unavailable.', error);
-        return { minimumPrices: {}, minimumPromotions: {}, featuredPromotions: {} };
+        return { minimumPrices: {}, minimumPromotions: {}, featuredPromotions: {}, hasActivePromotions: false, promotionsAvailable: false };
     }
 }
 
@@ -121,11 +123,11 @@ export async function loadPublicPricingSnapshot(): Promise<PublicPricingSnapshot
 export const loadCachedPublicPricingSnapshot = unstable_cache(
     async (): Promise<PublicPricingSnapshot> => {
         try {
-            const [packages, featuredPromotions] = await Promise.all([
+            const [packages, promotionState] = await Promise.all([
                 findPricedPublicPackagesFromDatabase(),
-                loadFeaturedPromotionsByService().catch(promotionError => {
+                loadHomepagePromotionState().then(state => ({ ...state, promotionsAvailable: true })).catch(promotionError => {
                     console.warn('[public-pricing] Promotions unavailable; using regular prices.', promotionError);
-                    return {} as Record<string, PublicPackagePromotion>;
+                    return { featuredPromotions: {} as Record<string, PublicPackagePromotion>, hasActivePromotions: false, promotionsAvailable: false };
                 }),
             ]);
 
@@ -137,10 +139,10 @@ export const loadCachedPublicPricingSnapshot = unstable_cache(
                     minimumPromotions[pkg.service.name] = pkg.promotion;
                 }
             }
-            return { minimumPrices, minimumPromotions, featuredPromotions };
+            return { minimumPrices, minimumPromotions, ...promotionState };
         } catch (error) {
             console.warn('[public-pricing] Cached pricing snapshot unavailable.', error);
-            return { minimumPrices: {}, minimumPromotions: {}, featuredPromotions: {} };
+            return { minimumPrices: {}, minimumPromotions: {}, featuredPromotions: {}, hasActivePromotions: false, promotionsAvailable: false };
         }
     },
     ['public-marketing-pricing'],

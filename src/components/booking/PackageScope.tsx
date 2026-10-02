@@ -4,13 +4,15 @@ import { packageScopeLines } from '@/lib/packageScope';
 export default function PackageScope({
     description,
     features,
+    scopeLines,
     className = '',
 }: {
     description?: string | null;
     features?: string | string[] | null;
+    scopeLines?: string[];
     className?: string;
 }) {
-    const lines = packageScopeLines({ description, features });
+    const lines = scopeLines ?? packageScopeLines({ description, features });
     if (lines.length === 0) return null;
     return (
         <ul className={`list-disc space-y-2 pl-5 text-sm leading-relaxed ${className}`}>
