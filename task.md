@@ -7,8 +7,8 @@
 - [x] Przejść 27 testów jednostkowych i 5 scenariuszy CMS/API/UI/SSR; niezależny odbiór kodu PASS.
 - [x] Domknąć formalną deltę typecheck HEAD: 106/106 identycznych diagnoz, brak nowych błędów.
 - [x] Przygotować mobilny podgląd offline rzeczywistego SSR i Tailwind.
-- [x] Wykonać build Node 22 bez produkcyjnej bazy: kompilacja i 262/262 stron PASS; pełny proces FAIL przy ENOTEMPTY w .next/export.
-- [ ] Potwierdzić pełny build i mobilny odbiór podglądu.
+- [x] Potwierdzić pełny czysty build Node 22.23.3 bez produkcyjnej bazy: exit 0, kompilacja, 262/262 stron i finalizacja PASS; pierwotny ENOTEMPTY usunięty przez przeniesienie wygenerowanego .next.
+- [ ] Potwierdzić mobilny odbiór podglądu.
 - [ ] Opublikować przez standardowy git push i potwierdzić preview/produkcję; uwierzytelnienie GitHub blokuje publikację.
 - [ ] Uzgodnić brakujące parametry handlowe (liczby zdjęć ślubnych, album, termin oddania) przed ich dopisaniem.
 
