@@ -1,3 +1,7 @@
+## 2026-10-02 — zapis pakietu i wspólna dostępność
+
+Edycja nazwy, opisu i zakresu pakietu nie przesyła nieedytowalnego `available_hours`; zachowuje zapisany parametr oraz wspólny grafik. API obsługuje null i pusty tekst jako brak godzin, pominięte pole jako zachowanie wartości, a jawne godziny jako zwalidowaną listę0–23. Błędna jawna lista nadal blokuje zapis i pokazuje inline błąd. Widoczne `hours` i `blocks_entire_day` nadal są zapisywane normalnie.
+
 ## 2026-10-02 — treści usług, promocje i zakupiony zakres
 
 Trzy redakcyjne moduły CMS są obecne w HTML serwera oraz po hydracji, z istniejącymi tekstami i zdjęciami. Pola meta title i meta description stron usługowych mają pierwszeństwo; przy pustych polach pozostaje aktualny generator ceny. Canonical i kontekst miasta rezerwacji pozostają zachowane.

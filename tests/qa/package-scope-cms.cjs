@@ -12,6 +12,8 @@ let stored = {
     id: 1, service_id: 1, name: 'Rodzinny Start', hours: 1, price: 75000,
     subtitle: 'Godzina zdjęć', description: '<ol><li>35 gotowych zdjęć</li><li>Pendrive</li></ol>',
     features: '["do 50 zdjęć", "4 godziny"]', order: 1, is_active: true,
+    available_hours: 'MON,TUE,WED,THU,FRI',
+    blocks_entire_day: true,
 };
 const service = { id: 1, name: 'Sesja', order: 1, is_active: true };
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -66,11 +68,27 @@ const request = body => new NextRequest('http://localhost/api/packages', { metho
 (async () => {
     await check('package save denies access and invalid duration before any mutation', async () => {
         const before = clone(stored);
+        const { available_hours, ...editable } = stored;
         adminAllowed = false;
         assert.equal((await packageApi.POST(request({ ...stored, features: '[]' }))).status, 401);
         adminAllowed = true;
-        assert.equal((await packageApi.POST(request({ ...stored, hours: 25 }))).status, 400);
+        assert.equal((await packageApi.POST(request({ ...editable, hours: 25 }))).status, 400);
+        assert.equal((await packageApi.POST(request({ ...editable, available_hours: '24' }))).status, 400);
         assert.deepEqual(stored, before);
+    });
+    await check('API preserves omitted availability, accepts null/blank and validates explicit hour lists', async () => {
+        const before = clone(stored);
+        const { available_hours, ...editable } = stored;
+        for (const [input, expected] of [[null, null], ['', null], [' 18,9,09,18 ', '9,18']]) {
+            assert.equal((await packageApi.POST(request({ ...editable, available_hours: input }))).status, 200);
+            assert.equal(stored.available_hours, expected);
+        }
+        const current = clone(stored);
+        assert.equal((await packageApi.POST(request({ ...editable, available_hours: 'MON,TUE' }))).status, 400);
+        assert.deepEqual(clone(stored), current);
+        assert.equal((await packageApi.POST(request(editable))).status, 200);
+        assert.equal(stored.available_hours, '9,18');
+        stored = before;
     });
     await check('existing admin saves full scope, reloads it, and public offer keeps scope, price and CTA', async () => {
         await mount(Admin, {});
@@ -89,6 +107,9 @@ const request = body => new NextRequest('http://localhost/api/packages', { metho
         await click(button('Zapisz'));
         assert.equal(stored.description, description);
         assert.equal(stored.price, 75000);
+        assert.equal(stored.hours, 1);
+        assert.equal(stored.available_hours, 'MON,TUE,WED,THU,FRI');
+        assert.equal(stored.blocks_entire_day, true);
         assert.ok(invalidations > 0);
         await click(button('Edytuj'));
         assert.equal(field('Zakres, gdy opis pełny jest pusty').value, 'Do 50 zdjęć\n4 godziny');
@@ -126,7 +147,8 @@ const request = body => new NextRequest('http://localhost/api/packages', { metho
         await click(button('Edytuj'));
         await set(field('Zakres, gdy opis pełny jest pusty'), '35 gotowych zdjęć\nPendrive');
         await click(button('Zapisz'));
-        for (let round = 0; round < 2; round++) assert.equal((await packageApi.POST(request(stored))).status, 200);
+        const { available_hours, ...editable } = stored;
+        for (let round = 0; round < 2; round++) assert.equal((await packageApi.POST(request(editable))).status, 200);
         const html = renderToStaticMarkup(await PublicPage({ params: Promise.resolve({ slug: 'sesja-rodzinna' }) }));
         assert.ok(html.includes('35 gotowych zdjęć'));
         assert.ok(html.includes('Pendrive'));

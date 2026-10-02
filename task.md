@@ -1,3 +1,12 @@
+## 2026-10-02 — pilna poprawka zapisu pakietów
+
+- [x] Zdiagnozować HTTP400: JSONnull zamieniane na tekst przy walidacji available_hours.
+- [x] Zachować nieedytowalne pole przez pominięcie w adminie; poprawnie obsłużyć null w API.
+- [x] Zachować walidację jawnej listy godzin i istniejący wspólny grafik.
+- [x] Lokalny test6scenariuszy CMS/API/GET/oferta/rezerwacja PASS.
+- [x] Niezależny QA:6scenariuszy EXIT0 i code review PASS; wydzielony commit przygotowany.
+- [ ] Potwierdzić wdrożenie i zapis zaakceptowanych danych przez istniejący produkcyjny CMS.
+
 ## 2026-10-02 — domknięcie SSR/promocji/snapshotu (draft)
 
 - [x] Potwierdzić obsługę CMS modułów i przyczynę braku tekstów/zdjęć w SSR.

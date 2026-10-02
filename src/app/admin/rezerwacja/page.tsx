@@ -89,6 +89,10 @@ export default function AdminPackagesPage() {
                 },
                 body: JSON.stringify({
                     ...pkg,
+                    // Availability belongs to the shared schedule editor. Legacy
+                    // package rows may hold JSON/day labels that this form cannot edit.
+                    // Omission preserves the stored value without bypassing API validation.
+                    available_hours: undefined,
                     service_id: serviceId,
                     features: typeof pkg.features === 'string' ? pkg.features : JSON.stringify(pkg.features || []),
                     price: parseInt(String(pkg.price))

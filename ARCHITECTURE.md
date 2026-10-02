@@ -1,3 +1,7 @@
+## 2026-10-02 — nullable available_hours w istniejącym API
+
+`POST /api/packages` rozróżnia undefined (bez zmiany), null/pusty tekst (null) i listę godzin (walidacja, deduplikacja, sortowanie). Formularz `/admin/rezerwacja` pomija pole, ponieważ nie ma dla niego kontrolki i dostępność edytuje się w istniejącym wspólnym grafiku. Żadnych migracji ani zmian reguł dostępności. Regresja w `tests/qa/package-scope-cms.cjs` obejmuje null/blank/omission, błędne listy oraz pełny roundtrip starego rekordu z nieedytowalną wartością.
+
 ## 2026-10-02 — SSR modułów i snapshot zakresu
 
 `PageRenderer` i `HomeContent` importują bezpośrednio MagazineLayout, NarrativeText i redakcyjny MasonryGallery. Komponenty nie wymagają browser API w renderze; animacje nie ukrywają tekstu przez początkowe opacity. Dynamiczne efekty pozostałych modułów pozostają bez zmian. Metadane growth stron korzystają z istniejących pól Page z fallbackiem generatora.

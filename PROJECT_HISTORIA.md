@@ -1,3 +1,9 @@
+## 2026-10-02 — odblokowanie zapisu pakietów z pustą dostępnością
+
+Produkcja odrzucała edycję pakietu z `available_hours: null`: API zamieniało null na tekst „null”, a następnie odrzucało go jako nieprawidłową listę godzin. Istniejący edytor pakietu przesyłał przy tym nieedytowalne pole z odczytanego rekordu. API przyjmuje teraz jawne null i pusty tekst jako brak godzin, a pominięcie pola zachowuje obecną wartość. Admin pomija to pole; wspólny grafik, czas fotografowania, cena i blokowanie całego dnia pozostają bez zmiany. Jawnie błędna lista godzin nadal zwraca400.
+
+Poprawka jest wydzielona przed przebudową lokalnych stron. Lokalne6scenariuszy rzeczywistego edytora, API, ponownego odczytu i publicznej oferty/rezerwacji PASS na Node22 i pamięciowej bazie, bez produkcyjnych zapisów ani płatności. Niezależny QA6scenariuszy i code review PASS. Pełnego nowego builda i odbioru mobilnego tej poprawki jeszcze nie wykonano. PR93 z wcześniejszym zakresem został scalony przez użytkownika (merge3808905); bieżący kod bazuje na tym merge.
+
 ## 2026-10-02 — SSR treści ślubnych, promocje i utrwalony zakres rezerwacji (draft)
 
 Audyt potwierdził, że trzy istniejące moduły CMS (`magazine_layout`, `narrative_text`, `masonry_gallery`) były importowane z wyłączonym SSR: pojawiały się po hydracji, ale tekstu i galerii nie było w HTML serwera. Zwykłe importy w `PageRenderer` i rendererze homepage zachowują treść oraz układ CMS i udostępniają je w SSR. Niepuste pola SEO stron usługowych z CMS mają teraz pierwszeństwo przed generowanym tytułem/opisem, także w Open Graph i Twitter.
