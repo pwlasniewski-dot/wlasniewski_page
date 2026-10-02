@@ -9,6 +9,7 @@ import { minimumBookingDateISO } from '@/lib/bookingDate';
 import { buildBookingSlots, normalizeBookingServiceKey, resolveBookingSchedule } from '@/lib/bookingSchedule';
 import { loadBookingScheduleConfiguration } from '@/lib/bookingScheduleRepository';
 import { hasBookingDateTimeConflict } from '@/lib/bookingAvailability';
+import { bookingSnapshotScopeLines } from '@/lib/bookingPackageScope';
 
 import prisma from '@/lib/db/prisma';
 
@@ -263,6 +264,7 @@ export async function PATCH(request: Request) {
                     clientName: booking.client_name,
                     service: booking.service,
                     packageName: booking.package,
+                    packageScopeLines: bookingSnapshotScopeLines(booking.booking_snapshot),
                     date: formattedDate,
                     time: booking.start_time ? (booking.end_time ? `${booking.start_time} - ${booking.end_time}` : booking.start_time) : undefined,
                     location: booking.venue_city ? (booking.venue_place ? `${booking.venue_city}, ${booking.venue_place}` : booking.venue_city) : undefined,

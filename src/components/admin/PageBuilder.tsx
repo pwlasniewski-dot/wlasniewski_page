@@ -12,8 +12,9 @@ import {
 } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
+import CityCmsSectionEditor from './CityCmsSectionEditor';
 
-export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'stories_grid' | 'chronological_gallery' | 'floating_button' | 'pointcloud_hero' | 'pointcloud_viewer' | 'pointcloud_services' | 'pointcloud_showcase' | 'pointcloud_tech' | 'photo_cube_3d' | 'nphoto_albums_showcase' | 'active_promotions';
+export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'stories_grid' | 'chronological_gallery' | 'floating_button' | 'pointcloud_hero' | 'pointcloud_viewer' | 'pointcloud_services' | 'pointcloud_showcase' | 'pointcloud_tech' | 'photo_cube_3d' | 'nphoto_albums_showcase' | 'active_promotions' | 'faq' | 'public_packages' | 'city_seo' | 'city_inquiry';
 
 export interface SliderSlide {
     id: string;
@@ -196,6 +197,18 @@ export interface PageSection {
     id: string;
     type: SectionType;
     label?: string;
+    enabled?: boolean;
+    faqItems?: Array<{ question: string; answer: string; enabled?: boolean }>;
+    serviceNames?: string[];
+    emptyMessage?: string;
+    imageAlt?: string;
+    secondaryButtonText?: string;
+    secondaryButtonLink?: string;
+    canonicalPath?: string;
+    socialTitle?: string;
+    socialDescription?: string;
+    socialImage?: string;
+    socialImageAlt?: string;
     aeroContentVersion?: 2;
     content?: string;
     image?: string;
@@ -315,12 +328,13 @@ interface PageBuilderProps {
     pageType?: string;
 }
 
-function SortableSection({ section, index, onRemove, onUpdate, onMove, openMediaPicker }: {
+function SortableSection({ section, index, onRemove, onUpdate, onMove, onDuplicate, openMediaPicker }: {
     section: PageSection;
     index: number;
     onRemove: (id: string) => void;
     onUpdate: (id: string, data: Partial<PageSection>) => void;
     onMove: (id: string, direction: 'up' | 'down') => void;
+    onDuplicate: (id: string) => void;
     openMediaPicker: (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'secondary' | 'mini_gallery_item' | 'story_cover' | 'chronological', index?: number }) => void;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: section.id });
@@ -353,12 +367,25 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                         </button>
                     </div>
                 </div>
-                <button onClick={() => onRemove(section.id)} className="text-zinc-400 hover:text-red-500 transition-colors">
+                <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 text-xs text-zinc-300"><input aria-label={`Widoczność modułu ${section.id}`} type="checkbox" checked={section.enabled !== false} onChange={event => onUpdate(section.id, { enabled: event.target.checked })} />Widoczny</label>
+                    <button type="button" onClick={() => onDuplicate(section.id)} className="text-xs text-zinc-300">Duplikuj moduł</button>
+                <button type="button" onClick={() => onRemove(section.id)} className="text-zinc-400 hover:text-red-500 transition-colors">
                     <Trash2 className="w-5 h-5" />
                 </button>
+                </div>
             </div>
 
             <div className="p-4 space-y-4">
+                {['faq', 'public_packages', 'city_seo', 'city_inquiry'].includes(section.type) && <CityCmsSectionEditor section={section} onUpdate={onUpdate} chooseImage={() => openMediaPicker(section.id, { target: 'single' })} />}
+                {['hero', 'image_text'].includes(section.type) && <label className="block text-xs text-zinc-400">ALT zdjęcia<input aria-label={`ALT zdjęcia ${section.id}`} value={section.imageAlt || ''} onChange={event => onUpdate(section.id, { imageAlt: event.target.value })} className="mt-2 w-full rounded border border-zinc-700 bg-zinc-800 p-3 text-white" /></label>}
+                {section.type === 'hero' && <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="text-xs text-zinc-400">Wariant hero<select value={section.pageStyle || ''} onChange={event => onUpdate(section.id, { pageStyle: event.target.value === 'editorial' ? 'editorial' : undefined })} className="mt-2 w-full rounded bg-zinc-800 p-3 text-white"><option value="">Klasyczny</option><option value="editorial">Redakcyjny</option></select></label>
+                    <label className="text-xs text-zinc-400">Główny nagłówek H1<input type="checkbox" checked={section.isPrimaryHeading || false} onChange={event => onUpdate(section.id, { isPrimaryHeading: event.target.checked })} className="ml-3" /></label>
+                    {(['imagePosition', 'imagePositionMobile'] as const).map((key, index) => <label key={key} className="text-xs text-zinc-400">Kadr {index ? 'telefon' : 'komputer'}<select aria-label={`Kadr ${index ? 'telefon' : 'komputer'} ${section.id}`} value={section[key] || 'center center'} onChange={event => onUpdate(section.id, { [key]: event.target.value })} className="mt-2 w-full rounded bg-zinc-800 p-3 text-white">{['left top', 'center top', 'right top', 'left center', 'center center', 'right center', 'left bottom', 'center bottom', 'right bottom'].map(value => <option key={value} value={value}>{value}</option>)}</select></label>)}
+                    <label className="text-xs text-zinc-400">Drugi przycisk hero<input aria-label="Drugi przycisk hero" value={section.secondaryButtonText || ''} onChange={event => onUpdate(section.id, { secondaryButtonText: event.target.value })} className="mt-2 w-full rounded bg-zinc-800 p-3 text-white" /></label>
+                    <label className="text-xs text-zinc-400">Adres drugiego przycisku hero<input aria-label="Adres drugiego przycisku hero" value={section.secondaryButtonLink || ''} onChange={event => onUpdate(section.id, { secondaryButtonLink: event.target.value })} className="mt-2 w-full rounded bg-zinc-800 p-3 text-white" /></label>
+                </div>}
                 {/* HERO PARALLAX */}
                 {section.type === 'hero_parallax' && (
                     <div className="space-y-4">
@@ -3718,6 +3745,8 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                     updateSection(activeSectionId, { thermalImage: imageUrl });
                 }
             }
+        } else if (section.type === 'city_seo') {
+            updateSection(activeSectionId, { socialImage: imageUrl });
         } else if (section.type === 'hero_slider') {
             const updated = [...(section.slides || [])];
             if (sectionEditIndex >= 0) {
@@ -3886,7 +3915,11 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
             layout: 'left'
         };
 
-        if (type === 'b2b_stats') {
+        if (type === 'faq') {
+            newSection.faqItems = [];
+        } else if (type === 'public_packages') {
+            newSection.serviceNames = ['Sesja', 'Ślub', 'Przyjęcie', 'Urodziny'];
+        } else if (type === 'b2b_stats') {
             newSection.b2b_stats = [];
         } else if (type === 'b2b_process') {
             newSection.title = 'Jak przebiega realizacja';
@@ -4482,6 +4515,7 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
 
             {pageType !== 'b2b' && pageType !== 'dron' && (
             <div className="flex gap-2 flex-wrap">
+                {(['faq', 'public_packages', 'city_seo', 'city_inquiry'] as const).map((type, i) => <button type="button" key={type} onClick={() => addSection(type)} className="rounded border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm text-white">{['FAQ', 'Aktualne pakiety', 'SEO miasta / Open Graph', 'Zapytanie miejskie'][i]}</button>)}
                 <button onClick={() => addSection('hero_parallax')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm text-white transition-colors">
                     <ImageIcon className="w-4 h-4" /> Zdjęcie Parallax
                 </button>
@@ -4601,6 +4635,7 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                             onRemove={removeSection}
                             onUpdate={updateSection}
                             onMove={moveSection}
+                            onDuplicate={id => { const original = sections.find(section => section.id === id); if (original) onChange([...sections, { ...structuredClone(original), id: `copy-${Math.random().toString(36).slice(2)}`, isPrimaryHeading: false }]); }}
                             openMediaPicker={openMediaPicker}
                         />
                     ))}

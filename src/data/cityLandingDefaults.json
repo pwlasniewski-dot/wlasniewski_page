@@ -1,0 +1,646 @@
+{
+  "torun": {
+    "slug": "fotograf-torun",
+    "city": "Toruń",
+    "lat": 53.0138,
+    "lng": 18.5984,
+    "metaTitle": "Fotograf Toruń — śluby i sesje rodzinne | Foto-Dron",
+    "metaDescription": "Fotografia ślubna i sesje rodzinne w Toruniu. Zobacz zdjęcia, porównaj aktualne pakiety i zapytaj o termin oraz miejsce spotkania.",
+    "sections": [
+      {
+        "id": "city-hero",
+        "type": "hero",
+        "pageStyle": "editorial",
+        "isPrimaryHeading": true,
+        "title": "Fotograf w Toruniu — śluby i sesje rodzinne",
+        "description": "Planujecie ślub w Toruniu albo rodzinne zdjęcia? Wybierzcie rodzaj fotografii i zobaczcie dostępne pakiety. Przed rezerwacją ustalimy miejsce, godzinę oraz plan zdjęć.",
+        "image": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "imageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski",
+        "buttonText": "Zapytaj o termin ślubu",
+        "buttonLink": "/slub?city=Toruń#szybki-kontakt",
+        "secondaryButtonText": "Zobacz sesje rodzinne",
+        "secondaryButtonLink": "/sesja-rodzinna?city=Toruń"
+      },
+      {
+        "id": "city-narrative-0",
+        "type": "narrative_text",
+        "title": "Fotografia ślubna w Toruniu",
+        "content": "<p>Ceremonia, kameralne przyjęcie czy cały dzień wesela — dobierzcie pakiet do planu uroczystości. W zapytaniu podajcie datę oraz miejsce ceremonii i przyjęcia. Ustalimy też zdjęcia z rodziną i czas na sesję pary.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-narrative-1",
+        "type": "narrative_text",
+        "title": "Miejsce na sesję w Toruniu",
+        "content": "<p>Jeżeli chcecie miejskie tło, możemy rozważyć Bulwar Filadelfijski nad Wisłą. Na zdjęcia w zieleni — Park Miejski na Bydgoskim Przedmieściu. Konkretny punkt spotkania i porę wybierzemy po ustaleniu składu rodziny i rodzaju zdjęć.</p><p>Sesja może odbyć się również w Waszym domu. Przy plenerze sprawdzimy pogodę i dostępność wybranego miejsca przed spotkaniem.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-packages",
+        "type": "public_packages",
+        "pageStyle": "editorial",
+        "title": "Wybierz rodzaj fotografii",
+        "subtitle": "Aktualne ceny i zawartość pakietów są wspólne dla oferty oraz rezerwacji.",
+        "serviceNames": [
+          "Ślub",
+          "Sesja",
+          "Urodziny"
+        ],
+        "buttonText": "Wybierz pakiet i sprawdź termin",
+        "buttonLink": "/rezerwacja",
+        "emptyMessage": "Nie mogę teraz wyświetlić pakietów. Zapytaj o aktualną ofertę."
+      },
+      {
+        "id": "city-faq",
+        "type": "faq",
+        "title": "Pytania przed rezerwacją",
+        "faqItems": [
+          {
+            "question": "Jak sprawdzić termin fotografa na ślub w Toruniu?",
+            "answer": "Wyślijcie datę oraz miejsca ceremonii i przyjęcia przez formularz na stronie oferty ślubnej. Otrzymam informacje potrzebne do sprawdzenia terminu i dobrania zakresu."
+          },
+          {
+            "question": "Gdzie porównać ceny i zakres pakietów?",
+            "answer": "Aktualne warianty są na stronach fotografii ślubnej i sesji rodzinnej. Wybierzcie usługę, aby sprawdzić cenę, czas zdjęć oraz zawartość pakietu."
+          },
+          {
+            "question": "Czy możemy zaproponować własne miejsce sesji?",
+            "answer": "Tak. Podajcie adres lub nazwę miejsca w zapytaniu. Ustalimy punkt spotkania i plan zdjęć przed rezerwacją."
+          }
+        ]
+      },
+      {
+        "id": "city-inquiry",
+        "type": "city_inquiry"
+      },
+      {
+        "id": "city-seo",
+        "type": "city_seo",
+        "canonicalPath": "/fotograf-torun",
+        "socialImage": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "socialImageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski"
+      }
+    ]
+  },
+  "grudziadz": {
+    "slug": "fotograf-grudziadz",
+    "city": "Grudziądz",
+    "lat": 53.4837,
+    "lng": 18.7536,
+    "metaTitle": "Fotograf Grudziądz — śluby i rodzina | Foto-Dron",
+    "metaDescription": "Fotografia ślubna i sesje rodzinne w Grudziądzu. Zobacz portfolio, porównaj aktualne pakiety i podaj datę oraz miejsce w zapytaniu.",
+    "sections": [
+      {
+        "id": "city-hero",
+        "type": "hero",
+        "pageStyle": "editorial",
+        "isPrimaryHeading": true,
+        "title": "Fotograf w Grudziądzu — śluby i sesje rodzinne",
+        "description": "Szukacie fotografa na ślub w Grudziądzu albo planujecie rodzinne zdjęcia? Zobaczcie ofertę odpowiadającą Waszemu spotkaniu. Miejsce oraz plan fotografowania ustalimy przed rezerwacją.",
+        "image": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "imageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski",
+        "buttonText": "Zapytaj o termin ślubu",
+        "buttonLink": "/slub?city=Grudziądz#szybki-kontakt",
+        "secondaryButtonText": "Zobacz sesje rodzinne",
+        "secondaryButtonLink": "/sesja-rodzinna?city=Grudziądz"
+      },
+      {
+        "id": "city-narrative-0",
+        "type": "narrative_text",
+        "title": "Ślub i przyjęcie w Grudziądzu",
+        "content": "<p>Zakres reportażu dopasujemy do godzin ceremonii i przyjęcia. W zapytaniu podajcie oba miejsca oraz najważniejsze punkty dnia. Na tej podstawie dobierzemy pakiet i zaplanujemy zdjęcia z najbliższymi.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-narrative-1",
+        "type": "narrative_text",
+        "title": "Pomysły na plener w Grudziądzu",
+        "content": "<p>Spichlerze od strony Wisły i Błonia to propozycja dla zdjęć z miejskim tłem. Możemy także rozważyć okolicę Góry Zamkowej z wieżą Klimek. Przed wyborem miejsca sprawdzimy dostępność i ustalimy punkt spotkania.</p><p>Na rodzinne zdjęcia możecie zaproponować również dom lub ogród. Nie trzeba łączyć kilku lokalizacji — miejsce dobierzemy do planu sesji.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-packages",
+        "type": "public_packages",
+        "pageStyle": "editorial",
+        "title": "Wybierz rodzaj fotografii",
+        "subtitle": "Aktualne ceny i zawartość pakietów są wspólne dla oferty oraz rezerwacji.",
+        "serviceNames": [
+          "Ślub",
+          "Sesja",
+          "Urodziny"
+        ],
+        "buttonText": "Wybierz pakiet i sprawdź termin",
+        "buttonLink": "/rezerwacja",
+        "emptyMessage": "Nie mogę teraz wyświetlić pakietów. Zapytaj o aktualną ofertę."
+      },
+      {
+        "id": "city-faq",
+        "type": "faq",
+        "title": "Pytania przed rezerwacją",
+        "faqItems": [
+          {
+            "question": "Czy mogę zapytać o fotografię ślubną w Grudziądzu?",
+            "answer": "Tak. Na stronie ślubnej podajcie datę oraz miejsce ceremonii i przyjęcia. Ustalimy dostępność i zakres reportażu."
+          },
+          {
+            "question": "Gdzie zobaczę aktualne pakiety?",
+            "answer": "Przejdźcie do fotografii ślubnej lub sesji rodzinnej. Na stronie wybranej usługi znajdziecie aktualne ceny i zakres."
+          },
+          {
+            "question": "Jak ustalamy dojazd i miejsce zdjęć?",
+            "answer": "Podajcie dokładną lokalizację w zapytaniu. Szczegóły realizacji i dojazdu ustalimy przed potwierdzeniem rezerwacji."
+          }
+        ]
+      },
+      {
+        "id": "city-inquiry",
+        "type": "city_inquiry"
+      },
+      {
+        "id": "city-seo",
+        "type": "city_seo",
+        "canonicalPath": "/fotograf-grudziadz",
+        "socialImage": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "socialImageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski"
+      }
+    ]
+  },
+  "chelmno": {
+    "slug": "fotograf-chelmno",
+    "city": "Chełmno",
+    "lat": 53.349,
+    "lng": 18.4311,
+    "metaTitle": "Fotograf Chełmno — śluby i sesje rodzinne | Foto-Dron",
+    "metaDescription": "Fotografia ślubna i sesje rodzinne w Chełmnie. Sprawdź portfolio, aktualne pakiety oraz możliwość zdjęć w wybranym miejscu i terminie.",
+    "sections": [
+      {
+        "id": "city-hero",
+        "type": "hero",
+        "pageStyle": "editorial",
+        "isPrimaryHeading": true,
+        "title": "Fotograf w Chełmnie — śluby i sesje rodzinne",
+        "description": "Planujecie uroczystość w Chełmnie albo sesję z rodziną? Zacznijcie od wybrania usługi. Przed rezerwacją ustalimy miejsce, godzinę i przebieg zdjęć.",
+        "image": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "imageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski",
+        "buttonText": "Zapytaj o termin ślubu",
+        "buttonLink": "/slub?city=Chełmno#szybki-kontakt",
+        "secondaryButtonText": "Zobacz sesje rodzinne",
+        "secondaryButtonLink": "/sesja-rodzinna?city=Chełmno"
+      },
+      {
+        "id": "city-narrative-0",
+        "type": "narrative_text",
+        "title": "Fotografia ślubna w Chełmnie",
+        "content": "<p>Wybierzcie reportaż odpowiadający planowi Waszego dnia — od ceremonii po przyjęcie weselne. Podajcie datę oraz miejsca uroczystości. Zdjęcia rodzinne i sesję pary zaplanujemy z uwzględnieniem godzin wydarzenia.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-narrative-1",
+        "type": "narrative_text",
+        "title": "Miejskie tło czy zieleń?",
+        "content": "<p>Rynek z ratuszem i okolice murów obronnych możemy rozważyć jako tło miejskie. Jeśli wolicie zieleń, do wyboru miejsca warto wziąć pod uwagę Planty albo Park Pamięci i Tolerancji im. dr Ludwika Rydygiera.</p><p>To propozycje do ustalenia przed sesją. Wybierzemy konkretny punkt spotkania i sprawdzimy dostępność miejsca; możecie też zaproponować własny dom lub ogród.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-packages",
+        "type": "public_packages",
+        "pageStyle": "editorial",
+        "title": "Wybierz rodzaj fotografii",
+        "subtitle": "Aktualne ceny i zawartość pakietów są wspólne dla oferty oraz rezerwacji.",
+        "serviceNames": [
+          "Ślub",
+          "Sesja",
+          "Urodziny"
+        ],
+        "buttonText": "Wybierz pakiet i sprawdź termin",
+        "buttonLink": "/rezerwacja",
+        "emptyMessage": "Nie mogę teraz wyświetlić pakietów. Zapytaj o aktualną ofertę."
+      },
+      {
+        "id": "city-faq",
+        "type": "faq",
+        "title": "Pytania przed rezerwacją",
+        "faqItems": [
+          {
+            "question": "Jak zapytać o ślub w Chełmnie?",
+            "answer": "Na stronie oferty ślubnej podajcie datę oraz miejsca ceremonii i przyjęcia. Sprawdzimy termin i dobierzemy zakres fotografowania."
+          },
+          {
+            "question": "Czy na sesję możemy wybrać miejsce poza centrum?",
+            "answer": "Tak. Podajcie proponowaną lokalizację w zapytaniu. Przed rezerwacją ustalimy szczegóły miejsca oraz dojazdu."
+          },
+          {
+            "question": "Gdzie są aktualne ceny i warunki oddania zdjęć?",
+            "answer": "Sprawdźcie pakiety na stronie wybranej usługi. Ich aktualny zakres jest wspólny dla oferty i rezerwacji."
+          }
+        ]
+      },
+      {
+        "id": "city-inquiry",
+        "type": "city_inquiry"
+      },
+      {
+        "id": "city-seo",
+        "type": "city_seo",
+        "canonicalPath": "/fotograf-chelmno",
+        "socialImage": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "socialImageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski"
+      }
+    ]
+  },
+  "wabrzezno": {
+    "slug": "fotograf-wabrzezno",
+    "city": "Wąbrzeźno",
+    "lat": 53.286,
+    "lng": 18.9557,
+    "metaTitle": "Fotograf Wąbrzeźno — śluby i rodzina | Foto-Dron",
+    "metaDescription": "Sesje rodzinne i fotografia ślubna w Wąbrzeźnie. Zobacz aktualne pakiety i zapytaj o termin oraz miejsce realizacji.",
+    "sections": [
+      {
+        "id": "city-hero",
+        "type": "hero",
+        "pageStyle": "editorial",
+        "isPrimaryHeading": true,
+        "title": "Fotograf w Wąbrzeźnie — śluby i sesje rodzinne",
+        "description": "Wybierzcie fotografię ślubną albo sesję rodzinną w Wąbrzeźnie. Miejsce, godzinę i plan zdjęć ustalimy przed rezerwacją.",
+        "image": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "imageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski",
+        "buttonText": "Zapytaj o termin ślubu",
+        "buttonLink": "/slub?city=Wąbrzeźno#szybki-kontakt",
+        "secondaryButtonText": "Zobacz sesje rodzinne",
+        "secondaryButtonLink": "/sesja-rodzinna?city=Wąbrzeźno"
+      },
+      {
+        "id": "city-narrative-0",
+        "type": "narrative_text",
+        "title": "Plener w Wąbrzeźnie",
+        "content": "<p>Jezioro Zamkowe, Frydek i Góra Zamkowa to punkty, które możemy wziąć pod uwagę przy wyborze pleneru. Konkretną trasę oraz dostępność miejsca sprawdzimy przed sesją. Możecie też wybrać zdjęcia w domu lub ogrodzie.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-narrative-1",
+        "type": "narrative_text",
+        "title": "Zakres dopasowany do spotkania",
+        "content": "<p>Przy ślubie podajcie datę i miejsca ceremonii oraz przyjęcia. Przy sesji rodzinnej napiszcie, kto będzie na zdjęciach i gdzie chcecie się spotkać. Aktualne pakiety znajdziecie na stronie wybranej usługi.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-packages",
+        "type": "public_packages",
+        "pageStyle": "editorial",
+        "title": "Wybierz rodzaj fotografii",
+        "subtitle": "Aktualne ceny i zawartość pakietów są wspólne dla oferty oraz rezerwacji.",
+        "serviceNames": [
+          "Ślub",
+          "Sesja",
+          "Urodziny"
+        ],
+        "buttonText": "Wybierz pakiet i sprawdź termin",
+        "buttonLink": "/rezerwacja",
+        "emptyMessage": "Nie mogę teraz wyświetlić pakietów. Zapytaj o aktualną ofertę."
+      },
+      {
+        "id": "city-faq",
+        "type": "faq",
+        "title": "Pytania przed rezerwacją",
+        "faqItems": [
+          {
+            "question": "Jak wybrać miejsce na zdjęcia w Wąbrzeźnie?",
+            "answer": "Podajcie rodzaj sesji i liczbę uczestników. Możemy rozważyć plener nad jeziorem lub wybrane przez Was wnętrze; szczegóły ustalimy przed spotkaniem."
+          },
+          {
+            "question": "Gdzie sprawdzić cenę i termin oddania zdjęć?",
+            "answer": "Sprawdźcie aktualne pakiety na stronie wybranej usługi. Przy niestandardowym zleceniu ustalimy warunki przed rezerwacją."
+          }
+        ]
+      },
+      {
+        "id": "city-inquiry",
+        "type": "city_inquiry"
+      },
+      {
+        "id": "city-seo",
+        "type": "city_seo",
+        "canonicalPath": "/fotograf-wabrzezno",
+        "socialImage": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "socialImageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski"
+      }
+    ]
+  },
+  "lisewo": {
+    "slug": "fotograf-lisewo",
+    "city": "Lisewo",
+    "lat": 53.3147,
+    "lng": 18.7553,
+    "metaTitle": "Fotograf Lisewo — śluby i sesje rodzinne | Foto-Dron",
+    "metaDescription": "Fotografia ślubna i sesje rodzinne w Lisewie i okolicy. Zobacz aktualną ofertę i podaj miejsce oraz datę w zapytaniu.",
+    "sections": [
+      {
+        "id": "city-hero",
+        "type": "hero",
+        "pageStyle": "editorial",
+        "isPrimaryHeading": true,
+        "title": "Fotograf w Lisewie i okolicy",
+        "description": "Planujecie ślub w Lisewie albo rodzinne zdjęcia w domu czy plenerze? Wybierzcie usługę i podajcie miejsce oraz termin. Szczegóły zdjęć ustalimy przed rezerwacją.",
+        "image": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "imageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski",
+        "buttonText": "Zapytaj o termin ślubu",
+        "buttonLink": "/slub?city=Lisewo#szybki-kontakt",
+        "secondaryButtonText": "Zobacz sesje rodzinne",
+        "secondaryButtonLink": "/sesja-rodzinna?city=Lisewo"
+      },
+      {
+        "id": "city-narrative-0",
+        "type": "narrative_text",
+        "title": "Ślub w Lisewie",
+        "content": "<p>Jeżeli ceremonia odbędzie się w kościele Podwyższenia Krzyża Świętego w Lisewie, wpiszcie jego nazwę w zapytaniu razem z miejscem przyjęcia. Zaplanujemy zakres reportażu, zdjęcia z rodziną oraz ewentualny plener pary.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-narrative-1",
+        "type": "narrative_text",
+        "title": "Sesja w wybranym przez Was miejscu",
+        "content": "<p>Dom, ogród albo uzgodniony plener — miejsce dobierzemy do rodzaju zdjęć i uczestników. Jeśli proponujecie teren prywatny, ustalimy także możliwość wykonania na nim sesji.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-packages",
+        "type": "public_packages",
+        "pageStyle": "editorial",
+        "title": "Wybierz rodzaj fotografii",
+        "subtitle": "Aktualne ceny i zawartość pakietów są wspólne dla oferty oraz rezerwacji.",
+        "serviceNames": [
+          "Ślub",
+          "Sesja",
+          "Urodziny"
+        ],
+        "buttonText": "Wybierz pakiet i sprawdź termin",
+        "buttonLink": "/rezerwacja",
+        "emptyMessage": "Nie mogę teraz wyświetlić pakietów. Zapytaj o aktualną ofertę."
+      },
+      {
+        "id": "city-faq",
+        "type": "faq",
+        "title": "Pytania przed rezerwacją",
+        "faqItems": [
+          {
+            "question": "Czy możemy wybrać własny ogród lub dom?",
+            "answer": "Tak. Podajcie lokalizację i opiszcie, kto będzie uczestniczył w sesji. Ustalimy plan i godzinę zdjęć."
+          },
+          {
+            "question": "Jak sprawdzić pakiety i zasady dojazdu?",
+            "answer": "Aktualne pakiety znajdziecie na stronach fotografii ślubnej i sesji rodzinnej. Szczegóły dojazdu ustalimy dla dokładnej lokalizacji przed potwierdzeniem rezerwacji."
+          }
+        ]
+      },
+      {
+        "id": "city-inquiry",
+        "type": "city_inquiry"
+      },
+      {
+        "id": "city-seo",
+        "type": "city_seo",
+        "canonicalPath": "/fotograf-lisewo",
+        "socialImage": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "socialImageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski"
+      }
+    ]
+  },
+  "pluznica": {
+    "slug": "fotograf-pluznica",
+    "city": "Płużnica",
+    "lat": 53.3543,
+    "lng": 18.8849,
+    "metaTitle": "Fotograf Płużnica — śluby i sesje rodzinne | Foto-Dron",
+    "metaDescription": "Fotografia ślubna i sesje rodzinne w Płużnicy i okolicy. Sprawdź ofertę, podaj miejsce zdjęć i zapytaj o dostępny termin.",
+    "sections": [
+      {
+        "id": "city-hero",
+        "type": "hero",
+        "pageStyle": "editorial",
+        "isPrimaryHeading": true,
+        "title": "Fotograf w Płużnicy i okolicy",
+        "description": "Wybierzcie reportaż ślubny lub sesję rodzinną w gminie Płużnica. W zapytaniu podajcie miejsce i termin; zakres oraz plan zdjęć ustalimy przed rezerwacją.",
+        "image": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "imageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski",
+        "buttonText": "Zapytaj o termin ślubu",
+        "buttonLink": "/slub?city=Płużnica#szybki-kontakt",
+        "secondaryButtonText": "Zobacz sesje rodzinne",
+        "secondaryButtonLink": "/sesja-rodzinna?city=Płużnica"
+      },
+      {
+        "id": "city-narrative-0",
+        "type": "narrative_text",
+        "title": "Plener w gminie Płużnica",
+        "content": "<p>Okolice jeziora Wieldządz albo Wieczna Północnego możemy wziąć pod uwagę przy wyborze miejsca na zdjęcia. Konkretny punkt spotkania i dostępność sprawdzimy przed sesją. Rodzinne fotografie możemy zaplanować również w Waszym domu lub ogrodzie.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-narrative-1",
+        "type": "narrative_text",
+        "title": "Ślub, rodzina i plan zdjęć",
+        "content": "<p>Przy reportażu ślubnym potrzebuję daty oraz miejsc ceremonii i przyjęcia. Przy sesji rodzinnej napiszcie, kto będzie na zdjęciach i jaki plener lub wnętrze proponujecie. Aktualny zakres wybierzecie na stronie usługi.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-packages",
+        "type": "public_packages",
+        "pageStyle": "editorial",
+        "title": "Wybierz rodzaj fotografii",
+        "subtitle": "Aktualne ceny i zawartość pakietów są wspólne dla oferty oraz rezerwacji.",
+        "serviceNames": [
+          "Ślub",
+          "Sesja",
+          "Urodziny"
+        ],
+        "buttonText": "Wybierz pakiet i sprawdź termin",
+        "buttonLink": "/rezerwacja",
+        "emptyMessage": "Nie mogę teraz wyświetlić pakietów. Zapytaj o aktualną ofertę."
+      },
+      {
+        "id": "city-faq",
+        "type": "faq",
+        "title": "Pytania przed rezerwacją",
+        "faqItems": [
+          {
+            "question": "Czy miejsce sesji musi być w samej Płużnicy?",
+            "answer": "Możecie zaproponować także lokalizację w okolicy. Podajcie ją w zapytaniu, żeby ustalić szczegóły miejsca i dojazdu."
+          },
+          {
+            "question": "Gdzie znajdę ceny i zawartość pakietów?",
+            "answer": "Przejdźcie do oferty sesji rodzinnej lub fotografii ślubnej. Tam są aktualne warianty i warunki rezerwacji."
+          }
+        ]
+      },
+      {
+        "id": "city-inquiry",
+        "type": "city_inquiry"
+      },
+      {
+        "id": "city-seo",
+        "type": "city_seo",
+        "canonicalPath": "/fotograf-pluznica",
+        "socialImage": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "socialImageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski"
+      }
+    ]
+  },
+  "swiecie": {
+    "slug": "fotograf-swiecie",
+    "city": "Świecie",
+    "lat": 53.41,
+    "lng": 18.4408,
+    "metaTitle": "Fotograf Świecie — śluby i sesje rodzinne | Foto-Dron",
+    "metaDescription": "Fotografia ślubna i sesje rodzinne w Świeciu. Porównaj aktualne pakiety i zapytaj o zdjęcia w wybranym miejscu oraz terminie.",
+    "sections": [
+      {
+        "id": "city-hero",
+        "type": "hero",
+        "pageStyle": "editorial",
+        "isPrimaryHeading": true,
+        "title": "Fotograf w Świeciu — śluby i sesje rodzinne",
+        "description": "Planujecie ślub w Świeciu albo rodzinne zdjęcia? Wybierzcie usługę i prześlijcie miejsce oraz termin. Przed rezerwacją ustalimy zakres fotografowania i plan spotkania.",
+        "image": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "imageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski",
+        "buttonText": "Zapytaj o termin ślubu",
+        "buttonLink": "/slub?city=Świecie#szybki-kontakt",
+        "secondaryButtonText": "Zobacz sesje rodzinne",
+        "secondaryButtonLink": "/sesja-rodzinna?city=Świecie"
+      },
+      {
+        "id": "city-narrative-0",
+        "type": "narrative_text",
+        "title": "Miejsce na zdjęcia w Świeciu",
+        "content": "<p>Zamek w Świeciu, położony w widłach Wdy i Wisły, może być punktem odniesienia przy planowaniu miejskiego pleneru. Konkretną lokalizację oraz jej dostępność sprawdzimy przed zdjęciami. Po uzgodnieniu miejsca wybierzemy punkt spotkania i porę sesji.</p><p>Możecie również zaproponować dom, ogród albo miejsce związane z Waszą uroczystością.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-narrative-1",
+        "type": "narrative_text",
+        "title": "Zakres reportażu ślubnego",
+        "content": "<p>Podajcie datę i miejsca ceremonii oraz przyjęcia. Dobierzemy pakiet do planu uroczystości i ustalimy czas na zdjęcia z rodziną oraz sesję pary. Aktualne warianty są na stronie ślubnej.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-packages",
+        "type": "public_packages",
+        "pageStyle": "editorial",
+        "title": "Wybierz rodzaj fotografii",
+        "subtitle": "Aktualne ceny i zawartość pakietów są wspólne dla oferty oraz rezerwacji.",
+        "serviceNames": [
+          "Ślub",
+          "Sesja",
+          "Urodziny"
+        ],
+        "buttonText": "Wybierz pakiet i sprawdź termin",
+        "buttonLink": "/rezerwacja",
+        "emptyMessage": "Nie mogę teraz wyświetlić pakietów. Zapytaj o aktualną ofertę."
+      },
+      {
+        "id": "city-faq",
+        "type": "faq",
+        "title": "Pytania przed rezerwacją",
+        "faqItems": [
+          {
+            "question": "Czy możecie zaproponować własne miejsce sesji w Świeciu?",
+            "answer": "Tak. Podajcie nazwę miejsca lub adres w zapytaniu. Przed zdjęciami ustalimy plan i możliwość korzystania z wybranej lokalizacji."
+          },
+          {
+            "question": "Jak sprawdzić cenę i termin ślubu?",
+            "answer": "Na stronie ślubnej porównajcie aktualne pakiety i wyślijcie datę wraz z miejscami uroczystości. Na tej podstawie sprawdzimy możliwość realizacji."
+          }
+        ]
+      },
+      {
+        "id": "city-inquiry",
+        "type": "city_inquiry"
+      },
+      {
+        "id": "city-seo",
+        "type": "city_seo",
+        "canonicalPath": "/fotograf-swiecie",
+        "socialImage": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "socialImageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski"
+      }
+    ]
+  },
+  "bydgoszcz": {
+    "slug": "fotograf-bydgoszcz",
+    "city": "Bydgoszcz",
+    "lat": 53.1235,
+    "lng": 18.0084,
+    "metaTitle": "Fotograf Bydgoszcz — śluby i sesje rodzinne | Foto-Dron",
+    "metaDescription": "Fotografia ślubna i sesje rodzinne w Bydgoszczy. Zobacz aktualne pakiety, wybierz rodzaj zdjęć i zapytaj o termin realizacji.",
+    "sections": [
+      {
+        "id": "city-hero",
+        "type": "hero",
+        "pageStyle": "editorial",
+        "isPrimaryHeading": true,
+        "title": "Fotograf w Bydgoszczy — śluby i sesje rodzinne",
+        "description": "Planujecie ślub albo sesję rodzinną w Bydgoszczy? Zobaczcie ofertę dla wybranego rodzaju zdjęć. Miejsce, plan oraz szczegóły dojazdu ustalimy przed rezerwacją.",
+        "image": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "imageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski",
+        "buttonText": "Zapytaj o termin ślubu",
+        "buttonLink": "/slub?city=Bydgoszcz#szybki-kontakt",
+        "secondaryButtonText": "Zobacz sesje rodzinne",
+        "secondaryButtonLink": "/sesja-rodzinna?city=Bydgoszcz"
+      },
+      {
+        "id": "city-narrative-0",
+        "type": "narrative_text",
+        "title": "Miejski plener w Bydgoszczy",
+        "content": "<p>Wyspę Młyńską możemy rozważyć jako lokalizację sesji. Punkt spotkania i porę ustalimy po omówieniu rodzaju zdjęć. Jeśli wolicie dom, ogród lub inne miejsce, podajcie je w zapytaniu.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-narrative-1",
+        "type": "narrative_text",
+        "title": "Reportaż dopasowany do planu ślubu",
+        "content": "<p>Prześlijcie datę, miejsca ceremonii i przyjęcia oraz planowane godziny uroczystości. Na tej podstawie dobierzemy zakres reportażu i zaplanujemy zdjęcia z rodziną. Aktualne pakiety są na stronie ślubnej.</p>",
+        "dropCap": false
+      },
+      {
+        "id": "city-packages",
+        "type": "public_packages",
+        "pageStyle": "editorial",
+        "title": "Wybierz rodzaj fotografii",
+        "subtitle": "Aktualne ceny i zawartość pakietów są wspólne dla oferty oraz rezerwacji.",
+        "serviceNames": [
+          "Ślub",
+          "Sesja",
+          "Urodziny"
+        ],
+        "buttonText": "Wybierz pakiet i sprawdź termin",
+        "buttonLink": "/rezerwacja",
+        "emptyMessage": "Nie mogę teraz wyświetlić pakietów. Zapytaj o aktualną ofertę."
+      },
+      {
+        "id": "city-faq",
+        "type": "faq",
+        "title": "Pytania przed rezerwacją",
+        "faqItems": [
+          {
+            "question": "Jak zapytać o ślub w Bydgoszczy?",
+            "answer": "Podajcie datę oraz dokładne miejsca ceremonii i przyjęcia w formularzu na stronie ślubnej. Sprawdzimy możliwość realizacji i ustalimy szczegóły."
+          },
+          {
+            "question": "Czy dojazd jest zawsze w cenie?",
+            "answer": "Szczegóły dojazdu ustalimy dla dokładnej lokalizacji przed potwierdzeniem rezerwacji. Podajcie adres w zapytaniu."
+          }
+        ]
+      },
+      {
+        "id": "city-inquiry",
+        "type": "city_inquiry"
+      },
+      {
+        "id": "city-seo",
+        "type": "city_seo",
+        "canonicalPath": "/fotograf-bydgoszcz",
+        "socialImage": "/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
+        "socialImageAlt": "Przykład fotografii z portfolio — Przemysław Właśniewski"
+      }
+    ]
+  }
+}

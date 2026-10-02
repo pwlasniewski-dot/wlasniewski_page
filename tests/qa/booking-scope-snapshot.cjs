@@ -14,7 +14,7 @@ const db = {
     setting: { findFirst: async () => ({ booking_min_days_ahead: 7 }) },
     user: { findUnique: async () => ({ id: 7 }) },
     package: { findFirst: async () => clone(pkg) },
-    booking: { findMany: async () => [], create: async ({ data }) => { captured = { id: 9, ...data }; return clone(captured); }, updateMany: async () => ({ count: 1 }) },
+    booking: { findUnique: async () => clone(captured), update: async ({ data }) => { captured = { ...captured, ...data }; return clone(captured); }, findMany: async () => [], create: async ({ data }) => { captured = { id: 9, ...data }; return clone(captured); }, updateMany: async () => ({ count: 1 }) },
     $queryRaw: async () => [{ acquired: 1 }], $transaction: async callback => callback(db),
 };
 const originalLoad = Module._load;
@@ -22,6 +22,8 @@ let payuInput;
 Module._load = function(request, parent, isMain) {
     if (request === 'server-only') return {};
     if (request === '@/lib/db/prisma') return { __esModule: true, default: db };
+    if (request === '@/lib/auth/middleware') return { requireAuth: async () => null };
+    if (request === '@/lib/email/sender') return { sendEmail: async message => sent.push(message) };
     if (request === '@/lib/logger') return { logSystem: async () => {} };
     if (request === '@/lib/rate-limit') return { rateLimit: () => ({ ok: true }), getClientIp: () => '127.0.0.1' };
     if (request === '@/lib/bookingScheduleRepository') return { loadBookingScheduleConfiguration: async () => ({ rules: require('../../src/lib/bookingSchedule.ts').defaultBookingScheduleRules('SLUB'), exceptions: [] }) };
@@ -85,6 +87,17 @@ const requestForScope = (scopeLines, hours = 12) => {
         assert.ok(!html.includes('<img'));
         assert.equal(bookingSnapshotScopeLines({ package: { hours: 12 } }).length, 0);
         assert.equal(bookingSnapshotScopeLines(null).length, 0);
+    });
+    await check('manual admin confirmation uses the historical scope once and never rereads current Package', async () => {
+        const bookingApi = require('../../src/app/api/bookings/route.ts');
+        captured.status = 'pending'; const count = sent.length;
+        const request = () => new Request('http://localhost/api/bookings?id=9', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'confirmed' }) });
+        assert.equal((await bookingApi.PATCH(request())).status, 200);
+        assert.equal(sent.length, count + 1);
+        assert.ok(sent.at(-1).html.includes('Zakres potwierdzony przez klienta'));
+        assert.ok(sent.at(-1).html.includes('Pendrive')); assert.ok(!sent.at(-1).html.includes('Nowy zakres oferty'));
+        assert.ok(!sent.at(-1).html.includes('<img src=x onerror='));
+        assert.equal((await bookingApi.PATCH(request())).status, 200); assert.equal(sent.length, count + 1);
     });
     await check('actual customer booking summary renders frozen scope without rereading the current package', async () => {
         window.history.replaceState(null, '', '/konto?tab=bookings');

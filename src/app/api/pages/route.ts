@@ -5,6 +5,7 @@ import { requireAuth, withAuth } from '@/lib/auth/middleware';
 import { revalidatePath } from 'next/cache';
 import { validateDronePhotographyConfig } from '@/lib/dronePhotographyOffer';
 import { validateAeroPageSections } from '@/lib/aeroanaliza/page-validation';
+import { cityDefinition, validateCitySections } from '@/lib/cityLanding';
 
 async function preservePagePublicationBestEffort(page: {
     slug: string;
@@ -75,6 +76,15 @@ export async function POST(request: NextRequest) {
 
             // Normalize slug to lowercase
             if (slug) slug = slug.toLowerCase().trim();
+
+            const existingTarget = id && Number.isInteger(Number(id))
+                ? await prisma.page.findUnique({ where: { id: Number(id) }, select: { slug: true, page_type: true } })
+                : null;
+            if (existingTarget?.page_type === 'city_landing' || cityDefinition(existingTarget?.slug || '')
+                || page_type === 'city_landing' || cityDefinition(slug || '')) {
+                const validation = validateCitySections(sections);
+                if (!validation.valid) return NextResponse.json({ error: validation.error }, { status: 400 });
+            }
 
             if (slug === 'fotografia-z-drona') {
                 const validation = validateDronePhotographyConfig(sections);

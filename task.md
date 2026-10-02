@@ -1,3 +1,20 @@
+## 2026-10-02 — lokalny CMS / urodziny (draft)
+
+- [x] Audyt routing, 38 public Page i istniejących edytorów/API; PR93 scalony przez właściciela, baza 3808905.
+- [x] Zachować stare materiały i rzeczywiste galerie; zastąpić aktywny statyczny body miast PageRenderer.
+- [x] Dodać FAQ/SEO/livePackage/inquiry w dotychczasowym PageBuilder, bez nowego panelu/migracji.
+- [x] Respektować zapisane []/wyłączenia i udostępnić jawny starter bez nadpisania danych.
+- [x] Zachować 8 miast do zapytania/rezerwacji; poprawić usługę Urodziny i warianty rodzinne/przyjęć.
+- [x] Użyć frozen scope w ręcznym potwierdzeniu i sprawdzić brak powtórnej wysyłki.
+- [x] Lokalny QA: 8 city CMS + 5 snapshot + 7 regresji + 36 unit + 3 pricing contract PASS; brak produkcyjnych wysyłek/płatności.
+- [x] Formalna finalna delta TS: HEAD 106 / working 100, zero nowych, sześć usuniętych wystąpień starego błędu enabled.
+- [x] Niezależny code review oraz powtórzone 8 CMS / 5 snapshot PASS jako draft.
+- [ ] Previewbuild i faktyczny CMS save/read/render wraz z viewport 390×844.
+- [x] Koordynator poprawił dawny story 20/10 i pozostałe teksty Torunia w aktualnym CMS, zachowując media.
+- [ ] Jawnie skonfigurować puste miasta i brakujące moduły Torunia; odebrać H1/SEO/CTA oraz media na nowym rendererze.
+- [ ] Usunąć tymczasowy public/__qa-offer-viewport.html przed finalnym scaleniem.
+- [ ] Minimalny osobny snapshot zakresu Dronu z istniejącego configu; bez zmian cen/płatności.
+
 ## 2026-10-02 — pilna poprawka zapisu pakietów
 
 - [x] Zdiagnozować HTTP400: JSONnull zamieniane na tekst przy walidacji available_hours.
@@ -5,7 +22,7 @@
 - [x] Zachować walidację jawnej listy godzin i istniejący wspólny grafik.
 - [x] Lokalny test6scenariuszy CMS/API/GET/oferta/rezerwacja PASS.
 - [x] Niezależny QA:6scenariuszy EXIT0 i code review PASS; wydzielony commit przygotowany.
-- [ ] Potwierdzić wdrożenie i zapis zaakceptowanych danych przez istniejący produkcyjny CMS.
+- [x] Właściciel scalił PR94; koordynator potwierdził rzeczywisty zapis/odczyt 12 pakietów, niezależny public API QA PASS. Ceny, czas i grafik zachowane.
 
 ## 2026-10-02 — domknięcie SSR/promocji/snapshotu (draft)
 

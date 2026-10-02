@@ -1,4 +1,6 @@
 import { notFound, permanentRedirect } from 'next/navigation';
+import { CITY_NAMES, cityDefinition, visibleCitySections } from '@/lib/cityLanding';
+import type { CmsPublicPackage } from '@/components/sections/CmsOfferSections';
 import { Suspense } from 'react';
 import PageRenderer from '@/components/PageRenderer';
 import { Metadata } from 'next';
@@ -43,7 +45,7 @@ type GrowthPackage = {
     promotion: PublicPackagePromotion | null;
 };
 
-const GROWTH_CITIES = new Set(['Toruń', 'Grudziądz', 'Wąbrzeźno', 'Chełmno', 'Świecie']);
+const GROWTH_CITIES = new Set(CITY_NAMES);
 
 function safeGrowthCity(value: string | string[] | undefined) {
     const city = Array.isArray(value) ? value[0] : value;
@@ -218,6 +220,7 @@ function ServiceInquirySection({
 function getServiceLabelBySlug(slug: string) {
     const lower = slug.toLowerCase();
 
+    if (lower.includes('urodzin')) return 'fotograf na urodziny';
     if (lower.includes('slub')) return 'fotograf ślubny';
     if (lower.includes('rodzin')) return 'sesja rodzinna';
     if (lower.includes('komuni')) return 'fotograf komunijny';
@@ -230,6 +233,7 @@ function getServiceLabelBySlug(slug: string) {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { slug } = await params;
+    if (cityDefinition(slug)) return cityGenerateMetadata({ params: Promise.resolve({ city: slug.replace('fotograf-', '') }) });
     const page = await getPage(slug);
     const growthConfig = getServiceGrowthConfig(slug);
 
@@ -307,6 +311,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function DynamicPage({ params, searchParams }: PageProps) {
     const { slug } = await params;
+    if (cityDefinition(slug)) return CityLandingPage({ params: Promise.resolve({ city: slug.replace('fotograf-', '') }) });
     const page = await getPage(slug);
     const growthConfig = getServiceGrowthConfig(slug);
     const resolvedSearchParams = searchParams ? await searchParams : undefined;
@@ -321,22 +326,9 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
         notFound();
     }
 
-    // City landing keeps its bespoke editorial layout, while media sections
-    // configured in Admin (gallery / parallax) are passed through to the template.
-    if (page!.page_type === 'city_landing') {
-        let citySections: PageSection[] = [];
-        if (page!.sections) {
-            try {
-                citySections = JSON.parse(page!.sections);
-            } catch (error) {
-                console.error('Failed to parse city landing sections', error);
-            }
-        }
-
-        return CityLandingPage({
-            params: Promise.resolve({ city: slug.replace('fotograf-', '') }),
-            sections: citySections,
-        });
+    // The same Page record drives city body, metadata and the existing editor.
+    if (page.page_type === 'city_landing') {
+        return CityLandingPage({ params: Promise.resolve({ city: slug.replace('fotograf-', '') }), page });
     }
 
     // Redirect B2B pages to their proper path
@@ -377,6 +369,19 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
     });
     const serviceLabel = getServiceLabelBySlug(page!.slug);
     const localCoverageLabel = LOCAL_CITY_LINKS.map(l => l.city).join(', ');
+    const packageModules = visibleCitySections(sections).filter(section => section.type === 'public_packages');
+    // A deliberately hidden CMS module also replaces the legacy automatic block.
+    const hasCmsPackages = sections.some(section => section.type === 'public_packages');
+    let rendererPackages: CmsPublicPackage[] = [];
+    if (hasCmsPackages) {
+        const serviceNames = new Set(packageModules.flatMap(section => section.serviceNames || []));
+        try {
+            rendererPackages = (await findPricedPublicPackages()).filter(pkg => serviceNames.has(pkg.service.name)).map(pkg => ({
+                id: pkg.id, name: pkg.name, subtitle: pkg.subtitle, serviceName: pkg.service.name,
+                price: pkg.price, hours: pkg.hours, scopeLines: packageScopeLines(pkg), promotion: pkg.promotion,
+            }));
+        } catch (error) { console.warn('[CMS packages] Public catalog unavailable.', error); }
+    }
     let growthPackages: GrowthPackage[] = [];
     if (growthConfig) {
         try {
@@ -394,6 +399,9 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
             console.warn(`[service-growth] Packages unavailable for ${slug}`, error);
         }
     }
+    const schemaPackages = hasCmsPackages ? rendererPackages : growthPackages.map(pkg => ({
+        ...pkg, serviceName: growthConfig!.bookingService, scopeLines: packageScopeLines(pkg),
+    }));
 
     return (
         <main className={isEditorialService ? 'min-h-screen bg-[#f3efe8] text-[#2b251f] selection:bg-[#c9ad74] selection:text-[#2b251f]' : 'min-h-screen bg-zinc-950 text-white selection:bg-gold-400 selection:text-black'}>
@@ -464,28 +472,28 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
                             { '@type': 'AdministrativeArea', name: 'województwo kujawsko-pomorskie' },
                         ],
                         image: page.hero_image || undefined,
-                        ...(growthPackages.length > 0 ? {
-                            offers: growthPackages.map((pkg) => ({
+                        ...(schemaPackages.length > 0 ? {
+                            offers: schemaPackages.map((pkg) => ({
                                 '@type': 'Offer',
                                 name: pkg.name,
-                                description: [formatPackageDuration(pkg.hours), ...packageScopeLines(pkg)].join('. '),
+                                description: [formatPackageDuration(pkg.hours), ...pkg.scopeLines].join('. '),
                                 price: (pkg.price / 100).toFixed(2),
                                 priceCurrency: 'PLN',
                                 ...(pkg.promotion?.endsAt ? { priceValidUntil: pkg.promotion.endsAt } : {}),
                                 availability: 'https://schema.org/InStock',
-                                url: `https://wlasniewski.pl/rezerwacja?service=${encodeURIComponent(growthConfig?.bookingService || serviceLabel)}&package_id=${pkg.id}`,
+                                url: `https://wlasniewski.pl/rezerwacja?service=${encodeURIComponent(pkg.serviceName)}&package_id=${pkg.id}`,
                             })),
                         } : {}),
                     }).replace(/</g, '\\u003c'),
                 }}
             />
-            <PageRenderer sections={sections} />
+            <PageRenderer sections={sections} publicPackages={rendererPackages} city={growthCity || undefined} />
 
             {growthConfig && photoFunnelConfig?.display.serviceModuleEnabled && photoFunnelConfig.display.servicePosition === 'before_packages' && (
                 <ServiceInquirySection growthConfig={growthConfig} city={growthCity} funnelConfig={photoFunnelConfig} />
             )}
 
-            {growthConfig && photoFunnelConfig && (
+            {growthConfig && photoFunnelConfig && !hasCmsPackages && (
                 <ServiceGrowthOffer config={growthConfig} packages={growthPackages} editorial={isEditorialService} city={growthCity} funnelConfig={photoFunnelConfig} />
             )}
 

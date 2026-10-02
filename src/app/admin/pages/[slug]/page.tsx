@@ -10,6 +10,7 @@ import MediaPicker from '@/components/admin/MediaPicker';
 import RichTextEditor from '@/components/admin/RichTextEditor';
 import PageBuilder, { PageSection } from '@/components/admin/PageBuilder';
 import DronePhotographyPageEditor from '@/components/admin/DronePhotographyPageEditor';
+import { appendCityStarter, cityDefinition, parseCitySections, validateCitySections } from '@/lib/cityLanding';
 import {
     DEFAULT_DRONE_PHOTOGRAPHY_CONFIG,
     parseDronePhotographyConfig,
@@ -97,6 +98,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [citySectionsError, setCitySectionsError] = useState<string | null>(null);
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
     const [currentPickerTarget, setCurrentPickerTarget] = useState<string | null>(null);
 
@@ -172,6 +174,10 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                     // Load Page Builder Sections
                     if (resolvedParams.slug === 'fotografia-z-drona') {
                         setDroneConfig(parseDronePhotographyConfig(page.sections));
+                    } else if (cityDefinition(page.slug)) {
+                        const validation = page.sections ? validateCitySections(page.sections) : { valid: true as const };
+                        setCitySectionsError(validation.valid ? null : validation.error);
+                        setSections(parseCitySections(page.sections, page.slug, page));
                     } else if (page.sections) {
                         try {
                             const raw = JSON.parse(page.sections);
@@ -242,6 +248,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     }, [resolvedParams]);
 
     const handleSubmit = async () => {
+        if (citySectionsError) { toast.error(citySectionsError); return; }
         setSaving(true);
         try {
             const token = localStorage.getItem('admin_token');
@@ -660,6 +667,16 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                     <p className="text-sm text-zinc-400 mb-4">
                         Dodawaj i układaj sekcje, aby zbudować unikalny wygląd strony.
                     </p>
+                    {cityDefinition(formData.slug) && <div className="rounded border border-amber-500/30 p-4">
+                        {citySectionsError && <p role="alert" className="mb-3 text-red-300">{citySectionsError} Zapis zablokowany, aby zachować oryginalne dane. Najpierw napraw zapis sekcji.</p>}
+                        <p className="mb-3 text-sm leading-relaxed text-zinc-300">Zestaw miejski dodaje brakujące moduły. Zachowuje obecne teksty, galerie i wyłączenia. Ceny i zakres odczytuje z pakietów Rezerwacji. Sprawdź treść i zdjęcia przed publikacją.</p>
+                        <button type="button" onClick={() => setSections(current => appendCityStarter(current, formData.slug, formData))} className="rounded bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950">Dodaj brakujące moduły miejskie</button>
+                    </div>}
+                    {formData.slug === 'twoje-urodziny' && !sections.some(section => section.type === 'public_packages') && <button type="button" onClick={() => setSections(current => [...current, {
+                        id: 'birthday-packages', type: 'public_packages', title: 'Pakiety fotografii urodzin',
+                        subtitle: '', serviceNames: ['Urodziny'], buttonText: 'Sprawdź pakiet urodzinowy', buttonLink: '/rezerwacja',
+                        emptyMessage: 'Nie mogę teraz wyświetlić pakietów. Zapytaj o aktualną ofertę.',
+                    }])} className="rounded bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950">Dodaj pakiety urodzinowe</button>}
                     {isDronePhotographyPage
                         ? <DronePhotographyPageEditor value={droneConfig} onChange={setDroneConfig} />
                         : <PageBuilder sections={sections} onChange={setSections} pageType={formData.page_type} />}

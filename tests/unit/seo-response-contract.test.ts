@@ -48,11 +48,13 @@ test('CMS and Aero metadata use HTTP notFound/redirect instead of successful err
     assert.match(aero, /if \(status === 'unpublished'\) notFound\(\)/);
 });
 
-test('city title, description and social metadata use existing CMS SEO fields', () => {
-    const source = readFileSync('src/app/fotograf-[city]/page.tsx', 'utf8');
-    assert.match(source, /getPublishedPage\(data.slug\)/);
-    assert.match(source, /page\?\.meta_title\?\.trim\(\)/);
-    assert.match(source, /page\?\.meta_description\?\.trim\(\)/);
-    assert.equal((source.match(/title: metaTitle/g) || []).length, 3);
-    assert.match(source, /if \(!key\) notFound\(\)/);
+test('city FAQ and SEO configuration normalize visible CMS data without resurrecting hidden copy', async () => {
+    const { cityFaqItems, citySeoSettings, parseCitySections } = await import('../../src/lib/cityLanding');
+    const sections = parseCitySections(JSON.stringify([
+        { id: 'faq', type: 'faq', data: { faqItems: [{ question: 'Pytanie', answer: '&lt;script&gt;test&lt;/script&gt;' }, { question: 'Ukryte', answer: 'Nie publikuj', enabled: false }] } },
+        { id: 'seo', type: 'city_seo', canonicalPath: '/\\foreign.example' },
+    ]), 'fotograf-torun');
+    assert.deepEqual(cityFaqItems(sections), [{ question: 'Pytanie', answer: '<script>test</script>' }]);
+    assert.equal(citySeoSettings(sections, 'fotograf-torun').canonical, 'https://wlasniewski.pl/fotograf-torun');
+    assert.deepEqual(parseCitySections('[]', 'fotograf-torun'), []);
 });
