@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         let normalizedAvailableHours: string | null | undefined;
         if (available_hours !== undefined) {
             const rawHours = String(available_hours).trim();
-            if (!rawHours) {
+            if (available_hours === null || !rawHours) {
                 normalizedAvailableHours = null;
             } else {
                 const parsedHours = rawHours.split(',').map(value => value.trim());
