@@ -50,6 +50,7 @@ export interface BookingEmailData {
   clientName: string;
   service: string;
   packageName: string;
+  packageScopeLines?: string[];
   date: string;
   time?: string;
   location?: string;
@@ -179,6 +180,16 @@ function goldDivider(): string {
   return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0;">
       <tr><td style="height:1px;background:linear-gradient(90deg,transparent,#c5a059,transparent);"></td></tr>
     </table>`;
+}
+
+function bookingScopeRow(data: BookingEmailData): string {
+  const lines = (data.packageScopeLines || []).filter(line => typeof line === 'string' && line.trim());
+  if (lines.length === 0) return '';
+  const entities: Record<string, string> = {
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  };
+  const escape = (value: string) => value.replace(/[&<>"']/g, char => entities[char]);
+  return detailRow('Zakres pakietu', `<ul style="margin:0;padding-left:18px;">${lines.map(line => `<li>${escape(line)}</li>`).join('')}</ul>`);
 }
 
 function detailRow(label: string, value: string, highlight = false): string {
@@ -396,6 +407,7 @@ export function generateClientEmail(data: BookingEmailData): string {
         <table width="100%" cellpadding="0" cellspacing="0">
           ${detailRow('Usługa', data.service)}
           ${detailRow('Pakiet', data.packageName)}
+          ${bookingScopeRow(data)}
           ${data.dronePackageName ? detailRow('Dron', data.dronePackageName) : ''}
           ${data.droneGoal ? detailRow('Cel materiału z drona', data.droneGoal) : ''}
           ${detailRow('📅 Data', data.date, true)}
@@ -443,6 +455,7 @@ export function generateBookingConfirmedEmail(data: BookingEmailData): string {
         <table width="100%" cellpadding="0" cellspacing="0">
           ${detailRow('Usługa', data.service)}
           ${detailRow('Pakiet', data.packageName)}
+          ${bookingScopeRow(data)}
           ${data.dronePackageName ? detailRow('Dron', data.dronePackageName) : ''}
           ${data.droneGoal ? detailRow('Cel materiału z drona', data.droneGoal) : ''}
           ${detailRow('📅 Data', `<span style="color:#4ade80;font-weight:600;">${data.date}</span>`)}
@@ -490,6 +503,7 @@ export function generateAdminEmail(data: BookingEmailData): string {
         <table width="100%" cellpadding="0" cellspacing="0">
           ${detailRow('Usługa', data.service)}
           ${detailRow('Pakiet', data.packageName)}
+          ${bookingScopeRow(data)}
           ${data.dronePackageName ? detailRow('Dron', data.dronePackageName) : ''}
           ${data.droneGoal ? detailRow('Cel materiału z drona', data.droneGoal) : ''}
           ${data.flightCheckStatus ? detailRow('Kontrola lotu', data.flightCheckStatus) : ''}

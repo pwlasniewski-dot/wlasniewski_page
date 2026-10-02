@@ -1,3 +1,21 @@
+## 2026-10-02 — domknięcie SSR/promocji/snapshotu (draft)
+
+- [x] Potwierdzić obsługę CMS modułów i przyczynę braku tekstów/zdjęć w SSR.
+- [x] Włączyć SSR trzech istniejących komponentów, zachowując treści.
+- [x] Przywrócić pierwszeństwo niepustych CMS metadanych usług.
+- [x] Dodać automatyczny moduł promocji do istniejącego managera homepage i rozróżnić pusty/nieznany/niewyróżniony stan.
+- [x] Ujawnić błąd API/status w edytorze pakietu; objąć zapis i reload limitem oczekiwania.
+- [x] Utrwalić zakres z serwera w istniejącym JSON rezerwacji i użyć go w mailach/konto; pokazać kopię w checkout.
+- [x] Zatrzymać zmieniony zakres/czas nowego koszyka przed płatnością.
+- [x] Wykonać 27 unit oraz 5 + 7 + 4 rzeczywistych scenariuszy CMS/API/UI/SSR/mail; bez produkcyjnej bazy/płatności.
+- [x] Odebrać finalną deltę typecheck: HEAD106/working106 identyczne diagnozy, zero dodanych/usuniętych.
+- [x] Odebrać niezależny code review PASS jako draft.
+- [ ] Odebrać pełny build nowego zakresu (Node22, lokalna baza offline; trwa).
+- [ ] Odebrać podgląd mobilny i rzeczywisty CMS roundtrip po wdrożeniu.
+- [ ] Przekazać lokalny commit i draft PR; opublikować wyłącznie przez proces roota/użytkownika.
+- [ ] Po wdrożeniu dodać automatyczny moduł homepage i ukryć zastępczy Narrative Text „Promocje i aktualne ceny”.
+- [ ] Osobno zatwierdzić parametry handlowe i poprawę nowego szablonu umowy ślubnej, bez zmian podpisanych umów.
+
 ## 2026-10-02 — pełny zakres pakietów oferty
 
 - [x] Potwierdzić utratę description/features w rendererze oferty i konflikty aktualnego katalogu.
@@ -9,7 +27,7 @@
 - [x] Przygotować mobilny podgląd offline rzeczywistego SSR i Tailwind.
 - [x] Potwierdzić pełny czysty build Node 22.23.3 bez produkcyjnej bazy: exit 0, kompilacja, 262/262 stron i finalizacja PASS; pierwotny ENOTEMPTY usunięty przez przeniesienie wygenerowanego .next.
 - [ ] Potwierdzić mobilny odbiór podglądu.
-- [ ] Opublikować przez standardowy git push i potwierdzić preview/produkcję; uwierzytelnienie GitHub blokuje publikację.
+- [x] Użytkownik wypchnął poprzednią poprawkę, PR #92 scalono; koordynator potwierdził pełne listy i godziny na produkcyjnym /slub.
 - [ ] Uzgodnić brakujące parametry handlowe (liczby zdjęć ślubnych, album, termin oddania) przed ich dopisaniem.
 
 ## 2026-09-23 — analityka wizyt i rezerwacji

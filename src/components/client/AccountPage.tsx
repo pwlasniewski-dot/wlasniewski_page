@@ -37,6 +37,8 @@ import type { PortalClientEvent, PortalModule } from '@/lib/client-portal-events
 import AccountOrders from '@/components/client/AccountOrders';
 import PhotoProductStorefront from '@/components/shop/PhotoProductStorefront';
 import { parseShopIntent, shopAccountHref } from '@/lib/galleries/shop-intent';
+import PackageScope from '@/components/booking/PackageScope';
+import { bookingSnapshotScopeLines } from '@/lib/bookingPackageScope';
 
 type Tab = 'orders' | 'overview' | 'sessions' | 'bookings' | 'documents' | 'gift_cards' | 'workshops' | 'preparation' | 'settings' | 'partner';
 
@@ -1296,6 +1298,7 @@ export function AuthenticatedAccountPage({ user, token, logout, readOnly = false
                                     <div>
                                         <h4 className="font-bold text-xl mb-1">{booking.service || booking.service_type || 'Sesja Indywidualna'}</h4>
                                         <p className="mb-2 text-sm text-zinc-300">{booking.package}{booking.drone_package_name && booking.service !== 'Dron' ? ` + ${booking.drone_package_name}` : ''}</p>
+                                        <PackageScope scopeLines={bookingSnapshotScopeLines(booking.booking_snapshot)} className="mb-4 text-zinc-300" />
                                         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-zinc-500">
                                             <span className="flex items-center gap-2"><Calendar className="w-4 h-4" /> {new Date(booking.date).toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
                                             <span className="flex items-center gap-2"><MapPin className="w-4 h-4" /> {[booking.venue_place, booking.venue_city].filter(Boolean).join(', ') || 'Lokalizacja do ustalenia'}</span>

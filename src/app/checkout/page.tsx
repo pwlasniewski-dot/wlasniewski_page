@@ -9,6 +9,8 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import { calculateFotoMatchDiscount } from '@/lib/fotoMatchDiscount';
 import { checkoutItemsWithCurrentAttribution, readConsentedClientAttribution } from '@/lib/analytics/clientAttribution';
 import PromotionPriceBlock from '@/components/promotions/PromotionPriceBlock';
+import PackageScope from '@/components/booking/PackageScope';
+import { storedPackageScopeLines } from '@/lib/bookingPackageScope';
 
 export default function CheckoutPage() {
     const { trackEvent } = useAnalytics();
@@ -450,6 +452,7 @@ export default function CheckoutPage() {
                                     <div className="flex-1 pr-4">
                                         <h4 className="font-bold text-white mb-0.5">{item.title}</h4>
                                         <p className="text-xs text-zinc-500">{item.subtitle}</p>
+                                        {item.type === 'booking' && <PackageScope scopeLines={storedPackageScopeLines(item.metadata?.package_scope_lines)} className="mt-3 text-zinc-300" />}
                                         {item.type === 'booking' && item.metadata?.package_promotion && (
                                             <PromotionPriceBlock promotion={item.metadata.package_promotion} variant="summary" className="mt-3" />
                                         )}

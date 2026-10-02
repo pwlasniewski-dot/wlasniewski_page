@@ -1,5 +1,6 @@
 
 import { v4 as uuidv4 } from 'uuid';
+import { DEFAULT_HOMEPAGE_PROMOTION_COPY } from '@/lib/homepagePromotions';
 
 export function createHeroSlideTemplate() {
     return {
@@ -12,6 +13,16 @@ export function createHeroSlideTemplate() {
         enabled: true,
         order: 0,
         shader: 'cinematic' as const
+    };
+}
+
+export function createActivePromotionsTemplate() {
+    return {
+        id: `promotions-${uuidv4()}`,
+        type: 'active_promotions',
+        label: 'Aktualne promocje',
+        enabled: true,
+        data: { ...DEFAULT_HOMEPAGE_PROMOTION_COPY },
     };
 }
 
@@ -324,6 +335,7 @@ export function createPhotoCube3DTemplate() {
 }
 
 export default {
+    createActivePromotionsTemplate,
     createHeroSlideTemplate,
     createAboutSectionTemplate,
     createFeaturesSectionTemplate,

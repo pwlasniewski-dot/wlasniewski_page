@@ -1,3 +1,13 @@
+## 2026-10-02 — treści usług, promocje i zakupiony zakres
+
+Trzy redakcyjne moduły CMS są obecne w HTML serwera oraz po hydracji, z istniejącymi tekstami i zdjęciami. Pola meta title i meta description stron usługowych mają pierwszeństwo; przy pustych polach pozostaje aktualny generator ceny. Canonical i kontekst miasta rezerwacji pozostają zachowane.
+
+Moduł „Aktualne promocje” dodaje się w `/admin/pages/strona-glowna`. Administrator zmienia teksty, CTA pustego stanu, widoczność i kolejność. Ceny, etykiety, termin, cena referencyjna oraz identyfikator pakietu pochodzą z `/admin/promocje`. Wyświetlane są tylko bieżące wyróżnione promocje, bez duplikatów aliasów usług; rabat znika po terminie również na otwartej stronie. Potwierdzony brak aktywnych akcji pokazuje „Aktualnie nie prowadzę promocji” i link oferty. Przy akcjach niewyróżnionych oraz awarii odczytu moduł pokazuje osobne neutralne komunikaty. Nie wprowadza fikcyjnych rabatów.
+
+Zapis pakietu blokuje ponowne kliknięcie, pokazuje oczekiwanie oraz błąd w modalu. Odpowiedź serwera zachowuje status i kod; timeout lub zerwane połączenie oznacza brak potwierdzenia i konieczność odświeżenia danych. Błąd odświeżenia po udanym zapisie nie jest przedstawiany jako nieudany zapis.
+
+Nowy koszyk pokazuje wybrany zakres. Przed utworzeniem płatności serwer porównuje zakres i czas z aktualnym pakietem; zmianę trzeba ponownie zaakceptować przez wybór aktualnej oferty. Snapshot nowej rezerwacji zachowuje kupiony zakres i jest używany w potwierdzeniach e-mail oraz historii konta. Stare rezerwacje bez zapisanych linii nie otrzymują domyślnego zakresu. Umowy i ich terminy realizacji pozostają odrębnym procesem, bez automatycznego przenoszenia nowych obietnic.
+
 ## 2026-10-02 — wspólny zakres pakietu
 
 Karta pakietu oferty i wyboru rezerwacji pokazuje czas, aktualną cenę/promocję oraz pełny zakres zapisany w `Package.description`. Przy pustym opisie używa `Package.features` (tablica JSON lub tekst z elementami w osobnych wierszach). Nie łączy obu pól, aby historyczne sprzeczne wpisy nie tworzyły dodatkowych obietnic. Pusta lub uszkodzona lista nie generuje domyślnych liczb zdjęć, albumów ani terminów. Karty ofert pokazują wszystkie aktywne pakiety. Edycja zakresu pozostaje w istniejącym `/admin/rezerwacja`; pełny opis ma pierwszeństwo, pole zapasowe jest jasno oznaczone. Ceny i dostępność nadal pochodzą z istniejącego źródła rezerwacji.

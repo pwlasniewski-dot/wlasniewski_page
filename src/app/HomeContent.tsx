@@ -13,6 +13,8 @@ import GiftCard from '@/components/GiftCard';
 import { mergeHomepageServiceCards, type HomepageServiceCard } from '@/lib/homepageServiceCards';
 import PromotionPriceBlock from '@/components/promotions/PromotionPriceBlock';
 import type { PublicPackagePromotion } from '@/lib/packagePromotionPricing';
+import ActivePromotionsSection from '@/components/promotions/ActivePromotionsSection';
+import { activeHomepagePromotions, DEFAULT_HOMEPAGE_PROMOTION_COPY } from '@/lib/homepagePromotions';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
 // Lazy-loaded below-the-fold components
@@ -27,12 +29,12 @@ const PhotoChallengeBanner = dynamic(() => import('@/components/PhotoChallengeBa
 // Premium Modules — lazy loaded
 const StoriesGrid = dynamic(() => import('@/components/sections/StoriesGrid'), { ssr: false });
 const ChronologicalGallery = dynamic(() => import('@/components/sections/ChronologicalGallery'), { ssr: false });
-const MagazineLayout = dynamic(() => import('@/components/sections/MagazineLayout'), { ssr: false });
-const EditorialMasonry = dynamic(() => import('@/components/sections/MasonryGallery'), { ssr: false });
+import MagazineLayout from '@/components/sections/MagazineLayout';
+import EditorialMasonry from '@/components/sections/MasonryGallery';
 const ClientStory = dynamic(() => import('@/components/sections/ClientStory'), { ssr: false });
 const ProcessTimeline = dynamic(() => import('@/components/sections/ProcessTimeline'), { ssr: false });
 const InvestmentTeaser = dynamic(() => import('@/components/sections/InvestmentTeaser'), { ssr: false });
-const NarrativeText = dynamic(() => import('@/components/sections/NarrativeText'), { ssr: false });
+import NarrativeText from '@/components/sections/NarrativeText';
 const FeaturedCarousel = dynamic(() => import('@/components/sections/FeaturedCarousel'), { ssr: false });
 const PhotoCube3D = dynamic(() => import('@/components/sections/PhotoCube3D'), { ssr: false });
 // Banners are rendered in AppShell
@@ -51,7 +53,7 @@ interface Testimonial {
 interface Section {
     id: string;
     type: 'about' | 'features' | 'parallax' | 'info_band' | 'challenge_banner' | 'testimonials' | 'creative_slider' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'hero_parallax' | 'mini_gallery' |
-    'stories_grid' | 'chronological_gallery' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'photo_cube_3d';
+    'stories_grid' | 'chronological_gallery' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'photo_cube_3d' | 'active_promotions';
     enabled?: boolean;
     backgroundColor?: 'black' | 'zinc-900' | 'zinc-800' | 'gold-900' | 'white';
     textVariant?: 'light' | 'dark';
@@ -104,16 +106,32 @@ interface HomeContentProps {
     heroSliderInterval?: number;
     publicPriceLabels: Record<string, string>;
     featuredPromotions: Record<string, PublicPackagePromotion>;
+    hasActivePromotions?: boolean;
+    promotionsAvailable?: boolean;
     publicGuidePromo: { title: string; image: string; imageAlt: string } | null;
 }
 
-export default function HomeContent({ skipHero = false, heroSlides, sections, homeData, orderedSections, testimonials: allTestimonials, heroSliderInterval = 6000, publicPriceLabels, featuredPromotions, publicGuidePromo }: HomeContentProps) {
+export default function HomeContent({ skipHero = false, heroSlides, sections, homeData, orderedSections, testimonials: allTestimonials, heroSliderInterval = 6000, publicPriceLabels, featuredPromotions, publicGuidePromo, hasActivePromotions = false, promotionsAvailable = true }: HomeContentProps) {
     const testimonials = useMemo(() => selectPublicReviews(allTestimonials), [allTestimonials]);
     const googleSummary = summarizeGoogleReviews(allTestimonials);
     const fallbackPublicPriceLabel = 'Aktualne pakiety i ceny';
     const { trackEvent } = useAnalytics();
     const [currentTestimonial, setCurrentTestimonial] = useState(0);
     const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
+    const [promotionNow, setPromotionNow] = useState(() => new Date());
+    // Cached marketing data must stop advertising a price when its window ends.
+    useEffect(() => {
+        const ends = Object.values(featuredPromotions).flatMap(promotion => {
+            const end = promotion.endsAt ? new Date(promotion.endsAt).getTime() : NaN;
+            return end > promotionNow.getTime() ? [end] : [];
+        });
+        if (ends.length === 0) return;
+        const timeout = setTimeout(() => setPromotionNow(new Date()),
+            Math.min(2_147_483_647, Math.max(1, Math.min(...ends) - Date.now() + 1)));
+        return () => clearTimeout(timeout);
+    }, [featuredPromotions, promotionNow]);
+    const visiblePromotions = Object.fromEntries(Object.entries(featuredPromotions)
+        .filter(([, promotion]) => activeHomepagePromotions([promotion], promotionNow).length > 0));
 
     // Auto-rotate testimonials
     useEffect(() => {
@@ -168,6 +186,13 @@ export default function HomeContent({ skipHero = false, heroSlides, sections, ho
         const textColors = getTextColorClass(section.textVariant, section.backgroundColor);
 
         switch (section.type) {
+            case 'active_promotions': {
+                const data = { ...DEFAULT_HOMEPAGE_PROMOTION_COPY, ...(section.data || section) };
+                return <ActivePromotionsSection key={section.id} promotions={Object.values(visiblePromotions)}
+                    title={data.title || ''} subtitle={data.subtitle} buttonText={data.buttonText || ''}
+                    emptyMessage={!promotionsAvailable ? data.unavailableMessage : hasActivePromotions ? data.noFeaturedMessage : data.emptyMessage}
+                    emptyButtonText={data.emptyButtonText} emptyButtonLink={data.emptyButtonLink} />;
+            }
             case 'about':
                 return (
                     <section key={section.id} className={`py-20 px-6 ${bgClass}`}>
@@ -1039,12 +1064,12 @@ export default function HomeContent({ skipHero = false, heroSlides, sections, ho
                         {serviceCards.map((item, index) => (
                             <article key={item.title} className={`group relative min-h-[420px] overflow-hidden rounded-[2px] bg-[#28221c] ${index === 0 ? 'md:col-span-5 md:min-h-[620px]' : index === 1 ? 'md:col-span-7 md:min-h-[620px]' : 'md:col-span-6 md:min-h-[480px]'}`}>
                                 <Link
-                                    href={featuredPromotions[item.service]
-                                        ? promotionBookingHref(item.href, featuredPromotions[item.service])
+                                    href={visiblePromotions[item.service]
+                                        ? promotionBookingHref(item.href, visiblePromotions[item.service])
                                         : item.href}
                                     aria-label={`${item.title} — ${item.cta_label || 'sprawdź ceny i terminy'}`}
                                     onClick={() => {
-                                        const promotion = featuredPromotions[item.service];
+                                        const promotion = visiblePromotions[item.service];
                                         if (promotion) void trackEvent('promotion_package_selected', { promotion_id: promotion.id, package_id: promotion.packageId, service: promotion.serviceName, placement: 'home' });
                                     }}
                                     className="absolute inset-0 z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#ead5ab]"
@@ -1069,8 +1094,8 @@ export default function HomeContent({ skipHero = false, heroSlides, sections, ho
                                             <p className="mt-4 max-w-lg text-sm leading-6 text-white/70">{item.copy}</p>
                                         </div>
                                         <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
-                                            {featuredPromotions[item.service] ? (
-                                                <PromotionPriceBlock promotion={featuredPromotions[item.service]} variant="home" />
+                                            {visiblePromotions[item.service] ? (
+                                                <PromotionPriceBlock promotion={visiblePromotions[item.service]} variant="home" />
                                             ) : (
                                                 <span className="text-xs font-bold uppercase tracking-[.14em] text-[#ead5ab]">{item.cta_label || publicPriceLabels[item.service] || fallbackPublicPriceLabel} <ArrowRight className="ml-2 inline" size={16}/></span>
                                             )}

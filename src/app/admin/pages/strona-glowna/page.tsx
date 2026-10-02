@@ -641,6 +641,11 @@ export default function HomepageManager() {
         toast.success('Dodano sekcję O mnie (pamiętaj zapisać)');
     };
 
+    const addActivePromotionsTemplate = () => {
+        setSections(prev => [...prev, templates.createActivePromotionsTemplate() as EditorSection]);
+        toast.success('Dodano moduł promocji (pamiętaj zapisać)');
+    };
+
     const addFeaturesSectionTemplate = () => {
         const tpl = templates.createFeaturesSectionTemplate() as FeaturesSection;
         setSections(prev => [...prev, tpl]);
@@ -1281,6 +1286,7 @@ export default function HomepageManager() {
                 <button onClick={addAllModulesAtOnce} className="px-4 py-2 bg-gold-500 hover:bg-gold-400 text-black rounded text-sm font-semibold">⭐ Dodaj wszystkie moduły</button>
                 <button onClick={addHeroSlideTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj slajd (Hero)</button>
                 <button onClick={addAboutSectionTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj O mnie</button>
+                <button onClick={addActivePromotionsTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj Aktualne promocje</button>
                 <button onClick={addFeaturesSectionTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj Kafelki</button>
                 <button onClick={addParallaxSectionTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj Parallax</button>
                 <button onClick={addInfoBandTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj Info Band</button>
@@ -1691,6 +1697,26 @@ export default function HomepageManager() {
 
                         {/* SECTION CONTENT EDITORS */}
                         <div className={!section.enabled ? 'opacity-50 pointer-events-none' : ''}>
+
+                            {section.type === 'active_promotions' && (
+                                <div className="space-y-4">
+                                    <p className="text-sm leading-relaxed text-zinc-400">
+                                        Moduł pokazuje aktywne promocje wyróżnione w <Link href="/admin/promocje" className="text-amber-300 underline">Promocjach pakietów</Link>.
+                                        Cena, nazwa pakietu, termin i cena referencyjna pochodzą z tego samego źródła co rezerwacja. Przy braku aktywnych promocji pokazuje poniższy komunikat i link oferty.
+                                    </p>
+                                    {([['title', 'Nagłówek promocji'], ['subtitle', 'Opis modułu promocji'], ['buttonText', 'Tekst przycisku promocji'],
+                                        ['emptyMessage', 'Komunikat bez aktywnej promocji'], ['noFeaturedMessage', 'Komunikat bez wyróżnionej promocji'],
+                                        ['unavailableMessage', 'Komunikat przy błędzie odczytu promocji'],
+                                        ['emptyButtonText', 'Tekst przycisku bez promocji'], ['emptyButtonLink', 'Link oferty bez promocji']] as const).map(([name, label]) => (
+                                        <label key={name} className="block text-sm text-zinc-400">
+                                            {label}
+                                            <input type="text" value={section.data?.[name] || ''} onChange={e => updateSectionData(index, name, e.target.value)}
+                                                className="mt-1 w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-white" />
+                                        </label>
+                                    ))}
+                                    <p className="text-xs text-zinc-500">Przycisk automatycznie wskazuje właściwy pakiet w rezerwacji. Kwot i procentów nie wpisuje się w tym module.</p>
+                                </div>
+                            )}
 
                             {/* ABOUT EDITOR */}
                             {section.type === 'about' && (
