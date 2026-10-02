@@ -10,7 +10,7 @@
 - [x] Wykonać 27 unit oraz 5 + 7 + 4 rzeczywistych scenariuszy CMS/API/UI/SSR/mail; bez produkcyjnej bazy/płatności.
 - [x] Odebrać finalną deltę typecheck: HEAD106/working106 identyczne diagnozy, zero dodanych/usuniętych.
 - [x] Odebrać niezależny code review PASS jako draft.
-- [ ] Odebrać pełny build nowego zakresu (Node22, lokalna baza offline; trwa).
+- [x] Pełny build nowego zakresu Node22.23.3: exit0, kompilacja39,5s,262/262 strony, finalizacja/traces; wyłącznie lokalny adres bazy offline.
 - [ ] Odebrać podgląd mobilny i rzeczywisty CMS roundtrip po wdrożeniu.
 - [ ] Przekazać lokalny commit i draft PR; opublikować wyłącznie przez proces roota/użytkownika.
 - [ ] Po wdrożeniu dodać automatyczny moduł homepage i ukryć zastępczy Narrative Text „Promocje i aktualne ceny”.
