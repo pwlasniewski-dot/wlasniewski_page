@@ -6,6 +6,9 @@ export type PublicPackagePromotion = {
     id: number;
     packageId: number;
     packageName: string;
+    /** Current Package copy, not a second editable promotion scope. */
+    scopeLines?: string[];
+    hours?: number;
     serviceName: string;
     label: string;
     discountType: PromotionDiscountType;

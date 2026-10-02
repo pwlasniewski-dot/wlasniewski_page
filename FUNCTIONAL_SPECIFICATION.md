@@ -1,3 +1,9 @@
+## 2026-10-02 — cena po obniżce i odwrócenie pomyłki
+
+Admin `/admin/promocje` rozróżnia cenę końcową, kwotę rabatu i procent; cena końcowa jest domyślnym pustym polem, bez automatycznego ustawiania nowego rabatu. Przed zapisem widoczna jest kwota klienta oraz wyliczenie. Walidacja właściwej ceny referencyjnej pozostaje obowiązkowa; blokada ma wyjaśnienie przy podglądzie. Edycja ceny/okresu dotyczy wyłącznie nieopublikowanej lub przyszłej promocji. Rozpoczętą można zakończyć, przyszłą anulować; zapisane ceny i rzeczywiste okresy pozostają w historii, także po ponowieniu żądania.
+
+Promocyjna karta homepage pokazuje nazwę pakietu, czas i do trzech pierwszych punktów aktualnego zakresu z Package, pełną cenę/promocję/termin/referencję oraz przycisk do właściwego package_id. Desktop ma dwie kolumny, telefon jedną. Dane oferty edytuje się w obecnych Rezerwacjach, a teksty modułu w dotychczasowym homepage CMS. Tymczasowy iframe został usunięty po odmowie osadzania; prawdziwy mobilny odbiór nadal wymagany. Lokalny proces admin→API→read→render ma 6 scenariuszy PASS; niezależny końcowy odbiór code/test jest PASS. Nowy build, rzeczywisty zapis/odczyt nowego admin UX oraz mobilny podgląd pozostają bramkami draftu.
+
 ## 2026-10-02 — zakres Dronu przed i po rezerwacji
 
 Pakiet samodzielny oraz dodatek Dronu pokazują opis zastosowania, wszystkie cechy i termin oddania zapisane w istniejącym DronePhotographyConfig. Te same punkty trafiają do koszyka; przed płatnością serwer sprawdza ich aktualność. Zmiana zakresu/czasu nowego koszyka zwraca 409 i wymaga ponownego wybrania aktualnej oferty. Starsze koszyki bez kopii zachowują zgodność.
