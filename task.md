@@ -1,3 +1,16 @@
+## 2026-10-02 — spójny zakres Dronu i kontrast promocji (draft)
+
+- [x] Potwierdzić gubienie features przez description w rzeczywistym widoku rezerwacji.
+- [x] Współdzielić zakres z istniejącego DronePhotographyConfig dla kart, koszyka i serwerowego snapshotu.
+- [x] Zatrzymać zmieniony zakres/czas przed checkoutem; zachować istniejące kwoty i płatności.
+- [x] Użyć frozen zakresu Dronu w potwierdzeniach i koncie, bez uzupełniania historii.
+- [x] Lokalny QA: 6 procesów Dronu, 3 unit, 5 fotograficznych snapshotów PASS; DB/PayU/email podstawione.
+- [x] Zdiagnozować ciemne CTA promocji jako globalny !important; zastosować ten sam jawny biały kolor.
+- [x] Formalna delta TS: HEAD 100 / working 100, zero dodanych/usuniętych; niezależne 6 QA / 5 snapshot / 3 unit PASS.
+- [x] Finalny niezależny odbiór delty/code review PASS do commita i draft preview.
+- [ ] Odebrać nowy build oraz rzeczywisty mobile/karty/koszyk/history/kontrast na preview.
+- [ ] Koordynator: poprawić FAQ/OG o wstępnej rezerwacji w obecnym CMS; nie przebudowywać płatności.
+
 ## 2026-10-02 — lokalny CMS / urodziny (draft)
 
 - [x] Audyt routing, 38 public Page i istniejących edytorów/API; PR93 scalony przez właściciela, baza 3808905.
@@ -13,7 +26,7 @@
 - [x] Koordynator poprawił dawny story 20/10 i pozostałe teksty Torunia w aktualnym CMS, zachowując media.
 - [ ] Jawnie skonfigurować puste miasta i brakujące moduły Torunia; odebrać H1/SEO/CTA oraz media na nowym rendererze.
 - [ ] Usunąć tymczasowy public/__qa-offer-viewport.html przed finalnym scaleniem.
-- [ ] Minimalny osobny snapshot zakresu Dronu z istniejącego configu; bez zmian cen/płatności.
+- [x] Minimalny osobny snapshot zakresu Dronu z istniejącego configu przygotowany lokalnie; odbiór i publikacja w odrębnej karcie powyżej.
 
 ## 2026-10-02 — pilna poprawka zapisu pakietów
 

@@ -453,6 +453,7 @@ export default function CheckoutPage() {
                                         <h4 className="font-bold text-white mb-0.5">{item.title}</h4>
                                         <p className="text-xs text-zinc-500">{item.subtitle}</p>
                                         {item.type === 'booking' && <PackageScope scopeLines={storedPackageScopeLines(item.metadata?.package_scope_lines)} className="mt-3 text-zinc-300" />}
+                                        {item.type === 'booking' && <PackageScope scopeLines={storedPackageScopeLines(item.metadata?.drone_scope_lines)} className="mt-3 text-zinc-300" />}
                                         {item.type === 'booking' && item.metadata?.package_promotion && (
                                             <PromotionPriceBlock promotion={item.metadata.package_promotion} variant="summary" className="mt-3" />
                                         )}

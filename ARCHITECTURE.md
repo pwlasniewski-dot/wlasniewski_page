@@ -1,3 +1,9 @@
+## 2026-10-02 — wspólny parser DronePhotographyConfig i snapshot
+
+`dronePackageScopeLines` współdzieli bezpieczny parser tekstu z Package, ale składa summary/features/delivery jako pola uzupełniające odrębnego modelu Dronu. Rezerwacja przekazuje scopeLines oraz osobne drone_scope_lines dodatku; checkout renderuje obie kopie przez PackageScope. API porównuje je z aktualnym serwerowym CMS i zapisuje zakres w istniejących package.scopeLines/drone.scopeLines JSON. Dotychczasowe guards usługi, cen, celu, miejsca, zgody i grafiku pozostają obecne.
+
+`bookingSnapshotScopeLines` odczytuje tylko zapisane tablice: samodzielny Dron raz z package, dodatek obok zakresu Package. Ten sam resolver obsługuje mail PayU, ręczne potwierdzenie i konto; nie wykonuje żadnego zapytania do dzisiejszego katalogu. Brak migracji, backfillu albo nowych usług. ActivePromotionsSection używa jawnego białego koloru CTA zamiast klasy obejmowanej globalnym !important.
+
 ## 2026-10-02 — PageBuilder dla lokalnych ofert
 
 `cityLanding` normalizuje flat/nested sekcje, rozróżnia[] od brakującego JSON, tworzy wyłącznie edytowalny starter, waliduje FAQ/filtry/canonical i współdzieli CITY_NAMES. cityLandingDefaults zawiera startowe copy z researchu, cityLandingLegacy zachowuje dawny materiał bez importów wykonawczych. `loadCityPageState` odróżnia published/unpublished/missing/unavailable; metadata i body korzystają z tego samego resolvera. Znane slugs przechodzą przez /[slug] do renderera miasta niezależnie od omyłkowej zmiany page_type.

@@ -29,7 +29,7 @@ export default function ActivePromotionsSection({ promotions, title, subtitle, b
                 {active.length === 0 ? (
                     <div className="mt-8 rounded-2xl border border-[#d5cabd] bg-[#f8f5f0] p-6">
                         <p className="leading-relaxed text-[#686057]">{emptyMessage}</p>
-                        {emptyButtonText && <Link href={emptyHref} className="mt-5 inline-flex rounded-full bg-[#2b251f] px-5 py-3 text-sm font-semibold text-white">{emptyButtonText}</Link>}
+                        {emptyButtonText && <Link href={emptyHref} className="mt-5 inline-flex rounded-full bg-[#2b251f] px-5 py-3 text-sm font-semibold text-[#ffffff]">{emptyButtonText}</Link>}
                     </div>
                 ) : <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                     {active.map(promotion => (
@@ -41,7 +41,7 @@ export default function ActivePromotionsSection({ promotions, title, subtitle, b
                                     promotion_id: promotion.id, package_id: promotion.packageId,
                                     service: promotion.serviceName, placement: 'home-promotions',
                                 })}
-                                className="mt-6 inline-flex items-center justify-center rounded-full bg-[#2b251f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#4a4036]">
+                                className="mt-6 inline-flex items-center justify-center rounded-full bg-[#2b251f] px-5 py-3 text-sm font-semibold text-[#ffffff] transition hover:bg-[#4a4036]">
                                 {buttonText}
                             </Link>}
                         </article>

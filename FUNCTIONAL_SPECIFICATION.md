@@ -1,3 +1,9 @@
+## 2026-10-02 — zakres Dronu przed i po rezerwacji
+
+Pakiet samodzielny oraz dodatek Dronu pokazują opis zastosowania, wszystkie cechy i termin oddania zapisane w istniejącym DronePhotographyConfig. Te same punkty trafiają do koszyka; przed płatnością serwer sprawdza ich aktualność. Zmiana zakresu/czasu nowego koszyka zwraca 409 i wymaga ponownego wybrania aktualnej oferty. Starsze koszyki bez kopii zachowują zgodność.
+
+Nowy snapshot zachowuje zakupiony zakres samodzielnego Dronu i osobny zakres dodatku. Potwierdzenia oraz historia konta odczytują zapisane punkty, bez uzupełniania dawnych rezerwacji dzisiejszym katalogiem. Ceny, prefiksy, eligibility, grafik i płatności pozostają z obecnego procesu. Przycisk pustego oraz aktywnego modułu promocji zachowuje czytelny biały tekst na ciemnym tle; odbiór faktycznego podglądu pozostaje wymagany.
+
 ## 2026-10-02 — lokalny CMS i wspólne pakiety
 
 Strony 8 obsługiwanych miast odczytują zapisane moduły z tego samego rekordu Page co istniejący `/admin/pages/[slug]`. Administrator edytuje teksty, zdjęcia, ALT/kadr hero, CTA, FAQ, kolejność i widoczność modułów. Dodatkowy moduł SEO pozwala ustawić kontrolowany canonical i dane OpenGraph; meta title/description/keywords pozostają w obecnych polach. FAQ JSON-LD jest identyczne z widocznymi odpowiedziami, a dane oferty używają rzeczywistej ceny/czasu/zakresu Package. Niepublikowana strona zwraca404 także dla metadanych. Awaria CMS nie przywraca dawnych obietnic; awaria katalogu nie tworzy kwot ani zakresu.
