@@ -1,3 +1,13 @@
+## 2026-10-02 — lokalny CMS i wspólne pakiety
+
+Strony 8 obsługiwanych miast odczytują zapisane moduły z tego samego rekordu Page co istniejący `/admin/pages/[slug]`. Administrator edytuje teksty, zdjęcia, ALT/kadr hero, CTA, FAQ, kolejność i widoczność modułów. Dodatkowy moduł SEO pozwala ustawić kontrolowany canonical i dane OpenGraph; meta title/description/keywords pozostają w obecnych polach. FAQ JSON-LD jest identyczne z widocznymi odpowiedziami, a dane oferty używają rzeczywistej ceny/czasu/zakresu Package. Niepublikowana strona zwraca404 także dla metadanych. Awaria CMS nie przywraca dawnych obietnic; awaria katalogu nie tworzy kwot ani zakresu.
+
+Jawne[] oraz ukryte moduły są respektowane. Dodanie bezpiecznego zestawu startowego jest świadomą akcją, bez automatycznego zapisu lub nadpisania istniejącego Torunia. MalformedJSON w zapisanym miejskim CMS blokuje nadpisanie przez edytor; API odrzuca błędne FAQ/filtry i obcy canonical. Autoryzacja pozostaje w dotychczasowym guardzie administratora.
+
+Moduł „Aktualne pakiety” wybiera Sesja, Ślub, Przyjęcie lub Urodziny; nazwę/cenę/czas/zakres zmienia się wyłącznie w dotychczasowych Rezerwacjach. CTA zachowuje prawidłowy package_id, usługę i miasto; source może być edytowany w adresie. Ukrycie skonfigurowanego modułu nie przywraca automatycznego bloku. Urodzinowa oferta nie wybiera pakietu rodzinnego. Manualne potwierdzenie statusu używa istniejącego snapshotu zakupionego zakresu i nie wysyła drugiego maila przy powtórzonym statusie.
+
+Odbiór wdrożeniowy, konfiguracja pustych miast, poprawa dawnych wpisów CMS i podgląd telefonu są obowiązkowymi brakującymi bramkami draftu. Dron pozostaje odrębną ofertą z istniejącym DronePhotographyConfig; dalszy zakres spójności jest osobnym zadaniem.
+
 ## 2026-10-02 — zapis pakietu i wspólna dostępność
 
 Edycja nazwy, opisu i zakresu pakietu nie przesyła nieedytowalnego `available_hours`; zachowuje zapisany parametr oraz wspólny grafik. API obsługuje null i pusty tekst jako brak godzin, pominięte pole jako zachowanie wartości, a jawne godziny jako zwalidowaną listę0–23. Błędna jawna lista nadal blokuje zapis i pokazuje inline błąd. Widoczne `hours` i `blocks_entire_day` nadal są zapisywane normalnie.

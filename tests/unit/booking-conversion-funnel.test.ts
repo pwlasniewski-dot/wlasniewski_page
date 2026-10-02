@@ -261,10 +261,10 @@ test('city and service entry pages expose booking and no-payment inquiry paths',
     assert.match(servicePage, /photoFunnelConfig\.copy\.inquiryCtaLabel/);
     assert.match(servicePage, /package_id/);
     assert.match(servicePage, /package_slug/);
-    assert.match(cityPage, /<CityLeadSection/);
+    assert.match(cityPage, /CityLeadSection\(\{/);
     assert.match(cityPage, /photoFunnelConfig/);
-    assert.match(cityPage, /cityMetaDescription\(key, data, publicMinimumPrices\)/);
-    assert.match(cityPage, /configuredBookingCta\(photoFunnelConfig, 'Sesja'\)/);
+    assert.match(cityPage, /cityMetaDescription\(data, prices\)/);
+    assert.match(cityPage, /publicPackages=\{packages\}/);
     assert.match(servicePage, /funnelConfig\.copy\.packageBookingCtaLabel/);
     assert.doesNotMatch(`${cityPage}\n${serviceGrowth}`, /(?:750|1900)\s*zł/);
     assert.doesNotMatch(serviceGrowth, /bookingLabel/);

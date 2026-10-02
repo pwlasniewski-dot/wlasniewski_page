@@ -18,6 +18,7 @@ import Image from 'next/image';
 import { Check, Star } from 'lucide-react';
 import PhotoChallengeBanner from '@/components/PhotoChallengeBanner';
 import WhiteInfoBand from '@/components/WhiteInfoBand';
+import { CmsFaqSection, CmsPublicPackages, EditorialOfferHero, type CmsPublicPackage } from '@/components/sections/CmsOfferSections';
 
 /**
  * Helper: Strip HTML tags from text for SEO-compliant ALT attributes
@@ -62,7 +63,9 @@ const PointCloudTechnology = dynamic(() => import('@/components/sections/PointCl
 const PointCloudViewerSection = dynamic(() => import('@/components/sections/PointCloudSections').then(m => ({ default: m.PointCloudViewerSection })), { ssr: false });
 const NphotoAlbumsShowcase = dynamic(() => import('@/components/sections/NphotoAlbumsShowcase'), { ssr: false });
 
-export default function PageRenderer({ sections }: { sections: PageSection[] }) {
+export default function PageRenderer({ sections, publicPackages = [], city, cityInquiry }: {
+    sections: PageSection[]; publicPackages?: CmsPublicPackage[]; city?: string; cityInquiry?: React.ReactNode;
+}) {
     const [selectedCert, setSelectedCert] = React.useState<any>(null);
     const [activeCertSection, setActiveCertSection] = React.useState<any>(null);
     const [selectedCase, setSelectedCase] = React.useState<any>(null);
@@ -77,6 +80,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
     return (
         <div className={`flex flex-col gap-0 ${isEditorialService ? 'service-editorial' : ''}`}>
             {sections.map((section) => {
+                if ((section.enabled ?? section.data?.enabled) === false) return null;
                 // Determine source of data (flat or nested in .data)
                 // This allows PageRenderer to handle both old and new data structures
                 const rawData = section.data || section;
@@ -87,6 +91,14 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                 }
 
                 switch (section.type) {
+                    case 'faq':
+                        return <CmsFaqSection key={section.id} data={{ ...data, id: section.id, type: section.type }} />;
+                    case 'public_packages':
+                        return <CmsPublicPackages key={section.id} data={data} packages={publicPackages} city={city} />;
+                    case 'city_seo':
+                        return null;
+                    case 'city_inquiry':
+                        return <React.Fragment key={section.id}>{cityInquiry}</React.Fragment>;
                     case 'hero_parallax':
                         return (
                             <ParallaxSection
@@ -142,7 +154,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                 {data.image ? (
                                                     <img
                                                         src={data.image}
-                                                        alt={stripHtml(data.title) || "Zdjęcie sekcji"}
+                                                        alt={data.imageAlt ?? (stripHtml(data.title) || "Zdjęcie sekcji")}
                                                         style={{
                                                             ['--cms-image-position' as any]: data.imagePosition || 'center center',
                                                             ['--cms-image-position-mobile' as any]: data.imagePositionMobile || data.imagePosition || 'center center',
@@ -331,6 +343,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                         );
 
                     case 'hero':
+                        if (data.pageStyle === 'editorial') return <EditorialOfferHero key={section.id} data={data} city={city} />;
                         const HeroHeading = data.isPrimaryHeading ? 'h1' : 'h2';
                         return (
                             <section key={section.id} className="relative py-32 px-4 bg-zinc-950 flex flex-col items-center justify-center text-center overflow-hidden min-h-[60vh]">
@@ -386,6 +399,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             {data.subtitle}
                                         </p>
                                     )}
+                                    {data.description && <p className="text-lg leading-relaxed text-zinc-300">{data.description}</p>}
                                     {data.buttonText && (
                                         <div className="pt-4">
                                             <Link

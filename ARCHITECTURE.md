@@ -1,3 +1,11 @@
+## 2026-10-02 — PageBuilder dla lokalnych ofert
+
+`cityLanding` normalizuje flat/nested sekcje, rozróżnia[] od brakującego JSON, tworzy wyłącznie edytowalny starter, waliduje FAQ/filtry/canonical i współdzieli CITY_NAMES. cityLandingDefaults zawiera startowe copy z researchu, cityLandingLegacy zachowuje dawny materiał bez importów wykonawczych. `loadCityPageState` odróżnia published/unpublished/missing/unavailable; metadata i body korzystają z tego samego resolvera. Znane slugs przechodzą przez /[slug] do renderera miasta niezależnie od omyłkowej zmiany page_type.
+
+PageRenderer przyjmuje serializowane publicPackages i server-side slot istniejącego CityLeadSection. Nowe FAQ/livePackage/hero są renderowane w SSR jako tekst React; JSON-LD escapuje znaki<. Oferta bazuje na findPricedPublicPackages i packageScopeLines; moduł nigdy nie przechowuje równoległej ceny/ilości. CityCmsSectionEditor rozszerza istniejący PageBuilder, a dodatkowe pola mieszczą się w dotychczasowym Page.sections JSON. API waliduje rzeczywisty cel edycji po id, aby klientowe slug/page_type nie omijało miejskiej walidacji. Dotychczasowe guards administratora i revalidatePath zachowane.
+
+`PATCH /api/bookings` przekazuje bookingSnapshotScopeLines do istniejącego potwierdzenia. Nie odczytuje współczesnego Package ani nie zmienia snapshotu. QA używa pamięciowego storage i podstawionego mailera/PayU; nie wykonuje wysyłek ani transakcji produkcyjnych.
+
 ## 2026-10-02 — nullable available_hours w istniejącym API
 
 `POST /api/packages` rozróżnia undefined (bez zmiany), null/pusty tekst (null) i listę godzin (walidacja, deduplikacja, sortowanie). Formularz `/admin/rezerwacja` pomija pole, ponieważ nie ma dla niego kontrolki i dostępność edytuje się w istniejącym wspólnym grafiku. Żadnych migracji ani zmian reguł dostępności. Regresja w `tests/qa/package-scope-cms.cjs` obejmuje null/blank/omission, błędne listy oraz pełny roundtrip starego rekordu z nieedytowalną wartością.

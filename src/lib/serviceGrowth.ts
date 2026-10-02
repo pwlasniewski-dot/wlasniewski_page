@@ -1,11 +1,11 @@
 export type ServiceGrowthConfig = {
-    slug: 'sesja-rodzinna' | 'slub';
+    slug: 'sesja-rodzinna' | 'slub' | 'twoje-urodziny';
     metaTitle: string;
     metaDescription: string;
     h1: string;
     eyebrow: string;
     intro: string;
-    bookingService: 'Sesja' | 'Ślub';
+    bookingService: 'Sesja' | 'Ślub' | 'Urodziny';
     packageSummary: string;
 };
 
@@ -19,6 +19,16 @@ const SERVICE_GROWTH_CONFIGS: Record<ServiceGrowthConfig['slug'], ServiceGrowthC
         intro: 'Fotografuję rodziny w domu, w plenerze albo w miejscu, które wspólnie ustalimy. Przed rezerwacją wybierasz zakres i termin. Jeżeli nie wiesz, który pakiet będzie odpowiedni, napisz do mnie.',
         bookingService: 'Sesja',
         packageSummary: 'Pakiety rodzinne obejmują różny czas fotografowania, liczbę gotowych zdjęć i dodatki. Wszystkie ceny widzisz przed wyborem terminu.',
+    },
+    'twoje-urodziny': {
+        slug: 'twoje-urodziny',
+        metaTitle: 'Fotograf na urodziny Toruń i okolice | Pakiety',
+        metaDescription: 'Reportaż fotograficzny z urodzin. Porównaj aktualne pakiety i zapytaj o termin.',
+        h1: 'Fotograf na urodziny w Toruniu i okolicy',
+        eyebrow: 'Fotografia urodzin',
+        intro: 'Przed uroczystością ustalamy miejsce, godziny i momenty, które mają znaleźć się na zdjęciach.',
+        bookingService: 'Urodziny',
+        packageSummary: 'Porównaj aktualne warianty reportażu urodzinowego. Cena, czas i zakres pochodzą z pakietów dostępnych w rezerwacji.',
     },
     slub: {
         slug: 'slub',

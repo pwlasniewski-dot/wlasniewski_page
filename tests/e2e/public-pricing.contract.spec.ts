@@ -44,7 +44,8 @@ test('city SEO and copy contain no legacy hardcoded prices or decorated meta des
     expect(city).not.toMatch(/\b(?:400|450|500|550)\s*zł/i);
     expect(city).not.toMatch(/\b\d[\d .]*\s*zł/i);
 
-    const descriptions = city.match(/metaDescription:\s*'[^']*'/g) || [];
+    const defaults = JSON.parse(await readFile(path.join(root, 'src/data/cityLandingDefaults.json'), 'utf8'));
+    const descriptions = Object.values(defaults).map((entry: any) => entry.metaDescription);
     expect(descriptions.length).toBeGreaterThan(0);
     for (const description of descriptions) {
         expect(description).not.toMatch(/[★✓☎]/);
