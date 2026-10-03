@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/middleware';
+import { isTrustedAdminOrigin } from '@/lib/auth/admin-origin';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
 import { boundedJson, inspectSandbox, sandboxConfigured, SandboxError } from '@/lib/fulfillment/prodigi-sandbox';
 
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
 }
 export async function POST(request: NextRequest) {
   return withAuth(request, async () => {
-    if (request.headers.get('origin') !== request.nextUrl.origin) return NextResponse.json({ error: 'Nieprawidłowe pochodzenie żądania.' }, { status: 403, headers });
+    if (!isTrustedAdminOrigin(request)) return NextResponse.json({ error: 'Nieprawidłowe pochodzenie żądania.' }, { status: 403, headers });
     if (request.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'application/json') return NextResponse.json({ error: 'Wymagany JSON.' }, { status: 415, headers });
     if (!rateLimit(`prodigi-sandbox:${getClientIp(request)}`, 12, 60_000).ok) return NextResponse.json({ error: 'Limit zapytań. Odczekaj minutę.' }, { status: 429, headers });
     try {

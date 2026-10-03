@@ -2,6 +2,7 @@ const h = require('./gallery-shop-dom.cjs');
 const { assert, check, mount, reset, field, set, button, click, act, flush } = h;
 const Module = require('node:module');
 const { NextRequest, NextResponse } = require('next/server');
+process.env.NODE_ENV = 'test';
 let allowed = true, limited = false, providerCalls = 0;
 const original = Module._load;
 Module._load = function(name, ...args) {
@@ -24,6 +25,16 @@ function request(value = body, options = {}) { return new NextRequest('http://lo
   await check('POD-A04 malformed and streamed oversized body', async () => { assert.equal((await route.POST(request('{'))).status, 400); assert.equal((await route.POST(request(' '.repeat(16385)))).status, 413); assert.equal(providerCalls, 0); });
   await check('POD-A05 rate limit and missing key', async () => { limited = true; assert.equal((await route.POST(request())).status, 429); limited = false; delete process.env.PRODIGI_SANDBOX_API_KEY; assert.equal((await route.POST(request())).status, 503); assert.equal(providerCalls, 0); process.env.PRODIGI_SANDBOX_API_KEY = 'qa-never-return'; });
   await check('POD-A06 actual handler -> adapter -> sanitized provider result', async () => { const response = await route.POST(request()); assert.equal(response.status, 200); assert.equal(providerCalls, 1); assert.equal((await response.json()).product.sku, product.sku); });
+  await check('POD-A07 external production origin works behind Netlify while foreign forwarded origin is rejected', async () => {
+    const previousContext = process.env.CONTEXT;
+    process.env.NODE_ENV = 'production'; process.env.CONTEXT = 'production';
+    try {
+      assert.equal((await route.POST(request(body, { headers: { origin: 'https://wlasniewski.pl' } }))).status, 200);
+      const before = providerCalls;
+      assert.equal((await route.POST(request(body, { headers: { origin: 'https://evil.test', host: 'wlasniewski.pl', 'x-forwarded-host': 'wlasniewski.pl' } }))).status, 403);
+      assert.equal(providerCalls, before);
+    } finally { process.env.NODE_ENV = 'test'; if (previousContext === undefined) delete process.env.CONTEXT; else process.env.CONTEXT = previousContext; }
+  });
   let configured = false, failQuote = false, missingArea = false, posts = [];
   global.fetch = async (_url, init) => {
     if (init?.method !== 'POST') return new Response(JSON.stringify({ configured }));
