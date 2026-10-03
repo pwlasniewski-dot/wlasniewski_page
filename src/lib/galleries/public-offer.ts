@@ -5,6 +5,10 @@ import { isProductImageUrl } from './product-media';
 
 /** Presentation only. Product data and amounts always come from the shared shop. */
 export type PublicShopOffer = {
+    personalizationEnabled?: boolean;
+    personalizationTitle?: string;
+    personalizationIntroduction?: string;
+    personalizationButtonLabel?: string;
     enabled: boolean;
     title: string;
     introduction: string;
@@ -25,6 +29,7 @@ export type PublicShopCatalog = {
 
 export function defaultPublicOffer(): PublicShopOffer {
     return {
+        personalizationEnabled: false, personalizationTitle: 'Produkty z Twoim zdjęciem', personalizationIntroduction: 'Dodaj własne zdjęcie i wybierz produkt. Przed płatnością zobaczysz podsumowanie z dostawą.', personalizationButtonLabel: 'Dodaj własne zdjęcie',
         enabled: false,
         title: 'Twoje fotografie. Pięknie oprawione.',
         introduction: 'Wybierz odbitki lub produkt, a następnie wskaż zdjęcia ze swojej galerii. Wariant przygotujemy zgodnie z opisem oferty; przed płatnością zobaczysz pełną cenę z dostawą.',
@@ -46,8 +51,10 @@ export function validatePublicOffer(value: unknown): PublicShopOffer {
     check(p.layout === 'cards' || p.layout === 'editorial', 'Wybierz dostępny układ oferty.');
     check(Array.isArray(p.productIds) && p.productIds.length <= 100 && p.productIds.every(id => Number.isSafeInteger(id) && id > 0) && new Set(p.productIds).size === p.productIds.length, 'Wybierz unikalne produkty do prezentacji.');
     check(Array.isArray(p.formatIds) && p.formatIds.length <= 100 && p.formatIds.every(id => typeof id === 'string' && /^[a-zA-Z0-9_-]{1,60}$/.test(id)) && new Set(p.formatIds).size === p.formatIds.length, 'Wybierz unikalne formaty do prezentacji.');
+    check(p.personalizationEnabled === undefined || typeof p.personalizationEnabled === 'boolean', 'Sprawdź ustawienie własnych zdjęć.');
+    for (const key of ['personalizationTitle', 'personalizationIntroduction', 'personalizationButtonLabel'] as const) check(p[key] === undefined || (typeof p[key] === 'string' && p[key]!.trim().length > 0 && p[key]!.length <= (key === 'personalizationIntroduction' ? 2000 : 200)), 'Sprawdź treści personalizacji.');
     // Explicit projection: unknown fields must never reach a public endpoint.
-    return { enabled: p.enabled, title: p.title, introduction: p.introduction, buttonLabel: p.buttonLabel, emptyMessage: p.emptyMessage,
+    return { personalizationEnabled: p.personalizationEnabled ?? false, personalizationTitle: p.personalizationTitle ?? defaultPublicOffer().personalizationTitle, personalizationIntroduction: p.personalizationIntroduction ?? defaultPublicOffer().personalizationIntroduction, personalizationButtonLabel: p.personalizationButtonLabel ?? defaultPublicOffer().personalizationButtonLabel, enabled: p.enabled, title: p.title, introduction: p.introduction, buttonLabel: p.buttonLabel, emptyMessage: p.emptyMessage,
         formatIds: [...p.formatIds], productIds: [...p.productIds], printImageUrl: p.printImageUrl, printImageAlt: p.printImageAlt, layout: p.layout };
 }
 

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { defaultShopConfig, validateShopConfig } from '../galleries/merchandise';
 import { inspectSandbox, SandboxError, type SandboxProduct, type SandboxQuote } from './prodigi-sandbox';
 import { fetchProdigiFx, estimateProdigiCostInPln } from './prodigi-fx';
+import { supportsProdigiSinglePhoto } from './prodigi-catalog';
 
 export const prodigiProductKey = (id: number) => `prodigi_product_v1_${id}`;
 export const catalogRequest = z.object({
@@ -19,6 +20,7 @@ export async function prepareProdigiProduct(input: unknown, inspect: CatalogInsp
   const parsed = catalogRequest.safeParse(input);
   if (!parsed.success) throw new SandboxError('INVALID_INPUT', 'Sprawdź SKU, wariant, nazwę, cenę PLN i dostawę.', 400);
   const request = parsed.data;
+  if (!supportsProdigiSinglePhoto(request.sku)) throw new SandboxError('UNSUPPORTED_PRODUCT', 'Ten produkt wymaga osobnego konfiguratora. Obecnie obsługujemy pojedyncze fotografie Fine Art i canvas GLOBAL-FAP / GLOBAL-CAN.', 422);
   const result = await inspect({ action: 'product', sku: request.sku });
   if (result.action !== 'product') throw new SandboxError('INVALID_RESPONSE', 'Nie potwierdzono produktu.');
   const areas = Object.entries(result.product.printAreas).filter(([, value]) => value.required).map(([name]) => name);

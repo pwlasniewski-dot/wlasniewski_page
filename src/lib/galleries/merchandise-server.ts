@@ -1,3 +1,4 @@
+import {hasProdigiPrintResolution} from '@/lib/fulfillment/prodigi-image-size';
 import {isShopQa} from '@/lib/shop-qa';
 import {readProdigiProduct} from '@/lib/fulfillment/prodigi-catalog';
 import { orderClient } from './order-account';
@@ -84,7 +85,7 @@ export async function postShopOrder(request:NextRequest,scope:{accessCode:string
   const existing=await prisma.photoOrder.findUnique({where:{idempotency_key:key}});
   if(existing) return existingResponse(existing);
   const {catalog}=await loadGalleryShop(gallery.id);
-  const photos=await prisma.galleryPhoto.findMany({where:{gallery_id:gallery.id},select:{id:true,is_standard:true}});
+  const photos=await prisma.galleryPhoto.findMany({where:{gallery_id:gallery.id},select:{id:true,is_standard:true,download_source_width:true,download_source_height:true}});
   let allowed=photos.map(p=>p.id);
   if(participantId===null) {
    const paid=await prisma.photoOrder.findMany({where:{gallery_id:gallery.id,payment_status:'paid'},select:{photo_ids:true}});
@@ -92,6 +93,11 @@ export async function postShopOrder(request:NextRequest,scope:{accessCode:string
    allowed=photos.filter(p=>p.is_standard || paidIds.has(p.id)).map(p=>p.id);
   }
   const priced=priceShopCart(catalog,body.lines,body.delivery,allowed);
+  for(const line of priced.lines){
+   if(line.kind!=='product'||!line.product?.prodigi)continue;
+   const photo=photos.find(value=>value.id===line.photoIds[0]);
+   if(!hasProdigiPrintResolution(photo?.download_source_width,photo?.download_source_height,line.product.prodigi.variant.printAreaSizes.default))throw new ShopValidationError('Zdjęcie ma za małą lub niepotwierdzoną rozdzielczość do wybranego produktu. Wybierz większy oryginał.',422);
+  }
   if(priced.total!==body.expectedTotal) return NextResponse.json({success:false,code:'PRICE_CHANGED',error:'Cennik się zmienił. Sprawdź aktualne podsumowanie przed płatnością.',catalog,total:priced.total},{status:409});
   if(priced.delivery.method==='locker') await verifyParcelPoint(priced.delivery.pointCode!);
   const client = participantId === null ? await orderClient(request) : null;

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import {isShopQa} from '../shop-qa';
 import { boundedJson } from './prodigi-sandbox';
 export type ProdigiEnvironment = 'sandbox' | 'live';
-export type ProdigiOrderState = {environment:ProdigiEnvironment; state:'submitting'|'unknown'|'accepted'|'cancelled'; idempotencyKey:string; updatedAt:string; orderId?:string; stage?:string; outcome?:string; issueCount?:number; shipments?:Array<{id:string; trackingNumber:string|null; trackingUrl:string|null}>; approvedBy:number; approvedAt:string};
+export type ProdigiOrderState = {environment:ProdigiEnvironment; state:'submitting'|'unknown'|'accepted'|'cancelled'; idempotencyKey:string; updatedAt:string; orderId?:string; stage?:string; outcome?:string; issueCount?:number; shipments?:Array<{id:string; trackingNumber:string|null; trackingUrl:string|null}>; approvedBy:number; approvedAt:string; callbackKeyHash?:string};
 export class ProdigiOrderError extends Error {constructor(message:string,public status=409){super(message);}}
 export function orderEnvironment():ProdigiEnvironment {
  const value=process.env.PRODIGI_ORDER_ENV || 'sandbox';

@@ -1,4 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
+import {createProdigiCallback,type ProdigiCallbackIndex} from '@/lib/fulfillment/prodigi-callback';
+import {notifyProdigiCustomer} from '@/lib/fulfillment/prodigi-notification-server';
 import prisma from '@/lib/db/prisma';
 import {acquireAdvisoryTransactionLock} from '@/lib/db/advisoryLock';
 import {prepareProdigiOrder,type ProdigiPrepared} from '@/lib/fulfillment/prodigi-preflight';
@@ -27,7 +29,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
  const environment=previous?.environment || orderEnvironment();orderCredentials(environment);
  // Real customer orders must never be sent to the test network, even with masked images.
  if(environment!=='live')throw new ProdigiOrderError('Zamówienia klientów wymagają środowiska live. Sandbox testuj na danych demonstracyjnych.');
- const persist=async(next:ProdigiOrderState,expected:string)=>{if(next.state==='cancelled')metadata.fulfillment={...metadata.fulfillment,status:'cancelled'};if(next.state==='accepted'){const tracking=next.shipments?.map(s=>s.trackingNumber).filter(Boolean).join(', ')||null;metadata.fulfillment={status:next.stage?.toLowerCase()==='complete'?'shipped':'ordered',trackingNumber:tracking};}const result=await prisma.photoOrder.updateMany({where:{id:order.id,gallery_id:galleryId,product_ids:expected},data:{product_ids:JSON.stringify({...metadata,providerFulfillment:next})}});if(result.count!==1)throw new ProdigiOrderError('Zamówienie zmieniło się równocześnie. Odśwież stan.');};
+ const persist=async(next:ProdigiOrderState,expected:string)=>{if(next.state==='cancelled')metadata.fulfillment={...metadata.fulfillment,status:'cancelled'};if(next.state==='accepted'){const tracking=next.shipments?.map(s=>s.trackingNumber).filter(Boolean).join(', ')||null;metadata.fulfillment={status:next.stage?.toLowerCase()==='complete'?'shipped':'ordered',trackingNumber:tracking};}const result=await prisma.photoOrder.updateMany({where:{id:order.id,gallery_id:galleryId,product_ids:expected},data:{product_ids:JSON.stringify({...metadata,providerFulfillment:next})}});if(result.count!==1)throw new ProdigiOrderError('Zamówienie zmieniło się równocześnie. Odśwież stan.');await notifyProdigiCustomer(order.id,metadata.delivery.email,next).catch(()=>{});};
  if(input.action==='reconcile'){
   if(!previous||!['submitting','unknown'].includes(previous.state))throw new ProdigiOrderError('Wyjaśnienie dotyczy tylko nieznanego wyniku.');
   const providerId=validProviderId(input.providerOrderId);
@@ -94,7 +96,8 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   items.push({merchantReference:line.id,sku:s.sku,copies:line.quantity,sizing:'fitPrintArea',attributes:s.variant.attributes,assets:[{printArea:'default',md5Hash:prepared.sources[line.id].md5,url:await getPrivateS3DownloadUrl(prepared.sources[line.id].objectKey,7*24*3600)}]});
  }
  if(items.length===0||items.length>100)throw new ProdigiOrderError('Nieprawidłowa liczba pozycji.');
- const now=new Date().toISOString();const state:ProdigiOrderState={environment,state:'submitting',idempotencyKey:`photo-order-${order.id}-live-v1`,updatedAt:now,approvedAt:new Date(metadata.prodigiPrepared.input.lines.flatMap(line=>line.kind==='print'&&line.approval?[line.approval.approvedAtMs]:[])[0]).toISOString(),approvedBy:metadata.prodigiPrepared.approvedBy!};
+ const callback=createProdigiCallback();
+ const now=new Date().toISOString();const state:ProdigiOrderState={environment,callbackKeyHash:callback.hash,state:'submitting',idempotencyKey:`photo-order-${order.id}-live-v1`,updatedAt:now,approvedAt:new Date(metadata.prodigiPrepared.input.lines.flatMap(line=>line.kind==='print'&&line.approval?[line.approval.approvedAtMs]:[])[0]).toISOString(),approvedBy:metadata.prodigiPrepared.approvedBy!};
  // CAS is acquired before the network side effect and intentionally never automatically cleared.
  const locked=JSON.stringify({...metadata,providerFulfillment:state});
  const lock=await prisma.$transaction(async tx=>{
@@ -105,11 +108,13 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   prepared.input.nowMs=Date.now();
   const gate=evaluateProdigiRelease(prepared.input);
   if(!gate.readyForSubmission)throw new ProdigiOrderError('Wstrzymano produkcję: '+gate.blockers.map(b=>b.code).join(', '));
-  return tx.photoOrder.updateMany({where:{id:order.id,payment_status:'paid',product_ids:order.product_ids},data:{product_ids:locked}});
+  const claimed=await tx.photoOrder.updateMany({where:{id:order.id,payment_status:'paid',product_ids:order.product_ids},data:{product_ids:locked}});
+  if(claimed.count===1){const index:ProdigiCallbackIndex={version:1,orderId:order.id,galleryId:galleryId,environment,idempotencyKey:state.idempotencyKey};await tx.setting.create({data:{setting_key:callback.key,setting_value:JSON.stringify(index)}});}
+  return claimed;
  });
  if(lock.count!==1)throw new ProdigiOrderError('Inna operacja zmieniła zamówienie. Odśwież widok.');
  try{
-  const result=parseProviderOrder(await prodigiOrderRequest(environment,'/Orders','POST',{idempotencyKey:state.idempotencyKey,merchantReference:`photo-order-${order.id}`,shippingMethod,recipient:{name:d.recipientName,email:d.email,phoneNumber:d.phone,address:{line1:d.address.street,postalOrZipCode:d.address.postalCode,townOrCity:d.address.city,countryCode:'PL'}},items}));
+  const result=parseProviderOrder(await prodigiOrderRequest(environment,'/Orders','POST',{callbackUrl:callback.url,idempotencyKey:state.idempotencyKey,merchantReference:`photo-order-${order.id}`,shippingMethod,recipient:{name:d.recipientName,email:d.email,phoneNumber:d.phone,address:{line1:d.address.street,postalOrZipCode:d.address.postalCode,townOrCity:d.address.city,countryCode:'PL'}},items}));
   const next:ProdigiOrderState={...state,...result,state:result.stage.toLowerCase()==='cancelled'?'cancelled':'accepted',updatedAt:new Date().toISOString()};await persist(next,locked);
   return NextResponse.json({success:true,fulfillment:next},{headers});
  }catch(e){await persist({...state,state:'unknown',updatedAt:new Date().toISOString()},locked).catch(()=>{});throw e;}

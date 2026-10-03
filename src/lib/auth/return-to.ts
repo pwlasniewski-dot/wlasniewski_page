@@ -4,6 +4,7 @@ export function safeReturnTo(value: unknown, fallback = '/konto'): string {
         return fallback;
     }
     const allowed = [
+        /^\/sklep\/personalizacja(?:[?#].*)?$/,
         /^\/konto(?:[/?#].*)?$/,
         /^\/strefa-klienta\/oferty\/\d+(?:[/?#].*)?$/,
         /^\/strefa-klienta\/umowy\/\d+(?:[/?#].*)?$/,

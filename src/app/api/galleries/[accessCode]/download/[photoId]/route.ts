@@ -30,7 +30,7 @@ export async function GET(
                 gallery_mode: true,
                 client_id: true,
                 client_email: true,
-                group_password: true,
+                group_password: true, terms_source: true,
                 is_active: true,
                 expires_at: true,
             }

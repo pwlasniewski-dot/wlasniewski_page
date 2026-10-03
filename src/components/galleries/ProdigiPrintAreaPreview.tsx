@@ -1,0 +1,10 @@
+'use client';
+import { hasProdigiPrintResolution } from '@/lib/fulfillment/prodigi-image-size';
+import type { ProdigiProductConfig } from '@/lib/fulfillment/prodigi-catalog';
+/** Mirrors fitPrintArea: complete image centred inside the exact print-area aspect ratio. */
+export default function ProdigiPrintAreaPreview({ spec, photo }: { spec: ProdigiProductConfig; photo: { file_url: string; width?: number | null; height?: number | null } }) {
+ const size=spec.variant.printAreaSizes.default;
+ if(!size || size.horizontalResolution<=0 || size.verticalResolution<=0)return null;
+ const sufficient=hasProdigiPrintResolution(photo.width,photo.height,size);
+ return <figure className="my-5 rounded-2xl border border-stone-300 bg-stone-100 p-4"><figcaption className="mb-3 text-sm font-semibold">Podgląd pola druku — całe zdjęcie bez przycinania</figcaption><div className="mx-auto max-w-sm border border-stone-300 bg-white" style={{aspectRatio:`${size.horizontalResolution} / ${size.verticalResolution}`}}><img src={photo.file_url} alt="Twoje zdjęcie dopasowane do pola druku" className="h-full w-full object-contain" style={{aspectRatio:`${size.horizontalResolution} / ${size.verticalResolution}`,objectFit:'contain',objectPosition:'center'}} /></div><p role="status" className={`mt-3 text-sm ${sufficient ? 'text-emerald-800' : 'text-red-800'}`}>{sufficient ? 'Rozdzielczość zdjęcia spełnia wymagania tego pola druku.' : `To zdjęcie ma za małą lub niepotwierdzoną rozdzielczość. Wymagane minimum: ${size.horizontalResolution} × ${size.verticalResolution} px w tej orientacji. Dodaj większy oryginał lub wybierz mniejszy produkt.`}</p><p className="mt-3 text-xs text-stone-600">Zdjęcie jest wyśrodkowane i mieści się w całości. Gdy proporcje są inne, przy krawędziach pozostaje wolne pole. To podgląd proporcji pola druku, a nie wizualizacja ramy, faktury, zawinięcia płótna lub koloru gotowego produktu.</p></figure>;
+}

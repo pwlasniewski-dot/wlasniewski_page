@@ -1,3 +1,4 @@
+import {hasProdigiPrintResolution} from './prodigi-image-size';
 import {z} from 'zod';
 import {createHash} from 'node:crypto';
 import sharp from 'sharp';
@@ -7,7 +8,7 @@ import {readProdigiProduct} from './prodigi-catalog';
 import {ProdigiOrderError,prodigiOrderRequest} from './prodigi-orders';
 import {fetchProdigiFx,estimateProdigiCostInPln} from './prodigi-fx';
 import {createReleaseQuoteFingerprint,type ProdigiReleaseInput} from './prodigi-release-gate';
-export type ProdigiPrepared={input:ProdigiReleaseInput;sources:Record<string,{photoId:number;url:string;sha256:string;md5:string;objectKey:string}>;preparedAt:string;approvedBy?:number};
+export type ProdigiPrepared={input:ProdigiReleaseInput;sources:Record<string,{photoId:number;url:string;sha256:string;md5:string;objectKey:string}>;preparedAt:string;economics?:{revenueGrosze:number;customerShippingGrosze:number;supplierTotal:{amount:string;currency:string};conversion:NonNullable<ReturnType<typeof estimateProdigiCostInPln>>;beforeFeesAndTaxGrosze:number;indicative:true};approvedBy?:number};
 export async function prepareProdigiOrder(order:{id:number;total_amount:number;gallery_id:number},metadata:ShopMetadata,photos:Array<{id:number;download_source_url:string|null}>,previous?:ProdigiPrepared){
  const d=metadata.delivery;
  if(d.method!=='courier'||!d.address)throw new ProdigiOrderError('Prodigi wymaga dostawy kurierem pod adres klienta.');
@@ -32,7 +33,7 @@ export async function prepareProdigiOrder(order:{id:number;total_amount:number;g
   const info=await sharp(bytes,{limitInputPixels:120000000}).metadata();const required=config.variant.printAreaSizes.default;
   const width=info.autoOrient?.width || info.width || 0,height=info.autoOrient?.height || info.height || 0;
   if(!required||!width||!height||!['jpeg','png'].includes(info.format||''))throw new ProdigiOrderError('Plik produkcyjny musi być JPEG/PNG o poprawnych wymiarach.');
-  if(!((width>=required.horizontalResolution&&height>=required.verticalResolution)||(height>=required.horizontalResolution&&width>=required.verticalResolution)))throw new ProdigiOrderError(`Zdjęcie #${photo.id} ma za małą rozdzielczość do produktu.`);
+  if(!hasProdigiPrintResolution(width,height,required))throw new ProdigiOrderError(`Zdjęcie #${photo.id} ma za małą rozdzielczość do produktu.`);
   const objectKey=`prodigi-production/${order.gallery_id}/${order.id}/${sha256}.${info.format==='png'?'png':'jpg'}`;
   await uploadToS3(bytes,objectKey,info.format==='png'?'image/png':'image/jpeg',{access:'private'});
   sources[line.id]={photoId:photo.id,url:photo.download_source_url,sha256,md5:createHash('md5').update(bytes).digest('hex'),objectKey};
@@ -53,5 +54,5 @@ export async function prepareProdigiOrder(order:{id:number;total_amount:number;g
  const grosze=Number(converted.amount.replace('.',''));if(!Number.isSafeInteger(grosze)||grosze<1)throw new ProdigiOrderError('Niepoprawna wartość wyceny.',502);
  if(previous?.input.quote&&grosze>previous.input.quote.providerCostGrosze)throw new ProdigiOrderError('Koszt produkcji wzrósł. Przygotuj i zatwierdź nową wycenę.');
  input.quote={fingerprint:createReleaseQuoteFingerprint(input),obtainedAtMs:now,expiresAtMs:now+15*60*1000,providerCostGrosze:grosze,currency:'PLN'};
- return {input,sources,preparedAt:new Date(now).toISOString()} satisfies ProdigiPrepared;
+ return {input,sources,preparedAt:new Date(now).toISOString(),economics:{revenueGrosze:order.total_amount,customerShippingGrosze:d.amount,supplierTotal:total,conversion:converted,beforeFeesAndTaxGrosze:order.total_amount-grosze,indicative:true}} satisfies ProdigiPrepared;
 }
