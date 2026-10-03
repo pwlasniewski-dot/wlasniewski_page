@@ -1,17 +1,18 @@
+import { readProdigiProduct, type ProdigiProductConfig } from '@/lib/fulfillment/prodigi-catalog';
 /** Shared private-gallery merchandise contract. Amounts are integer grosze. */
 import { validatePublicOffer, type PublicShopOffer } from './public-offer';
 import { availableShopDelivery } from './shop-delivery';
 export type PrintPriceTier = { minQuantity: number; unitAmount: number };
 export type PrintFormat = { id: string; label: string; widthMm: number; heightMm: number; unitAmount: number; active: boolean; paper: string; priceTiers?: PrintPriceTier[] };
 export type ProductShopRule = {minPhotos: number; maxPhotos: number; deliveryMethods?: ('locker' | 'courier')[]};
-export type ShopProduct = { id: number; title: string; description: string | null; price: number; image_url: string | null; preview_images?: string[]; video_url?: string | null; sample_pages?: string[]; product_type: string | null; minPhotos: number; maxPhotos: number; deliveryMethods?: ('locker' | 'courier')[]; nphoto_product_id?: string | null; nphoto_url?: string | null };
+export type ShopProduct = { prodigi?: ProdigiProductConfig; id: number; title: string; description: string | null; price: number; image_url: string | null; preview_images?: string[]; video_url?: string | null; sample_pages?: string[]; product_type: string | null; minPhotos: number; maxPhotos: number; deliveryMethods?: ('locker' | 'courier')[]; nphoto_product_id?: string | null; nphoto_url?: string | null };
 export type ShopConfig = { version: 1; enabled: boolean; title: string; introduction: string; buttonLabel: string; formats: PrintFormat[]; productRules: Record<string, ProductShopRule>; delivery: {locker: {enabled: boolean; amount: number}; courier: {enabled: boolean; amount: number}; pickup?: {enabled: boolean; amount: number; instructions: string}}; publicOffer?: PublicShopOffer };
 export type ShopCatalog = Omit<ShopConfig, 'version' | 'productRules' | 'publicOffer'> & {galleryId: number; products: ShopProduct[]};
 export type ShopCrop = {mode: 'fit' | 'fill'; x: number; y: number; zoom: number};
 export type ShopLine = {id: string; kind: 'print'; photoId: number; formatId: string; quantity: number; crop: ShopCrop; confirmed: boolean} | {id: string; kind: 'product'; productId: number; photoIds: number[]; coverPhotoId: number; quantity: number};
 export type ShopDelivery = {method: 'locker' | 'courier' | 'pickup'; recipientName: string; email: string; phone: string; pointCode?: string; instructions?: string; address?: {street: string; postalCode: string; city: string}};
-export type PricedShopLine = ShopLine & {title: string; unitAmount: number; lineTotal: number; format?: PrintFormat; product?: {image_url?: string | null; title: string; description: string | null; nphoto_product_id?: string | null; nphoto_url?: string | null}};
-export type ShopMetadata = {customerId?: number; kind: 'gallery_merchandise'; version: 1; lines: PricedShopLine[]; delivery: ShopDelivery & {amount: number}; fulfillment: {status: 'new' | 'ordered' | 'received' | 'packed' | 'shipped' | 'collected'; trackingNumber: string | null}};
+export type PricedShopLine = ShopLine & {title: string; unitAmount: number; lineTotal: number; format?: PrintFormat; product?: {prodigi?: ProdigiProductConfig; image_url?: string | null; title: string; description: string | null; nphoto_product_id?: string | null; nphoto_url?: string | null}};
+export type ShopMetadata = {customerId?: number; kind: 'gallery_merchandise'; version: 1; lines: PricedShopLine[]; delivery: ShopDelivery & {amount: number}; fulfillment: {status: 'new' | 'ordered' | 'received' | 'packed' | 'shipped' | 'collected' | 'cancelled'; trackingNumber: string | null}};
 export class ShopValidationError extends Error { constructor(message: string, public status = 400) {super(message); this.name = 'ShopValidationError';} }
 function check(ok: unknown, message: string): asserts ok {if (!ok) throw new ShopValidationError(message);}
 function integer(value: unknown, min: number, max: number) {return typeof value === 'number' && Number.isSafeInteger(value) && value >= min && value <= max;}
@@ -76,10 +77,20 @@ export function priceShopCart(catalog: ShopCatalog, input: unknown, deliveryInpu
   }
   check(line.kind === 'product', 'Nieznany rodzaj pozycji.');
   const product = catalog.products.find(p=>p.id===line.productId); check(product, 'Produkt nie jest dostępny.');
+  if (product.prodigi || product.product_type?.startsWith('prodigi')) {
+   const spec = readProdigiProduct(product.prodigi);
+   check(spec && spec.productId === product.id && spec.environment === 'live' && spec.liveQualified && spec.ordersEnabled, 'Ten produkt nie jest jeszcze dostępny do zakupu.');
+   check(line.photoIds?.length === 1 && spec.requiredAssets.length === 1 && spec.requiredAssets[0] === 'default', 'Ten produkt wymaga jednego zdjęcia do druku.');
+  }
   check(Array.isArray(line.photoIds) && line.photoIds.length >= product.minPhotos && line.photoIds.length <= product.maxPhotos && new Set(line.photoIds).size === line.photoIds.length, 'Sprawdź liczbę zdjęć w produkcie.');
   line.photoIds.forEach(photo); check(line.photoIds.includes(line.coverPhotoId), 'Wybierz zdjęcie na okładkę.');
-  return {id:line.id,kind:'product',productId:product.id,photoIds:[...line.photoIds],coverPhotoId:line.coverPhotoId,quantity:line.quantity,title:product.title,unitAmount:product.price,lineTotal:product.price*line.quantity,product:{image_url:product.image_url,title:product.title,description:product.description,nphoto_product_id:product.nphoto_product_id,nphoto_url:product.nphoto_url}};
+  return {id:line.id,kind:'product',productId:product.id,photoIds:[...line.photoIds],coverPhotoId:line.coverPhotoId,quantity:line.quantity,title:product.title,unitAmount:product.price,lineTotal:product.price*line.quantity,product:{...(product.prodigi ? {prodigi:JSON.parse(JSON.stringify(product.prodigi))} : {}),image_url:product.image_url,title:product.title,description:product.description,nphoto_product_id:product.nphoto_product_id,nphoto_url:product.nphoto_url}};
  });
+ const prodigiLines = lines.filter(line => line.kind === 'product' && line.product?.prodigi);
+ check(prodigiLines.length === 0 || prodigiLines.length === lines.length, 'Produkty wysyłane bezpośrednio z drukarni zamów osobno od pozostałych produktów.');
+ check(prodigiLines.length <= 10, 'Jedno zamówienie z drukarni może zawierać maksymalnie 10 pozycji.');
+ const methods = new Set(prodigiLines.map(line => line.kind === 'product' ? line.product?.prodigi?.shippingMethod : undefined));
+ check(methods.size <= 1, 'Wybrane produkty wymagają różnych usług dostawy. Zamów je osobno.');
  const d = deliveryInput as ShopDelivery;
  check(d && ['locker','courier','pickup'].includes(d.method) && (d.method === 'pickup' ? (catalog.delivery.pickup ?? defaultPickupDelivery()).enabled : catalog.delivery[d.method]?.enabled), 'Wybierz dostępną dostawę.');
  check(availableShopDelivery(catalog, lines)[d.method]?.enabled, 'Wybrana dostawa nie obsługuje wszystkich produktów w koszyku. Zmień sposób dostawy lub skontaktuj się z fotografem.');
@@ -100,4 +111,14 @@ export function merchandisePrintEntries(raw: string | null | undefined): Array<{
  if (!metadata) return null;
  return metadata.lines.flatMap(line => line.kind === 'print' && Number.isSafeInteger(line.photoId) && line.photoId > 0 && Number.isSafeInteger(line.quantity) && line.quantity > 0 && line.format?.label
   ? [{photo_id: line.photoId, quantity: line.quantity, format: [line.format.label, line.format.paper].filter(Boolean).join(' · ')}] : []);
+}
+
+/** Client projection excludes provider costs, production proofs and storage object keys. */
+export function customerShopMetadata(metadata: ShopMetadata): ShopMetadata {
+ const lines = metadata.lines.map(line => {
+  if (line.kind !== 'product' || !line.product) return {...line};
+  const {prodigi: _private, ...product} = line.product;
+  return {...line, product};
+ });
+ return {kind:'gallery_merchandise',version:1,lines,delivery:{...metadata.delivery},fulfillment:{...metadata.fulfillment}};
 }

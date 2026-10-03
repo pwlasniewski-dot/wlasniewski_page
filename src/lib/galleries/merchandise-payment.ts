@@ -15,7 +15,7 @@ export async function handleMerchandisePayment(event: {extOrderId:string;orderId
  if(event.currencyCode!=='PLN'||Number(event.totalAmount)!==order.total_amount||!event.orderId||(order.payment_id && order.payment_id!==event.orderId)) throw new ShopValidationError('Powiadomienie nie odpowiada zamówieniu.',400);
  if(event.status==='COMPLETED') {
   await prisma.paymentLedger.upsert({where:{provider_provider_payment_id:{provider:'PAYU',provider_payment_id:event.orderId}},create:{provider:'PAYU',provider_payment_id:event.orderId,external_order_id:event.extOrderId,resource_type:'GALLERY',resource_id:order.id,payment_kind:'FULL',amount:order.total_amount,currency:'PLN',status:'COMPLETED',paid_at:new Date(),metadata:{source:'gallery_merchandise'}},update:{status:'COMPLETED'}});
-  const updated=await prisma.photoOrder.updateMany({where:{id:order.id,payment_status:{not:'paid'}},data:{payment_status:'paid',paid_at:new Date(),payment_id:event.orderId}});
+  const updated=await prisma.photoOrder.updateMany({where:{id:order.id,payment_status:{in:['initializing','pending','failed_init','cancelled','rejected']}},data:{payment_status:'paid',paid_at:new Date(),payment_id:event.orderId}});
   if(updated.count===1) {
    // Image lookup is optional: it must not block the payment or confirmation.
    let photos: Array<{id:number;url:string|null}> = [];
