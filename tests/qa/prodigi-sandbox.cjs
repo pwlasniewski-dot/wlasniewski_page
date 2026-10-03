@@ -3,7 +3,7 @@ const { assert, check, mount, reset, field, set, button, click, act, flush } = h
 const Module = require('node:module');
 const { NextRequest, NextResponse } = require('next/server');
 process.env.NODE_ENV = 'test';
-let allowed = true, limited = false, providerCalls = 0;
+let allowed = true, limited = false, providerCalls = 0, convertedQuoteResponse;
 const original = Module._load;
 Module._load = function(name, ...args) {
   if (name === '@/lib/auth/middleware') return { withAuth: async (_req, fn) => allowed ? fn() : NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
@@ -42,18 +42,55 @@ function request(value = body, options = {}) { return new NextRequest('http://lo
     assert.equal(data.code, 'PROVIDER_NOT_FOUND'); assert.match(data.error, /HTTP 404/);
     assert.equal(JSON.stringify(data).includes('qa-never-return'), false);
   });
-  let configured = false, failQuote = false, missingArea = false, posts = [];
+  await check('POD-A09 quote adds server PLN estimates from credential-free NBP request', async () => {
+    const calls = [];
+    global.fetch = async (url, init) => {
+      calls.push(url);
+      if (String(url).startsWith('https://api.sandbox.prodigi.com/')) return new Response(JSON.stringify({ outcome: 'Created', quotes: [quote] }));
+      assert.equal(url, 'https://api.nbp.pl/api/exchangerates/rates/a/eur/?format=json');
+      assert.deepEqual(init.headers, { Accept: 'application/json' });
+      return new Response(JSON.stringify({ table: 'A', code: 'EUR', rates: [{ no: '190/A/NBP/2026', effectiveDate: new Date().toISOString().slice(0, 10), mid: 4.25 }] }));
+    };
+    const response = await route.POST(request({ action: 'quote', items: [{ sku: product.sku, copies: 1, attributes: { wrap: 'Black' }, assets: [{ printArea: 'default' }] }] }));
+    assert.equal(response.status, 200); convertedQuoteResponse = await response.json();
+    assert.equal(calls.length, 2); assert.equal(convertedQuoteResponse.fx.available, true);
+    assert.equal(convertedQuoteResponse.quotes[0].costSummary.items.amount, '120.00');
+    assert.equal(convertedQuoteResponse.quotes[0].costSummary.items.currency, 'EUR');
+    assert.equal(convertedQuoteResponse.plnEstimates[0].items.amount, '510.00');
+    assert.equal(convertedQuoteResponse.plnEstimates[0].totalCost.amount, '714.00');
+  });
+  await check('POD-A10 NBP outage preserves successful original quote', async () => {
+    global.fetch = async url => String(url).startsWith('https://api.sandbox.prodigi.com/') ? new Response(JSON.stringify({ outcome: 'Created', quotes: [quote] })) : new Response('unavailable', { status: 503 });
+    const response = await route.POST(request({ action: 'quote', items: [{ sku: product.sku, copies: 1, attributes: { wrap: 'Black' }, assets: [{ printArea: 'default' }] }] }));
+    const data = await response.json(); assert.equal(response.status, 200); assert.equal(data.success, true);
+    assert.equal(data.fx.available, false); assert.equal(data.plnEstimates, undefined); assert.equal(data.quotes[0].costSummary.items.currency, 'EUR');
+  });
+  let configured = false, failQuote = false, missingArea = false, posts = [], fxResponse;
+
   global.fetch = async (_url, init) => {
     if (init?.method !== 'POST') return new Response(JSON.stringify({ configured }));
     const payload = JSON.parse(init.body); posts.push(payload);
     if (payload.action === 'product') return new Response(JSON.stringify({ success: true, checkedAt: '2026-09-24T12:00:00Z', product: missingArea ? { ...product, printAreas: { ...product.printAreas, back: { required: true } } } : product }));
-    return new Response(JSON.stringify(failQuote ? { error: 'Awaria testowa' } : { success: true, quotes: [quote], checkedAt: '2026-09-24T12:00:00Z' }), { status: failQuote ? 502 : 200 });
+    return new Response(JSON.stringify(failQuote ? { error: 'Awaria testowa' } : { success: true, quotes: [quote], checkedAt: '2026-09-24T12:00:00Z', ...fxResponse }), { status: failQuote ? 502 : 200 });
   };
   await check('POD-U00 diagnostics stays idle until opened', async () => { await mount(CollapsedPanel); assert.equal(document.querySelector('input'), null); assert.equal(document.querySelector('[role="alert"]'), null); await reset(); });
   await check('POD-U01 unconfigured blocks queries', async () => { await mount(Panel); assert.equal(button('Sprawdź produkt').disabled, true); assert.match(document.body.textContent, /PRODIGI_SANDBOX_API_KEY/); await reset(); });
   await check('POD-U02 lookup -> quantity -> quote uses full variant and displays sandbox costs', async () => { configured = true; await mount(Panel); await click(button('Sprawdź produkt')); await set(field('Ilość'), '3'); await click(button('Pobierz wycenę testową')); assert.equal(posts.at(-1).items[0].copies, 3); assert.deepEqual(posts.at(-1).items[0].attributes, { wrap: 'Black' }); assert.match(document.body.textContent, /120.00 EUR/); assert.match(document.body.textContent, /dostawa: 20.00 EUR/); assert.match(document.body.textContent, /Podatek według API: 28.00 EUR/); assert.match(document.body.textContent, /Suma według API: 168.00 EUR/); assert.equal(/(?:120.00|20.00|28.00|168.00) PLN/.test(document.body.textContent), false); assert.match(document.body.textContent, /nie potwierdzony pełny koszt|nie jest|a nie potwierdzony/); });
   await check('POD-U03 failure clears old quote and allows retry', async () => { failQuote = true; await click(button('Pobierz wycenę testową')); assert.equal(document.body.textContent.includes('120.00 EUR'), false); assert.match(document.querySelector('[role="alert"]').textContent, /Awaria/); failQuote = false; await click(button('Pobierz wycenę testową')); assert.match(document.body.textContent, /120.00 EUR/); });
   await check('POD-U04 changing SKU invalidates product and quote', async () => { await set(field('SKU z katalogu Prodigi'), 'GLOBAL-FAP-10X10'); assert.equal(document.body.textContent.includes('120.00 EUR'), false); assert.equal([...document.querySelectorAll('button')].some(b => b.textContent === 'Pobierz wycenę testową'), false); await reset(); });
+  await check('POD-U07 estimates retain EUR and show PLN with rate provenance, not store prices', async () => {
+    fxResponse = convertedQuoteResponse;
+    await mount(Panel); await click(button('Sprawdź produkt')); await click(button('Pobierz wycenę testową'));
+    assert.match(document.body.textContent, /120.00 EUR/); assert.match(document.body.textContent, /Produkty: 510.00 PLN/);
+    assert.match(document.body.textContent, /Suma według API: 714.00 PLN/); assert.match(document.body.textContent, /1 EUR = 4.25 PLN/);
+    assert.match(document.body.textContent, /190\/A\/NBP\/2026/); assert.match(document.body.textContent, /Nie zmienia cen sklepu/);
+  });
+  await check('POD-U08 unavailable FX clears PLN while retaining original quote', async () => {
+    fxResponse = { fx: { available: false, source: 'NBP', currency: 'EUR', reason: 'stale' } };
+    await click(button('Pobierz wycenę testową'));
+    assert.match(document.body.textContent, /120.00 EUR/); assert.equal(document.body.textContent.includes('510.00 PLN'), false);
+    assert.match(document.body.textContent, /starszy niż 7 dni/); fxResponse = undefined; await reset();
+  });
   await check('POD-U05 QA correction: incomplete required print areas block quote', async () => { missingArea = true; await mount(Panel); await click(button('Sprawdź produkt')); const before = posts.length; await click(button('Pobierz wycenę testową')); assert.equal(posts.length, before); assert.match(document.querySelector('[role="alert"]').textContent, /kompletu/); await reset(); });
   await check('POD-U06 QA correction: stalled initial config has timeout', async () => {
     const nativeTimeout = global.setTimeout;

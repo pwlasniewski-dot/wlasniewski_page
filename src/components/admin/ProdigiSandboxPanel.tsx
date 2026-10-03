@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import type { SandboxProduct, SandboxQuote } from '@/lib/fulfillment/prodigi-sandbox';
+import type { ProdigiFxResult, ProdigiPlnCosts } from '@/lib/fulfillment/prodigi-fx';
 import { isProdigiPilotSku } from '@/lib/fulfillment/prodigi-pilot';
 
 export default function ProdigiSandboxPanel() {
@@ -17,6 +18,8 @@ export function ProdigiSandboxDiagnostics() {
   const [product, setProduct] = useState<SandboxProduct | null>(null);
   const [variant, setVariant] = useState('0'); const [copies, setCopies] = useState('1');
   const [quotes, setQuotes] = useState<SandboxQuote[]>([]);
+  const [fx, setFx] = useState<ProdigiFxResult | null>(null);
+  const [plnEstimates, setPlnEstimates] = useState<ProdigiPlnCosts[]>([]);
   const [busy, setBusy] = useState(false); const [error, setError] = useState('');
   const [checkedAt, setCheckedAt] = useState('');
   const lock = useRef(false);
@@ -39,7 +42,7 @@ export function ProdigiSandboxDiagnostics() {
     if (action === 'quote' && (!product || !selected || !Number.isInteger(count) || count < 1 || count > 100)) { setError('Wybierz wariant i całkowitą ilość od 1 do 100.'); return; }
     const areas = product ? Object.keys(product.printAreas).filter(area => product.printAreas[area].required) : [];
     if (action === 'quote' && (areas.length === 0 || areas.some(area => !selected?.printAreaSizes[area]))) { setError('Brak kompletu wymaganych pól druku. Ten produkt wymaga osobnej kwalifikacji.'); return; }
-    lock.current = true; setBusy(true); setError(''); setQuotes([]); setCheckedAt('');
+    lock.current = true; setBusy(true); setError(''); setQuotes([]); setFx(null); setPlnEstimates([]); setCheckedAt('');
     if (action === 'product') { setProduct(null); setVariant('0'); }
     const controller = new AbortController(); activeRequest.current = controller;
     const timeout = setTimeout(() => controller.abort(), 20_000);
@@ -48,7 +51,8 @@ export function ProdigiSandboxDiagnostics() {
       const response = await fetch('/api/admin/gallery-shop/prodigi', { method: 'POST', credentials: 'include', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal });
       const data = await response.json();
       if (!response.ok || !data.success) throw Error(data.error || 'Nie udało się sprawdzić Prodigi.');
-      if (action === 'product') setProduct(data.product); else setQuotes(data.quotes);
+      if (action === 'product') setProduct(data.product);
+      else { setQuotes(data.quotes); setFx(data.fx ?? null); setPlnEstimates(data.plnEstimates ?? []); }
       setCheckedAt(data.checkedAt);
     } catch (failure) { setError(controller.signal.aborted ? 'Przekroczono czas połączenia. Spróbuj ponownie.' : failure instanceof Error ? failure.message : 'Nie udało się sprawdzić Prodigi.'); }
     finally { clearTimeout(timeout); activeRequest.current = null; lock.current = false; setBusy(false); }
@@ -68,7 +72,7 @@ export function ProdigiSandboxDiagnostics() {
       </>}
     </div>}
     {error && <p role="alert" className="text-sm text-red-200">{error}</p>}
-    {quotes.length > 0 && <div role="status" className="space-y-3">{quotes.map((quote, index) => <div key={index} className="rounded-lg border border-zinc-700 p-3 text-sm"><h6 className="font-semibold text-white">{quote.shipmentMethod}</h6><p className="mt-1 text-zinc-200">Produkty: {quote.costSummary.items.amount} {quote.costSummary.items.currency} · dostawa: {quote.costSummary.shipping.amount} {quote.costSummary.shipping.currency}</p>{quote.costSummary.branding && <p className="mt-1 text-zinc-200">Branding: {quote.costSummary.branding.amount} {quote.costSummary.branding.currency}</p>}{quote.costSummary.totalTax && <p className="mt-1 text-zinc-200">Podatek według API: {quote.costSummary.totalTax.amount} {quote.costSummary.totalTax.currency}</p>}{quote.costSummary.totalCost && <p className="mt-1 text-zinc-200">Suma według API: {quote.costSummary.totalCost.amount} {quote.costSummary.totalCost.currency}</p>}{quote.shipments.map((shipment, i) => <p key={i} className="mt-1 break-words text-zinc-400">Paczka {i + 1}: {shipment.carrier.name} / {shipment.carrier.service} · kraj produkcji: {shipment.fulfillmentLocation.countryCode}</p>)}</div>)}<p className="text-sm text-amber-200">Kwoty w walucie konta Prodigi, bez przeliczenia na PLN. To kwoty API, a nie potwierdzony pełny koszt ani cena dla klienta. Podatki, import, przewalutowanie i warunki śledzenia wymagają osobnego sprawdzenia. Przewoźnik z wyceny jest przewidywany; Paczkomaty nie są tu zakwalifikowane.</p></div>}
+    {quotes.length > 0 && <div role="status" className="space-y-3">{quotes.map((quote, index) => <div key={index} className="rounded-lg border border-zinc-700 p-3 text-sm"><h6 className="font-semibold text-white">{quote.shipmentMethod}</h6><p className="mt-1 text-zinc-200">Produkty: {quote.costSummary.items.amount} {quote.costSummary.items.currency} · dostawa: {quote.costSummary.shipping.amount} {quote.costSummary.shipping.currency}</p>{quote.costSummary.branding && <p className="mt-1 text-zinc-200">Branding: {quote.costSummary.branding.amount} {quote.costSummary.branding.currency}</p>}{quote.costSummary.totalTax && <p className="mt-1 text-zinc-200">Podatek według API: {quote.costSummary.totalTax.amount} {quote.costSummary.totalTax.currency}</p>}{quote.costSummary.totalCost && <p className="mt-1 text-zinc-200">Suma według API: {quote.costSummary.totalCost.amount} {quote.costSummary.totalCost.currency}</p>}{fx?.available && plnEstimates[index] && <div className="mt-3 border-t border-zinc-700 pt-2 text-emerald-200"><p>Orientacyjnie w PLN:</p>{(['items', 'shipping', 'branding', 'totalTax', 'totalCost'] as const).map(name => { const cost = plnEstimates[index][name]; const labels = { items: 'Produkty', shipping: 'Dostawa', branding: 'Branding', totalTax: 'Podatek według API', totalCost: 'Suma według API' }; return cost ? <p key={name}>{labels[name]}: {cost.amount} PLN</p> : null; })}</div>}{quote.shipments.map((shipment, i) => <p key={i} className="mt-1 break-words text-zinc-400">Paczka {i + 1}: {shipment.carrier.name} / {shipment.carrier.service} · kraj produkcji: {shipment.fulfillmentLocation.countryCode}</p>)}</div>)}{fx?.available && <p className="text-sm text-zinc-300">Przeliczenie orientacyjne: 1 {fx.currency} = {fx.mid} PLN · NBP, tabela {fx.tableNo}, kurs z {fx.effectiveDate}. Bez marży i opłat bankowych. Nie zmienia cen sklepu.</p>}{fx && !fx.available && <p className="text-sm text-amber-200">Przeliczenie PLN niedostępne: {fx.reason === 'stale' ? 'kurs NBP jest starszy niż 7 dni' : 'nie udało się pobrać aktualnego kursu NBP'}. Zachowano kwoty w walucie Prodigi.</p>}<p className="text-sm text-amber-200">Oryginalne kwoty są podane w walucie konta Prodigi. To kwoty API, a nie potwierdzony pełny koszt ani cena dla klienta. Podatki, import, przewalutowanie i warunki śledzenia wymagają osobnego sprawdzenia. Przewoźnik z wyceny jest przewidywany; Paczkomaty nie są tu zakwalifikowane.</p></div>}
     {checkedAt && <p className="text-xs text-zinc-400">Odczyt: {new Date(checkedAt).toLocaleString('pl-PL')}</p>}
     <p className="text-xs text-zinc-400">Następny etap: kwalifikacja kosztów i próbek. Zamówienia będą obsługiwane w Rezerwacje → Zamówienia, z buforem oczekującym na sesję i akceptację zdjęcia.</p>
   </section>;

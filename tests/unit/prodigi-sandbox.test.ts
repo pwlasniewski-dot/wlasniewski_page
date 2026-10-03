@@ -134,3 +134,32 @@ test('POD-S17: mixed currencies across shipping, quotes and optional totals are 
     await assert.rejects(inspectSandbox({ action: 'quote', items: [item] }, transport({ outcome: 'Created', quotes })), { code: 'INVALID_RESPONSE' });
   }
 });
+test('POD-S18: real Created envelope with null issues at both levels preserves quote costs', async () => {
+  for (const issues of [null, undefined, []]) {
+    const result = await inspectSandbox({ action: 'quote', items: [item] }, transport({ outcome: 'Created', issues, quotes: [{ ...quote, issues }] }));
+    assert.equal(result.action, 'quote');
+    if (result.action === 'quote') {
+      assert.equal(result.currency, 'EUR');
+      assert.deepEqual(result.quotes[0].costSummary, quote.costSummary);
+      assert.deepEqual(result.quotes[0].issues, issues);
+    }
+  }
+  const result = await inspectSandbox({ action: 'product', sku: item.sku }, transport({ outcome: 'Ok', issues: null, product }));
+  assert.equal(result.action, 'product');
+});
+test('POD-S19: null support still rejects nonempty or malformed issues at either level', async () => {
+  for (const issues of [[{ message: key }], [null], {}, 'none', false, 0]) {
+    for (const [payload, expectedCode] of [
+      [{ outcome: 'Created', issues, quotes: [{ ...quote, issues: null }] }, 'PROVIDER_ISSUES'],
+      [{ outcome: 'Created', issues: null, quotes: [{ ...quote, issues }] }, 'INVALID_RESPONSE'],
+    ] as const) {
+      await assert.rejects(inspectSandbox({ action: 'quote', items: [item] }, transport(payload)), (error: unknown) => {
+        assert.ok(error instanceof SandboxError);
+        assert.equal(error.code, expectedCode);
+        assert.equal(error.status, 502);
+        assert.equal(`${error.message} ${JSON.stringify(error)}`.includes(key), false);
+        return true;
+      });
+    }
+  }
+});
