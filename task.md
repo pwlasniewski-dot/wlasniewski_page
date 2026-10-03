@@ -1,3 +1,30 @@
+## 2026-10-02 — pilny UX promocji (draft)
+
+- [x] Potwierdzić istniejące end/cancel/edit i zachować omyłkowe 155 zł w historii; zero produkcyjnych zapisów.
+- [x] Domyślnie wpisywać cenę po obniżce, pokazać oddzielnie rabat i wynik przed zapisem.
+- [x] Jawne akcje zakończ/anuluj oraz wyjaśnienie immutable historii i blokady referencyjnej.
+- [x] Idempotentny DELETE po odczycie pod lockiem; walidacja jawnej daty końca.
+- [x] Karty dwóch kolumn z rzeczywistym Package scope/czasem, czytelną nazwą, ceną i CTA.
+- [x] Lokalne 6 CMS/API/read/render i 2 unit PASS; bez produkcyjnego DB/PayU/maili.
+- [x] Usunąć tymczasowy iframe po odmowie osadzania, bez osłabienia zabezpieczeń.
+- [x] Finalne 13 pricing unit i 7 regresji PASS; formalna delta TS 100→100, zero nowych/usuniętych.
+- [x] Niezależny końcowy code/test QA PASS: własne 6 CMS / 2 unit, delta TS zero i odczyt kompletnych 13+7 regresji.
+- [ ] Nowy build, rzeczywisty mobilny podgląd i publikacja nowego UX.
+
+## 2026-10-02 — spójny zakres Dronu i kontrast promocji (draft)
+
+- [x] Potwierdzić gubienie features przez description w rzeczywistym widoku rezerwacji.
+- [x] Współdzielić zakres z istniejącego DronePhotographyConfig dla kart, koszyka i serwerowego snapshotu.
+- [x] Zatrzymać zmieniony zakres/czas przed checkoutem; zachować istniejące kwoty i płatności.
+- [x] Użyć frozen zakresu Dronu w potwierdzeniach i koncie, bez uzupełniania historii.
+- [x] Lokalny QA: 6 procesów Dronu, 3 unit, 5 fotograficznych snapshotów PASS; DB/PayU/email podstawione.
+- [x] Zdiagnozować ciemne CTA promocji jako globalny !important; zastosować ten sam jawny biały kolor.
+- [x] Formalna delta TS: HEAD 100 / working 100, zero dodanych/usuniętych; niezależne 6 QA / 5 snapshot / 3 unit PASS.
+- [x] Finalny niezależny odbiór delty/code review PASS do commita i draft preview.
+- [x] Koordynator potwierdził Netlify build 4d8588c w draft PR96 PASS.
+- [ ] Odebrać rzeczywisty mobile/karty/koszyk/history/kontrast na preview.
+- [x] Koordynator poprawił FAQ/OG Dronu w obecnym CMS; płatności bez przebudowy.
+
 ## 2026-10-02 — lokalny CMS / urodziny (draft)
 
 - [x] Audyt routing, 38 public Page i istniejących edytorów/API; PR93 scalony przez właściciela, baza 3808905.
@@ -11,9 +38,10 @@
 - [x] Niezależny code review oraz powtórzone 8 CMS / 5 snapshot PASS jako draft.
 - [ ] Previewbuild i faktyczny CMS save/read/render wraz z viewport 390×844.
 - [x] Koordynator poprawił dawny story 20/10 i pozostałe teksty Torunia w aktualnym CMS, zachowując media.
-- [ ] Jawnie skonfigurować puste miasta i brakujące moduły Torunia; odebrać H1/SEO/CTA oraz media na nowym rendererze.
-- [ ] Usunąć tymczasowy public/__qa-offer-viewport.html przed finalnym scaleniem.
-- [ ] Minimalny osobny snapshot zakresu Dronu z istniejącego configu; bez zmian cen/płatności.
+- [x] Koordynator jawnie skonfigurował wszystkie 8 miast w istniejącym CMS, zachowując media (7×7 modułów, Toruń 13).
+- [x] Niezależny QA potwierdził publiczny odczyt/render wszystkich ośmiu miast po rzeczywistym zapisie CMS.
+- [x] Tymczasowy public/__qa-offer-viewport.html usunięty po odmowie osadzania; mobilnego odbioru nie uznano za wykonany.
+- [x] Minimalny osobny snapshot zakresu Dronu z istniejącego configu przygotowany lokalnie; odbiór i publikacja w odrębnej karcie powyżej.
 
 ## 2026-10-02 — pilna poprawka zapisu pakietów
 

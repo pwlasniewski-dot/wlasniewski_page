@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, BadgePercent, CalendarClock, CheckCircle2, History, Loader2, Pencil, Power, X } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
+import { calculatePromotionInput, type PromotionInputMode } from '@/lib/promotionEditor';
+import { calculateReferenceDiscountPercent } from '@/lib/packagePromotionPricing';
 
 type PromotionStatus = 'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'ENDED';
 
@@ -54,7 +56,7 @@ type EditorState = {
     promotionId: number | null;
     packageId: number;
     label: string;
-    discountType: 'percentage' | 'fixed';
+    inputMode: PromotionInputMode;
     discountValue: string;
     startsAt: string;
     endsAt: string;
@@ -115,6 +117,9 @@ export default function PackagePromotionsAdminPage() {
     const [packages, setPackages] = useState<AdminPackage[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [stoppingId, setStoppingId] = useState<number | null>(null);
+    const [actionError, setActionError] = useState<string | null>(null);
+    const [saveError, setSaveError] = useState<string | null>(null);
     const [editor, setEditor] = useState<EditorState | null>(null);
 
     const loadData = async () => {
@@ -138,6 +143,7 @@ export default function PackagePromotionsAdminPage() {
             if (!response.ok || !data.success) throw new Error(data.error || 'Błąd pobierania promocji');
             setPackages(data.packages || []);
         } catch (error) {
+            setActionError(error instanceof Error ? error.message : 'Nie udało się pobrać promocji');
             toast.error(error instanceof Error ? error.message : 'Nie udało się pobrać promocji');
         } finally {
             setLoading(false);
@@ -165,31 +171,28 @@ export default function PackagePromotionsAdminPage() {
 
     const preview = useMemo(() => {
         if (!editor || !editedPackage) return null;
-        const raw = Number(editor.discountValue.replace(',', '.'));
-        if (!Number.isFinite(raw) || raw <= 0) return null;
-        const discount = editor.discountType === 'percentage'
-            ? Math.floor(editedPackage.regularPrice * raw / 100)
-            : Math.round(raw * 100);
-        const price = editedPackage.regularPrice - discount;
-        if (price <= 0 || price >= editedPackage.regularPrice) return null;
+        let calculation;
+        try { calculation = calculatePromotionInput(editedPackage.regularPrice, editor.inputMode, editor.discountValue); }
+        catch { return null; }
         const manualReference = Number(editor.manualLowestPrice.replace(',', '.')) * 100;
         const legalReference = editedPackage.automaticReference.available && editedPackage.automaticReference.lowestPrice30d
             ? editedPackage.automaticReference.lowestPrice30d
             : Number.isFinite(manualReference) && manualReference > 0
                 ? Math.round(manualReference)
                 : editedPackage.regularPrice;
-        if (legalReference > editedPackage.regularPrice || price >= legalReference) return null;
-        const displayPercent = Math.max(1, Math.floor(((legalReference - price) * 100) / legalReference));
-        return { price, legalReference, displayPercent, referencePeriod: editorReferencePeriod };
+        const legalValid = legalReference <= editedPackage.regularPrice && calculation.price < legalReference;
+        const displayPercent = calculateReferenceDiscountPercent(legalReference, calculation.price);
+        return { ...calculation, legalReference, legalValid, displayPercent, referencePeriod: editorReferencePeriod };
     }, [editor, editedPackage, editorReferencePeriod]);
 
     const openNew = (pkg: AdminPackage) => {
+        setSaveError(null);
         setEditor({
             promotionId: null,
             packageId: pkg.id,
             label: 'Promocja',
-            discountType: 'percentage',
-            discountValue: '20',
+            inputMode: 'price',
+            discountValue: '',
             startsAt: toLocalInput(null),
             endsAt: toLocalInput(null, 14 * 24 * 60),
             manualLowestPrice: ((pkg.automaticReference.lowestPrice30d || pkg.regularPrice) / 100).toString(),
@@ -202,14 +205,13 @@ export default function PackagePromotionsAdminPage() {
 
     const openExisting = (pkg: AdminPackage, promotion: AdminPromotion) => {
         if (promotion.status === 'ACTIVE' || promotion.status === 'ENDED') return;
+        setSaveError(null);
         setEditor({
             promotionId: promotion.id,
             packageId: pkg.id,
             label: promotion.label,
-            discountType: promotion.discountType,
-            discountValue: promotion.discountType === 'percentage'
-                ? String(promotion.discountValue)
-                : String(promotion.discountValue / 100),
+            inputMode: 'price',
+            discountValue: String(promotion.price / 100),
             startsAt: toLocalInput(promotion.startsAt),
             endsAt: promotion.endsAt ? toLocalInput(promotion.endsAt) : '',
             manualLowestPrice: String(promotion.lowestPrice30d / 100),
@@ -221,15 +223,13 @@ export default function PackagePromotionsAdminPage() {
     };
 
     const savePromotion = async () => {
-        if (!editor || !editedPackage || !preview) {
+        if (saving || !editor || !editedPackage || !preview?.legalValid) {
             toast.error('Uzupełnij poprawnie dane promocji');
             return;
         }
         setSaving(true);
+        setSaveError(null);
         try {
-            const discountValue = editor.discountType === 'percentage'
-                ? Math.round(Number(editor.discountValue.replace(',', '.')))
-                : Math.round(Number(editor.discountValue.replace(',', '.')) * 100);
             const manualLowestPrice = Math.round(Number(editor.manualLowestPrice.replace(',', '.')) * 100);
             const response = await fetch('/api/admin/package-promotions', {
                 method: 'POST',
@@ -241,8 +241,8 @@ export default function PackagePromotionsAdminPage() {
                     promotionId: editor.promotionId,
                     packageId: editor.packageId,
                     label: editor.label,
-                    discountType: editor.discountType,
-                    discountValue,
+                    discountType: preview.discountType,
+                    discountValue: preview.discountValue,
                     startsAt: new Date(editor.startsAt).toISOString(),
                     endsAt: editor.endsAt ? new Date(editor.endsAt).toISOString() : null,
                     manualLowestPrice,
@@ -253,11 +253,12 @@ export default function PackagePromotionsAdminPage() {
                 }),
             });
             const data = await response.json().catch(() => ({}));
-            if (!response.ok || !data.success) throw new Error(data.error || 'Nie udało się zapisać promocji');
+            if (!response.ok || !data.success) throw new Error(`${data.error || 'Nie udało się zapisać promocji'} (HTTP ${response.status}${data.code ? ` · ${data.code}` : ''})`);
             toast.success('Promocja została zapisana');
             setEditor(null);
             await loadData();
         } catch (error) {
+            setSaveError(error instanceof Error ? error.message : 'Nie udało się zapisać promocji');
             toast.error(error instanceof Error ? error.message : 'Nie udało się zapisać promocji', { duration: 7000 });
         } finally {
             setSaving(false);
@@ -265,21 +266,27 @@ export default function PackagePromotionsAdminPage() {
     };
 
     const stopPromotion = async (promotion: AdminPromotion) => {
+        if (stoppingId !== null) return;
         const prompt = promotion.status === 'ACTIVE'
             ? 'Zakończyć promocję teraz? Pozostanie w historii cen.'
             : 'Anulować tę przyszłą promocję?';
         if (!window.confirm(prompt)) return;
+        setStoppingId(promotion.id);
+        setActionError(null);
         try {
             const response = await fetch(`/api/admin/package-promotions?id=${promotion.id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` },
             });
             const data = await response.json().catch(() => ({}));
-            if (!response.ok || !data.success) throw new Error(data.error || 'Nie udało się zakończyć promocji');
+            if (!response.ok || !data.success) throw new Error(`${data.error || 'Nie udało się zakończyć promocji'} (HTTP ${response.status})`);
             toast.success(data.message || 'Promocja została zakończona');
             await loadData();
         } catch (error) {
+            setActionError(error instanceof Error ? error.message : 'Nie udało się zakończyć promocji');
             toast.error(error instanceof Error ? error.message : 'Nie udało się zakończyć promocji');
+        } finally {
+            setStoppingId(null);
         }
     };
 
@@ -294,7 +301,7 @@ export default function PackagePromotionsAdminPage() {
                         </div>
                         <h1 className="text-3xl font-bold md:text-4xl">Promocje konkretnych pakietów</h1>
                         <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-400 md:text-base">
-                            Jedna promocja zasila cenę na stronie głównej, w rezerwacji, koszyku i PayU. Cena z przeglądarki nie jest źródłem rozliczenia.
+                            Wpisz cenę, którą klient ma zapłacić po obniżce. Podgląd pokaże także kwotę rabatu. Ta sama promocja zasila ofertę, rezerwację, koszyk i PayU.
                         </p>
                     </div>
                     <a
@@ -304,6 +311,8 @@ export default function PackagePromotionsAdminPage() {
                         Pozostałe banery
                     </a>
                 </div>
+
+                {actionError && <p role="alert" className="mb-6 rounded-xl border border-red-800 bg-red-950/50 p-4 text-sm text-red-200">{actionError}</p>}
 
                 <div className="mb-8 grid gap-4 md:grid-cols-3">
                     <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/5 p-5">
@@ -368,7 +377,7 @@ export default function PackagePromotionsAdminPage() {
                                                         {current && (
                                                             <p className="text-left text-[11px] leading-4 text-zinc-500 sm:text-right">
                                                                 {current.status === 'ACTIVE'
-                                                                    ? 'Zakończ ją ikoną zasilania, aby ustawić kolejny okres dla tego pakietu.'
+                                                                    ? 'Błędna cena? Zakończ promocję poniżej. Wróci cena zwykła, a zapis pozostanie w historii.'
                                                                     : `Uruchomi się automatycznie ${new Date(current.startsAt).toLocaleString('pl-PL')}.`}
                                                             </p>
                                                         )}
@@ -390,13 +399,14 @@ export default function PackagePromotionsAdminPage() {
                                                                     </div>
                                                                     <div className="flex gap-2">
                                                                         {(promotion.status === 'DRAFT' || promotion.status === 'SCHEDULED') && (
-                                                                            <button type="button" onClick={() => openExisting(pkg, promotion)} className="rounded-lg border border-zinc-700 p-2 text-zinc-300 hover:border-zinc-500 hover:text-white" aria-label="Edytuj promocję">
-                                                                                <Pencil className="h-4 w-4" />
+                                                                            <button type="button" onClick={() => openExisting(pkg, promotion)} className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-300 hover:border-zinc-500 hover:text-white">
+                                                                                <Pencil className="h-4 w-4" /> Edytuj cenę i okres
                                                                             </button>
                                                                         )}
                                                                         {promotion.status !== 'ENDED' && (
-                                                                            <button type="button" onClick={() => stopPromotion(promotion)} className="rounded-lg border border-red-900/60 p-2 text-red-300 hover:bg-red-950" aria-label="Zakończ promocję">
-                                                                                <Power className="h-4 w-4" />
+                                                                            <button type="button" onClick={() => stopPromotion(promotion)} disabled={stoppingId !== null} className="inline-flex items-center gap-2 rounded-lg border border-red-900/60 px-3 py-2 text-xs text-red-300 hover:bg-red-950 disabled:opacity-50">
+                                                                                {stoppingId === promotion.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
+                                                                                {stoppingId === promotion.id ? 'Zapisuję…' : promotion.status === 'ACTIVE' ? 'Zakończ teraz' : promotion.status === 'SCHEDULED' ? 'Anuluj zaplanowaną' : 'Anuluj szkic'}
                                                                             </button>
                                                                         )}
                                                                     </div>
@@ -404,9 +414,10 @@ export default function PackagePromotionsAdminPage() {
                                                                 <div className="mt-3 flex flex-wrap items-baseline gap-3">
                                                                     <strong className="text-2xl text-amber-300">{formatPln(promotion.price)}</strong>
                                                                     <span className="text-sm text-zinc-500 line-through">{formatPln(promotion.regularPrice)}</span>
-                                                                    <span className="text-xs font-bold text-amber-400">−{promotion.displayDiscountPercent}%</span>
+                                                                    {promotion.displayDiscountPercent > 0 && <span className="text-xs font-bold text-amber-400">−{promotion.displayDiscountPercent}%</span>}
                                                                 </div>
                                                                 <p className="mt-2 text-xs leading-5 text-zinc-400">{promotion.legalText}</p>
+                                                                {(promotion.status === 'ACTIVE' || promotion.status === 'ENDED') && <p className="mt-2 text-xs leading-5 text-zinc-500">{promotion.status === 'ACTIVE' ? 'Rozpoczętej ceny nie można przepisać. Zakończenie zachowa rzeczywisty okres i cenę w historii.' : 'Zakończona cena pozostaje w historii i wpływa na cenę referencyjną kolejnych obniżek.'}</p>}
                                                                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-500">
                                                                     <span>Start: {new Date(promotion.startsAt).toLocaleString('pl-PL')}</span>
                                                                     <span>Koniec: {promotion.endsAt ? new Date(promotion.endsAt).toLocaleString('pl-PL') : 'bez daty'}</span>
@@ -447,15 +458,17 @@ export default function PackagePromotionsAdminPage() {
                                 <input value={editor.label} onChange={event => setEditor({ ...editor, label: event.target.value })} className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 outline-none focus:border-amber-500" />
                             </label>
                             <label className="block">
-                                <span className="mb-2 block text-sm font-semibold text-zinc-300">Rodzaj obniżki</span>
-                                <select value={editor.discountType} onChange={event => setEditor({ ...editor, discountType: event.target.value as 'percentage' | 'fixed' })} className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 outline-none focus:border-amber-500">
-                                    <option value="percentage">Procentowa</option>
-                                    <option value="fixed">Kwotowa</option>
+                                <span className="mb-2 block text-sm font-semibold text-zinc-300">Co wpisujesz?</span>
+                                <select value={editor.inputMode} onChange={event => setEditor({ ...editor, inputMode: event.target.value as PromotionInputMode, discountValue: '' })} className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 outline-none focus:border-amber-500">
+                                    <option value="price">Cena po obniżce (zł)</option>
+                                    <option value="fixed">Kwota rabatu (zł)</option>
+                                    <option value="percentage">Rabat procentowy (%)</option>
                                 </select>
                             </label>
                             <label className="block">
-                                <span className="mb-2 block text-sm font-semibold text-zinc-300">{editor.discountType === 'percentage' ? 'Obniżka (%)' : 'Obniżka (zł)'}</span>
-                                <input type="number" min="1" step={editor.discountType === 'percentage' ? '1' : '0.01'} value={editor.discountValue} onChange={event => setEditor({ ...editor, discountValue: event.target.value })} className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 outline-none focus:border-amber-500" />
+                                <span className="mb-2 block text-sm font-semibold text-zinc-300">{editor.inputMode === 'price' ? 'Cena po obniżce (zł)' : editor.inputMode === 'percentage' ? 'Rabat (%)' : 'Kwota rabatu (zł)'}</span>
+                                <input aria-label={editor.inputMode === 'price' ? 'Cena po obniżce (zł)' : editor.inputMode === 'percentage' ? 'Rabat (%)' : 'Kwota rabatu (zł)'} type="number" min={editor.inputMode === 'percentage' ? '1' : '0.01'} step={editor.inputMode === 'percentage' ? '1' : '0.01'} value={editor.discountValue} onChange={event => setEditor({ ...editor, discountValue: event.target.value })} className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 outline-none focus:border-amber-500" />
+                                <span className="mt-2 block text-xs leading-5 text-zinc-500">{editor.inputMode === 'price' ? 'To końcowa cena pakietu widoczna dla klienta.' : 'To rabat odejmowany od ceny zwykłej. Sprawdź końcową cenę poniżej.'}</span>
                             </label>
                             <label className="block">
                                 <span className="mb-2 block text-sm font-semibold text-zinc-300">{legalReferenceLabel(editorReferencePeriod)} (zł)</span>
@@ -522,20 +535,25 @@ export default function PackagePromotionsAdminPage() {
                             </div>
                             {preview ? (
                                 <>
+                                    <p className="mt-3 text-xs font-semibold uppercase tracking-wide">Cena po obniżce — klient zapłaci</p>
                                     <div className="mt-3 flex flex-wrap items-baseline gap-3">
                                         <strong className="text-3xl text-[#8a3423]">{formatPln(preview.price)}</strong>
                                         <span className="text-base text-[#7b7168] line-through">{formatPln(editedPackage.regularPrice)}</span>
                                     </div>
+                                    <p className="mt-2 text-sm">Kwota rabatu od ceny zwykłej: {formatPln(preview.reduction)}</p>
                                     <p className="mt-2 text-xs">{legalReferenceLabel(preview.referencePeriod)}: {formatPln(preview.legalReference)}</p>
+                                    {!preview.legalValid && <p role="alert" className="mt-3 text-sm font-semibold text-[#8a3423]">Nie można ogłosić tej ceny jako nowej promocji: musi być niższa od właściwej ceny referencyjnej. Zakończone i omyłkowo opublikowane ceny pozostają w historii.</p>}
                                 </>
                             ) : (
-                                <p className="mt-3 text-sm text-[#8a3423]">Ustaw prawidłową obniżkę, aby zobaczyć podgląd.</p>
+                                <p className="mt-3 text-sm text-[#8a3423]">Wpisz cenę niższą od ceny zwykłej albo prawidłowy rabat, aby zobaczyć wyliczenie.</p>
                             )}
                         </div>
 
+                        {saveError && <p role="alert" className="mt-4 rounded-xl border border-red-800 bg-red-950/60 p-4 text-sm text-red-200">{saveError}</p>}
+
                         <div className="mt-6 flex flex-col-reverse justify-end gap-3 border-t border-zinc-800 pt-5 sm:flex-row">
                             <button type="button" onClick={() => setEditor(null)} className="rounded-full border border-zinc-700 px-6 py-3 font-semibold text-zinc-300 hover:border-zinc-500">Anuluj</button>
-                            <button type="button" onClick={savePromotion} disabled={saving || !preview} className="inline-flex items-center justify-center rounded-full bg-amber-500 px-7 py-3 font-bold text-black hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50">
+                            <button type="button" onClick={savePromotion} disabled={saving || !preview?.legalValid || (!editedPackage.automaticReference.available && !editor.confirmManualReference)} className="inline-flex items-center justify-center rounded-full bg-amber-500 px-7 py-3 font-bold text-black hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50">
                                 {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Zapisuję…</> : <><CalendarClock className="mr-2 h-4 w-4" /> Zapisz promocję</>}
                             </button>
                         </div>

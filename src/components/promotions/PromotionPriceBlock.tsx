@@ -10,6 +10,7 @@ type PromotionPriceBlockProps = {
     variant: 'home' | 'booking' | 'summary' | 'compact';
     tone?: 'light' | 'dark';
     className?: string;
+    showRegularPriceSavings?: boolean;
 };
 
 function formatEndDate(value: string | null): string | null {
@@ -31,6 +32,7 @@ export default function PromotionPriceBlock({
     variant,
     tone = 'light',
     className = '',
+    showRegularPriceSavings = true,
 }: PromotionPriceBlockProps) {
     const endsAt = formatEndDate(promotion.endsAt);
     const savings = Math.max(0, promotion.regularPrice - promotion.price);
@@ -52,7 +54,7 @@ export default function PromotionPriceBlock({
         return (
             <div className={`min-w-0 text-left ${tone === 'dark' ? 'text-white' : 'text-[#413c36]'} ${className}`}
                 data-promotion-id={promotion.id} data-package-id={promotion.packageId}>
-                <span className="inline-block rounded-full bg-[#a84631] px-2.5 py-1 text-[10px] font-bold text-white">{promotion.label}</span>
+                <span className="inline-block rounded-full bg-[#a84631] px-2.5 py-1 text-[10px] font-bold text-[#ffffff]">{promotion.label}</span>
                 <p className="mt-2 text-xs opacity-80">{promotion.packageName}</p>
                 <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
                     <strong className="text-2xl font-semibold">{formatPricePln(promotion.price)}</strong>
@@ -72,7 +74,7 @@ export default function PromotionPriceBlock({
                 data-package-id={promotion.packageId}
             >
                 <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-[#b5523c] px-3 py-1 text-[9px] font-extrabold uppercase tracking-[.18em] text-white">
+                    <span className="rounded-full bg-[#b5523c] px-3 py-1 text-[9px] font-extrabold uppercase tracking-[.18em] text-[#ffffff]">
                         {promotion.label}
                     </span>
                     {promotion.displayDiscountPercent > 0 && (
@@ -111,7 +113,7 @@ export default function PromotionPriceBlock({
                 data-package-id={promotion.packageId}
             >
                 <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-[#a84631] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[.14em] text-white">{promotion.label}</span>
+                    <span className="rounded-full bg-[#a84631] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[.14em] text-[#ffffff]">{promotion.label}</span>
                     {promotion.displayDiscountPercent > 0 && <span className="text-[10px] font-bold text-[#e9b3a4]">−{promotion.displayDiscountPercent}%</span>}
                 </div>
                 <div className="mt-2 flex flex-wrap items-baseline gap-2">
@@ -130,12 +132,12 @@ export default function PromotionPriceBlock({
             data-package-id={promotion.packageId}
         >
             <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="rounded-full bg-[#a84631] px-3 py-1 text-[9px] font-extrabold uppercase tracking-[.17em] text-white">
+                <span className="rounded-full bg-[#a84631] px-3 py-1 text-[9px] font-extrabold uppercase tracking-[.17em] text-[#ffffff]">
                     {promotion.label}
                 </span>
-                <span className="text-[11px] font-bold text-[#8a3423]">
+                {showRegularPriceSavings && <span className="text-[11px] font-bold text-[#8a3423]">
                     {savings > 0 ? `Oszczędzasz ${formatPricePln(savings)}` : `−${promotion.displayDiscountPercent}%`}
-                </span>
+                </span>}
             </div>
             <div className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-1">
                 <strong className="text-[2.35rem] font-extrabold leading-none tracking-[-.035em] text-[#8a3423]">

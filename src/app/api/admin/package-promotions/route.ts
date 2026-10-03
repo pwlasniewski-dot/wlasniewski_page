@@ -170,6 +170,9 @@ export async function POST(request: NextRequest) {
                 error: 'Wybierz pakiet, rodzaj i wartość obniżki oraz datę rozpoczęcia.',
             }, { status: 400 });
         }
+        if (body.endsAt && !endsAt) {
+            return NextResponse.json({ success: false, error: 'Wpisz poprawną datę zakończenia promocji.' }, { status: 400 });
+        }
         if (endsAt && endsAt <= startsAt) {
             return NextResponse.json({
                 success: false,
@@ -351,14 +354,20 @@ export async function DELETE(request: NextRequest) {
             if (!current) throw new Error('PROMOTION_NOT_FOUND');
             await acquireAdvisoryTransactionLock(tx, `package-promotion:${current.package_id}`);
 
+            // A concurrent request may have ended it while this request waited.
+            const locked = await tx.packagePromotion.findUnique({ where: { id: promotionId } });
+            if (!locked) throw new Error('PROMOTION_NOT_FOUND');
+
             const now = new Date();
-            if (current.is_enabled && current.starts_at <= now) {
+            if (locked.is_enabled && locked.starts_at <= now) {
+                if (locked.ends_at && locked.ends_at <= now) return { promotion: locked, ended: true };
                 const promotion = await tx.packagePromotion.update({
                     where: { id: promotionId },
                     data: { ends_at: now, show_on_home: false, updated_at: now },
                 });
                 return { promotion, ended: true };
             }
+            if (!locked.is_enabled && !locked.show_on_home) return { promotion: locked, ended: false };
             const promotion = await tx.packagePromotion.update({
                 where: { id: promotionId },
                 data: { is_enabled: false, show_on_home: false, updated_at: now },

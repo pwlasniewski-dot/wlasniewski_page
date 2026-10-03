@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import prisma from '@/lib/db/prisma';
+import { packageScopeLines } from '@/lib/packageScope';
 
 import {
     calculateReferenceDiscountPercent,
@@ -25,6 +26,9 @@ type PromotionRow = {
     id: number;
     package_id: number;
     package_name: string;
+    package_description?: string | null;
+    package_features?: string | null;
+    package_hours?: number;
     package_order: number;
     service_name: string;
     service_order: number;
@@ -78,6 +82,9 @@ function basePromotionSelect() {
             pp."id",
             pp."package_id",
             p."name" AS "package_name",
+            p."description" AS "package_description",
+            p."features" AS "package_features",
+            p."hours" AS "package_hours",
             p."order" AS "package_order",
             st."name" AS "service_name",
             st."order" AS "service_order",
@@ -112,6 +119,8 @@ export function toPublicPackagePromotion(record: PromotionRow): PublicPackagePro
         id: Number(record.id),
         packageId: Number(record.package_id),
         packageName: record.package_name,
+        scopeLines: packageScopeLines({ description: record.package_description, features: record.package_features }),
+        hours: record.package_hours,
         serviceName: record.service_name,
         label: record.label || 'Promocja',
         discountType: record.discount_type === 'fixed' ? 'fixed' : 'percentage',

@@ -11,6 +11,7 @@ import BookingCalendar from '@/components/BookingCalendar';
 import BookingFunnelIntro from '@/components/booking/BookingFunnelIntro';
 import PackageScope from '@/components/booking/PackageScope';
 import { formatPackageDuration, packageScopeLines } from '@/lib/packageScope';
+import { dronePackageScopeLines } from '@/lib/dronePhotographyScope';
 import PageRenderer from '@/components/PageRenderer';
 import { PageSection } from '@/components/admin/PageBuilder';
 import { useCart } from '@/context/CartContext';
@@ -47,6 +48,7 @@ interface Package {
     promotion?: PublicPackagePromotion | null;
     subtitle?: string;
     features?: string;
+    scopeLines?: string[];
     order: number;
     blocks_entire_day?: boolean;
     is_active: boolean;
@@ -216,6 +218,7 @@ export default function RezerwacjaPage() {
                             service_id: -100,
                             name: item.name,
                             description: `<p>${item.summary}</p><p>${item.delivery}</p>`,
+                            scopeLines: dronePackageScopeLines(item),
                             hours: Math.max(1, item.durationHours || 1),
                             price: item.price * 100,
                             subtitle: item.shortName,
@@ -553,7 +556,7 @@ export default function RezerwacjaPage() {
             const bookingData = {
                 service: service?.name,
                 package: chosenPackage.name,
-                package_scope_lines: packageScopeLines(chosenPackage),
+                package_scope_lines: chosenPackage.scopeLines ?? packageScopeLines(chosenPackage),
                 hours: chosenPackage.hours,
                 price: finalPrice,
                 originalPrice: (chosenPackage.regular_price ?? chosenPackage.price) + (selectedDroneAddon?.price || 0) * 100,
@@ -571,6 +574,7 @@ export default function RezerwacjaPage() {
                 booking_package_source: chosenPackage.source || 'database',
                 booking_source: source,
                 drone_addon_slug: selectedDroneAddon?.slug || null,
+                drone_scope_lines: selectedDroneAddon ? dronePackageScopeLines(selectedDroneAddon) : undefined,
                 drone_goal: hasDrone ? droneGoal : null,
                 drone_terms_accepted: hasDrone ? droneTermsAccepted : false,
                 notes: notes || null,
@@ -860,6 +864,7 @@ export default function RezerwacjaPage() {
                                             </div>
 
                                             <PackageScope
+                                                scopeLines={pkg.scopeLines}
                                                 description={pkg.description}
                                                 features={pkg.features}
                                                 className="mt-auto border-t border-[#ddd6cc]/80 pt-4 text-[#6b645c]"
@@ -900,7 +905,7 @@ export default function RezerwacjaPage() {
                                                     className={`rounded-xl border p-4 text-left ${selectedDroneAddonSlug === item.slug ? 'border-[#8d7f6d] bg-[#8d7f6d]/10' : 'border-[#ddd6cc] bg-white'}`}
                                                 >
                                                     <span className="flex justify-between gap-3 font-bold text-[#25221f]"><span>{item.name}</span><span>+{item.price} zł</span></span>
-                                                    <span className="mt-1 block text-sm leading-6 text-[#6b645c]">{item.summary}</span>
+                                                    <PackageScope scopeLines={dronePackageScopeLines(item)} className="mt-3 text-[#6b645c]" />
                                                 </button>
                                             ))}
                                         </div>

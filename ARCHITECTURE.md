@@ -1,3 +1,17 @@
+## 2026-10-02 — odwracalne czynności admina promocji
+
+`promotionEditor` zamienia jawny tryb ceny końcowej/rabatu/% na istniejący kontrakt API discountType/discountValue. Nie tworzy nowego modelu ceny. Admin używa wspólnego konserwatywnego calculateReferenceDiscountPercent, pokazuje wynik obliczeń także przy blokadzie prawnej oraz zachowuje serwerowe błędy inline.
+
+DELETE istniejącego API korzysta z tego samego requireAdminAuth i advisory lock; po uzyskaniu locka odczytuje bieżący rekord. Zakończony/anulowany rekord jest odpowiedzią idempotentną bez dalszej mutacji. POST nadal blokuje przepisywanie rozpoczętej promocji, konflikty okresów i niewłaściwą referencję. Nieprawidłowy jawny endsAt zwraca 400.
+
+Publiczny SELECT promocji dołącza obecne Package.description/features/hours; toPublicPackagePromotion używa tego samego parsera zakresu co booking. ActivePromotions pokazuje pierwsze trzy linie i kontrolowany układ dwóch kolumn; stare payloady bez zakresu pozostają zgodne. Brak migracji lub zmian rozliczenia. Osobny wariant prezentacji wyłącza kwotę oszczędności względem ceny zwykłej na kartach homepage, zachowując obowiązującą referencję. Lokalny memory-store QA obejmuje auth, zakończenie, ponowienie, korektę przyszłej ceny, anulowanie, konkurencyjny lock oraz wspólny scope/render. Formalna delta TS 100→100 ma zero dodanych/usuniętych diagnostyk; pełnego nowego builda tej poprawki nie deklarujemy.
+
+## 2026-10-02 — wspólny parser DronePhotographyConfig i snapshot
+
+`dronePackageScopeLines` współdzieli bezpieczny parser tekstu z Package, ale składa summary/features/delivery jako pola uzupełniające odrębnego modelu Dronu. Rezerwacja przekazuje scopeLines oraz osobne drone_scope_lines dodatku; checkout renderuje obie kopie przez PackageScope. API porównuje je z aktualnym serwerowym CMS i zapisuje zakres w istniejących package.scopeLines/drone.scopeLines JSON. Dotychczasowe guards usługi, cen, celu, miejsca, zgody i grafiku pozostają obecne.
+
+`bookingSnapshotScopeLines` odczytuje tylko zapisane tablice: samodzielny Dron raz z package, dodatek obok zakresu Package. Ten sam resolver obsługuje mail PayU, ręczne potwierdzenie i konto; nie wykonuje żadnego zapytania do dzisiejszego katalogu. Brak migracji, backfillu albo nowych usług. ActivePromotionsSection używa jawnego białego koloru CTA zamiast klasy obejmowanej globalnym !important.
+
 ## 2026-10-02 — PageBuilder dla lokalnych ofert
 
 `cityLanding` normalizuje flat/nested sekcje, rozróżnia[] od brakującego JSON, tworzy wyłącznie edytowalny starter, waliduje FAQ/filtry/canonical i współdzieli CITY_NAMES. cityLandingDefaults zawiera startowe copy z researchu, cityLandingLegacy zachowuje dawny materiał bez importów wykonawczych. `loadCityPageState` odróżnia published/unpublished/missing/unavailable; metadata i body korzystają z tego samego resolvera. Znane slugs przechodzą przez /[slug] do renderera miasta niezależnie od omyłkowej zmiany page_type.

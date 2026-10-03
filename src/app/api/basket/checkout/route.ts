@@ -6,6 +6,7 @@ import { logSystem } from '@/lib/logger';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { loadDronePhotographyCmsPage } from '@/lib/dronePhotographyCms';
+import { dronePackageScopeLines } from '@/lib/dronePhotographyScope';
 import { salesAttributionFromPayload } from '@/lib/analytics/salesAttribution';
 import { hasBookingDateTimeConflict } from '@/lib/bookingAvailability';
 import {
@@ -164,7 +165,7 @@ export async function POST(request: Request) {
                 let packageHours = 1;
                 let packageBlocksEntireDay = false;
                 let basePrice = 0;
-                let dronePackage: { slug: string; name: string; price: number } | null = null;
+                let dronePackage: { slug: string; name: string; price: number; scopeLines: string[] } | null = null;
                 let selectedPackage: any = null;
                 let selectedScopeLines: string[] = [];
                 let packagePromotion: PublicPackagePromotion | null = null;
@@ -186,7 +187,8 @@ export async function POST(request: Request) {
                     packageBlocksEntireDay = selected.blocksEntireDay === true;
                     basePrice = selected.price * 100;
                     regularPackagePrice = basePrice;
-                    dronePackage = { slug: selected.slug, name: selected.name, price: selected.price * 100 };
+                    selectedScopeLines = dronePackageScopeLines(selected);
+                    dronePackage = { slug: selected.slug, name: selected.name, price: selected.price * 100, scopeLines: selectedScopeLines };
                 } else {
                     const packageId = Number(item.productId);
                     if (!Number.isInteger(packageId)) return NextResponse.json({ ok: false, message: 'Nieprawidłowy pakiet.' }, { status: 400 });
@@ -198,18 +200,6 @@ export async function POST(request: Request) {
                         return NextResponse.json({ ok: false, message: 'Wybrany pakiet nie jest już dostępny.' }, { status: 400 });
                     }
                     selectedScopeLines = packageScopeLines(selectedPackage);
-                    // New carts include the displayed scope. An admin edit must be
-                    // reviewed by the client before checkout, even if price is unchanged.
-                    if (md.package_scope_lines !== undefined && (
-                        !Array.isArray(md.package_scope_lines)
-                        || md.package_scope_lines.some((line: unknown) => typeof line !== 'string')
-                        || JSON.stringify(md.package_scope_lines) !== JSON.stringify(selectedScopeLines)
-                        || (md.hours !== undefined && Number(md.hours) !== selectedPackage.hours)
-                    )) {
-                        return NextResponse.json({ ok: false,
-                            message: 'Zakres pakietu w koszyku został zmieniony. Odśwież rezerwację i sprawdź aktualny zakres przed płatnością.',
-                        }, { status: 409 });
-                    }
                     serviceName = selectedPackage.service.name;
                     packageName = selectedPackage.name;
                     packageHours = selectedPackage.hours;
@@ -247,8 +237,22 @@ export async function POST(request: Request) {
                             (candidate.eligibleServices || []).includes(serviceName)
                         );
                         if (!addon) return NextResponse.json({ ok: false, message: 'Wybrany dodatek dronowy nie jest dostępny dla tej usługi.' }, { status: 400 });
-                        dronePackage = { slug: addon.slug, name: addon.name, price: addon.price * 100 };
+                        dronePackage = { slug: addon.slug, name: addon.name, price: addon.price * 100, scopeLines: dronePackageScopeLines(addon) };
                     }
+                }
+
+                // Displayed scopes are checked against current server data; older
+                // carts without a copy retain their existing checkout behavior.
+                const scopeChanged = (displayed: unknown, current: string[]) => displayed !== undefined && (
+                    !Array.isArray(displayed) || displayed.some(line => typeof line !== 'string')
+                    || JSON.stringify(displayed) !== JSON.stringify(current)
+                );
+                if (scopeChanged(md.package_scope_lines, selectedScopeLines)
+                    || (md.package_scope_lines !== undefined && md.hours !== undefined && Number(md.hours) !== packageHours)
+                    || (!isDroneStandalone && dronePackage && scopeChanged(md.drone_scope_lines, dronePackage.scopeLines))) {
+                    return NextResponse.json({ ok: false,
+                        message: 'Zakres pakietu w koszyku został zmieniony. Odśwież rezerwację i sprawdź aktualny zakres przed płatnością.',
+                    }, { status: 409 });
                 }
 
                 const hasDrone = Boolean(dronePackage);
