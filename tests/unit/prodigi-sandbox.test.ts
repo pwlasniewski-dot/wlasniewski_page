@@ -4,7 +4,7 @@ import { inspectSandbox, boundedJson, sandboxConfigured, SandboxError } from '..
 
 const item = { sku: 'GLOBAL-CAN-10X10', copies: 2, attributes: { wrap: 'Black' }, assets: [{ printArea: 'default' }] };
 const product = { sku: item.sku, description: 'Canvas', attributes: { wrap: ['Black'] }, printAreas: { default: { required: true } }, variants: [{ attributes: { wrap: 'Black' }, shipsTo: ['PL'], printAreaSizes: { default: { horizontalResolution: 1500, verticalResolution: 1500 } } }] };
-const quote = { shipmentMethod: 'Standard', costSummary: { items: { amount: '120.00', currency: 'PLN' }, shipping: { amount: '20.00', currency: 'PLN' } }, shipments: [{ carrier: { name: 'Test carrier', service: 'Tracked' }, fulfillmentLocation: { countryCode: 'DE', labCode: 'test' } }] };
+const quote = { shipmentMethod: 'Standard', costSummary: { items: { amount: '120.00', currency: 'EUR' }, shipping: { amount: '20.00', currency: 'EUR' } }, shipments: [{ carrier: { name: 'Test carrier', service: 'Tracked' }, fulfillmentLocation: { countryCode: 'DE', labCode: 'test' } }] };
 const key = 'qa-secret-never-return';
 const transport = (body: unknown, status = 200) => (async () => new Response(JSON.stringify(body), { status })) as typeof fetch;
 
@@ -14,7 +14,7 @@ test('POD-S01: no key means no network, flag is configuration not connection', a
   process.env.PRODIGI_SANDBOX_API_KEY = key; assert.equal(sandboxConfigured(), true);
 });
 test('POD-S02: rejects host, URL, order action, unsafe SKU and invalid quantities before network', async () => {
-  for (const request of [{ action: 'orders' }, { action: 'product', sku: '../orders' }, { action: 'product', sku: item.sku, host: 'https://api.prodigi.com' }, { action: 'quote', items: [{ ...item, copies: -1 }] }, { action: 'quote', items: [{ ...item, copies: 1.5 }] }, { action: 'quote', items: [{ ...item, assets: [{ printArea: 'default', url: 'http://127.0.0.1' }] }] }, { action: 'quote', items: Array(11).fill(item) }]) {
+  for (const request of [{ action: 'orders' }, { action: 'quote', items: [item], currencyCode: 'EUR' }, { action: 'product', sku: '../orders' }, { action: 'product', sku: item.sku, host: 'https://api.prodigi.com' }, { action: 'quote', items: [{ ...item, copies: -1 }] }, { action: 'quote', items: [{ ...item, copies: 1.5 }] }, { action: 'quote', items: [{ ...item, assets: [{ printArea: 'default', url: 'http://127.0.0.1' }] }] }, { action: 'quote', items: Array(11).fill(item) }]) {
     await assert.rejects(inspectSandbox(request, async () => { throw Error('must not call'); }), { code: 'INVALID_INPUT' });
   }
 });
@@ -27,23 +27,23 @@ test('POD-S03: SKU lookup uses fixed sandbox and server-only secret, sanitized r
   }) as typeof fetch);
   assert.equal(result.action, 'product'); assert.equal(JSON.stringify(result).includes(key), false);
 });
-test('POD-S04: multi-product quote has PL/PLN, no recipient, photo URL or orders request', async () => {
+test('POD-S04: multi-product quote uses PL and account currency, no recipient, photo URL or orders request', async () => {
   const result = await inspectSandbox({ action: 'quote', items: [item, { ...item, copies: 3 }] }, (async (url, init) => {
     assert.equal(url, 'https://api.sandbox.prodigi.com/v4.0/quotes'); assert.equal(init?.method, 'POST');
     const body = JSON.parse(String(init?.body)); assert.equal(body.items.length, 2);
-    assert.deepEqual(Object.keys(body).sort(), ['currencyCode', 'destinationCountryCode', 'items']);
-    assert.equal(body.currencyCode, 'PLN'); assert.equal(body.destinationCountryCode, 'PL');
+    assert.deepEqual(Object.keys(body).sort(), ['destinationCountryCode', 'items']);
+    assert.equal('currencyCode' in body, false); assert.equal(body.destinationCountryCode, 'PL');
     return new Response(JSON.stringify({ outcome: 'Created', quotes: [quote, { ...quote, shipmentMethod: 'Express' }] }));
   }) as typeof fetch);
-  assert.equal(result.action, 'quote'); if (result.action === 'quote') assert.equal(result.quotes.length, 2);
+  assert.equal(result.action, 'quote'); if (result.action === 'quote') { assert.equal(result.quotes.length, 2); assert.equal(result.currency, 'EUR'); }
 });
 test('POD-S05: warnings block acceptance even on HTTP 200', async () => {
   for (const body of [{ outcome: 'CreatedWithIssues', quotes: [quote] }, { outcome: 'Created', quotes: [quote], issues: [{ description: key }] }]) {
     await assert.rejects(inspectSandbox({ action: 'quote', items: [item] }, transport(body)), { code: 'PROVIDER_ISSUES' });
   }
 });
-test('POD-S06: invalid, empty, foreign-currency and missing costs do not become zero', async () => {
-  for (const quotes of [[], [null], [{ ...quote, costSummary: {} }], [{ ...quote, costSummary: { ...quote.costSummary, items: { amount: '5.00', currency: 'EUR' } } }], [{ ...quote, costSummary: { ...quote.costSummary, items: { amount: '-5', currency: 'PLN' } } }]]) {
+test('POD-S06: invalid, empty, unsupported-currency and missing costs do not become zero', async () => {
+  for (const quotes of [[], [null], [{ ...quote, costSummary: {} }], [{ ...quote, costSummary: { ...quote.costSummary, items: { amount: '5.00', currency: 'PLN' } } }], [{ ...quote, costSummary: { ...quote.costSummary, items: { amount: '-5', currency: 'EUR' } } }]]) {
     await assert.rejects(inspectSandbox({ action: 'quote', items: [item] }, transport({ outcome: 'Ok', quotes })), { code: 'INVALID_RESPONSE' });
   }
 });
@@ -69,7 +69,7 @@ test('POD-S11: malformed provider JSON is a provider failure, not a user 400', a
   await assert.rejects(inspectSandbox({ action: 'product', sku: item.sku }, (async () => new Response('not-json')) as typeof fetch), { code: 'INVALID_RESPONSE', status: 502 });
 });
 test('POD-S12: QA correction — missing shipping, zero product cost and nested issues rejected', async () => {
-  for (const invalid of [{ ...quote, shipments: [] }, { ...quote, issues: [{}] }, { ...quote, costSummary: { ...quote.costSummary, items: { amount: '0', currency: 'PLN' } } }]) {
+  for (const invalid of [{ ...quote, shipments: [] }, { ...quote, issues: [{}] }, { ...quote, costSummary: { ...quote.costSummary, items: { amount: '0', currency: 'EUR' } } }]) {
     await assert.rejects(inspectSandbox({ action: 'quote', items: [item] }, transport({ outcome: 'Created', quotes: [invalid] })), { code: 'INVALID_RESPONSE' });
   }
 });
@@ -107,4 +107,30 @@ test('POD-S15: a failing body cancellation does not mask the received HTTP statu
     return new Response(body, { status: 404 });
   }) as typeof fetch), { code: 'PROVIDER_NOT_FOUND', providerStatus: 404 });
   assert.equal(cancelled, true);
+});
+
+test('POD-S16: account USD, GBP and EUR amounts are preserved without conversion, including optional totals', async () => {
+  for (const currency of ['USD', 'GBP', 'EUR']) {
+    const costSummary = {
+      items: { amount: '18.00', currency }, shipping: { amount: '12.89', currency },
+      branding: { amount: '0', currency }, totalTax: { amount: '7.10', currency }, totalCost: { amount: '37.99', currency },
+    };
+    const result = await inspectSandbox({ action: 'quote', items: [item] }, transport({ outcome: 'Created', quotes: [{ ...quote, costSummary }] }));
+    assert.equal(result.action, 'quote');
+    if (result.action === 'quote') { assert.equal(result.currency, currency); assert.deepEqual(result.quotes[0].costSummary, costSummary); }
+  }
+});
+test('POD-S17: mixed currencies across shipping, quotes and optional totals are rejected, even for zero', async () => {
+  const usdQuote = { ...quote, costSummary: { items: { amount: '120.00', currency: 'USD' }, shipping: { amount: '20.00', currency: 'USD' } } };
+  const invalidQuotes = [
+    [quote, usdQuote],
+    [{ ...quote, costSummary: { ...quote.costSummary, shipping: { amount: '20', currency: 'USD' } } }],
+    ...['branding', 'totalTax', 'totalCost'].flatMap(field => [
+      [{ ...quote, costSummary: { ...quote.costSummary, [field]: { amount: '0', currency: 'GBP' } } }],
+      [{ ...quote, costSummary: { ...quote.costSummary, [field]: { amount: '0', currency: 'PLN' } } }],
+    ]),
+  ];
+  for (const quotes of invalidQuotes) {
+    await assert.rejects(inspectSandbox({ action: 'quote', items: [item] }, transport({ outcome: 'Created', quotes })), { code: 'INVALID_RESPONSE' });
+  }
 });

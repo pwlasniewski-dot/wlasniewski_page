@@ -22,10 +22,13 @@ const productSchema = z.object({
   printAreas: z.record(z.string(), z.object({ required: z.boolean() })),
   variants: z.array(z.object({ attributes, shipsTo: z.array(z.string()), printAreaSizes: dimensions })),
 });
-const cost = z.object({ amount: z.string().regex(/^\d{1,12}(\.\d{1,6})?$/), currency: z.literal('PLN') });
+const cost = z.object({ amount: z.string().regex(/^\d{1,12}(\.\d{1,6})?$/), currency: z.enum(['USD', 'GBP', 'EUR']) });
 const quoteSchema = z.object({
-  shipmentMethod: z.string().min(1), costSummary: z.object({ items: cost.refine(value => Number(value.amount) > 0), shipping: cost }),
-  issues: z.array(z.unknown()).max(0).optional(),
+  shipmentMethod: z.string().min(1), costSummary: z.object({
+    items: cost.refine(value => Number(value.amount) > 0), shipping: cost,
+    branding: cost.optional(), totalCost: cost.optional(), totalTax: cost.optional(),
+  }),
+  issues: z.array(z.unknown()).max(0).nullish(),
   shipments: z.array(z.object({
     carrier: z.object({ name: z.string().min(1), service: z.string().min(1) }),
     fulfillmentLocation: z.object({ countryCode: z.string().regex(/^[A-Z]{2}$/), labCode: z.string().min(1) }),
@@ -85,7 +88,8 @@ export async function inspectSandbox(input: unknown, transport: typeof fetch = f
     const response = await transport(`${HOST}${path}`, {
       method: request.action === 'product' ? 'GET' : 'POST', redirect: 'error', cache: 'no-store',
       headers: { 'X-API-Key': key, 'Content-Type': 'application/json' }, signal: controller.signal,
-      ...(request.action === 'quote' ? { body: JSON.stringify({ destinationCountryCode: 'PL', currencyCode: 'PLN', items: request.items }) } : {}),
+      // Omit currencyCode to use the merchant account currency; Prodigi does not support PLN.
+      ...(request.action === 'quote' ? { body: JSON.stringify({ destinationCountryCode: 'PL', items: request.items }) } : {}),
     });
     if (!response.ok) {
       // A failure to release the body must not hide the status already received.
@@ -95,17 +99,20 @@ export async function inspectSandbox(input: unknown, transport: typeof fetch = f
     let raw: unknown;
     try { raw = await boundedJson(response.body, 1_048_576); }
     catch { throw new SandboxError('INVALID_RESPONSE', 'Nieprawidłowa odpowiedź Prodigi. Wynik nie został przyjęty.'); }
-    const envelope = z.object({ outcome: z.enum(['Ok', 'Created']), issues: z.array(z.unknown()).max(0).optional() }).passthrough().safeParse(raw);
+    const envelope = z.object({ outcome: z.enum(['Ok', 'Created']), issues: z.array(z.unknown()).max(0).nullish() }).passthrough().safeParse(raw);
     if (!envelope.success) throw new SandboxError('PROVIDER_ISSUES', 'Prodigi zwróciło ostrzeżenie lub niepotwierdzony wynik. Wymagana weryfikacja.');
-    const base = { environment: 'sandbox' as const, checkedAt: new Date().toISOString(), destination: 'PL', currency: 'PLN' };
+    const base = { environment: 'sandbox' as const, checkedAt: new Date().toISOString(), destination: 'PL' };
     if (request.action === 'product') {
       const product = productSchema.safeParse(envelope.data.product);
       if (!product.success || product.data.sku.toUpperCase() !== request.sku.toUpperCase()) throw new SandboxError('INVALID_RESPONSE', 'Nieprawidłowe dane produktu Prodigi.');
       return { ...base, action: 'product' as const, product: product.data };
     }
-    const quotes = z.array(quoteSchema).min(1).max(10).safeParse(envelope.data.quotes);
-    if (!quotes.success) throw new SandboxError('INVALID_RESPONSE', 'Brak kompletnych wycen w PLN. Nie przyjęto kosztu zerowego.');
-    return { ...base, action: 'quote' as const, quotes: quotes.data };
+    const quotes = z.array(quoteSchema).min(1).max(10).refine(values => {
+      const currency = values[0]?.costSummary.items.currency;
+      return values.every(quote => Object.values(quote.costSummary).every(value => !value || value.currency === currency));
+    }).safeParse(envelope.data.quotes);
+    if (!quotes.success) throw new SandboxError('INVALID_RESPONSE', 'Brak kompletnych wycen w jednej obsługiwanej walucie konta (USD, GBP lub EUR). Nie przyjęto kosztu zerowego.');
+    return { ...base, action: 'quote' as const, currency: quotes.data[0].costSummary.items.currency, quotes: quotes.data };
   } catch (error) {
     if (error instanceof SandboxError) throw error;
     throw new SandboxError('TRANSPORT', 'Nie udało się połączyć z piaskownicą Prodigi. Spróbuj ponownie.');
