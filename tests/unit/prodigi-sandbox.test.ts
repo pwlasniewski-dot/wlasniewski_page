@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { inspectSandbox, boundedJson, sandboxConfigured } from '../../src/lib/fulfillment/prodigi-sandbox';
+import { inspectSandbox, boundedJson, sandboxConfigured, SandboxError } from '../../src/lib/fulfillment/prodigi-sandbox';
 
 const item = { sku: 'GLOBAL-CAN-10X10', copies: 2, attributes: { wrap: 'Black' }, assets: [{ printArea: 'default' }] };
 const product = { sku: item.sku, description: 'Canvas', attributes: { wrap: ['Black'] }, printAreas: { default: { required: true } }, variants: [{ attributes: { wrap: 'Black' }, shipsTo: ['PL'], printAreaSizes: { default: { horizontalResolution: 1500, verticalResolution: 1500 } } }] };
@@ -77,4 +77,34 @@ test('POD-S13: QA correction — books and additional print areas need separate 
   for (const invalid of [{ ...item, sku: 'BOOK-FE-A4-P-HARD-G' }, { ...item, assets: [{ printArea: 'default' }, { printArea: 'back' }] }]) {
     await assert.rejects(inspectSandbox({ action: 'quote', items: [invalid] }, async () => { throw Error('must not call'); }), { code: 'NOT_IN_PILOT' });
   }
+});
+test('POD-S14: product and quote HTTP failures preserve status and controlled meaning without provider payload', async () => {
+  const cases = [[400, 'PROVIDER_BAD_REQUEST'], [401, 'CREDENTIALS'], [403, 'CREDENTIALS'], [404, 'PROVIDER_NOT_FOUND'], [405, 'PROVIDER_METHOD_NOT_ALLOWED'], [429, 'RATE_LIMIT'], [500, 'PROVIDER_ERROR'], [502, 'PROVIDER_ERROR'], [503, 'PROVIDER_ERROR'], [418, 'PROVIDER_ERROR']] as const;
+  for (const input of [{ action: 'product', sku: item.sku }, { action: 'quote', items: [item] }]) {
+    for (const [status, code] of cases) {
+      let calls = 0;
+      await assert.rejects(inspectSandbox(input, (async () => {
+        calls++;
+        return new Response(JSON.stringify({ secret: key, error: 'unsafe-provider-payload' }), { status, statusText: key, headers: { 'X-Debug': key } });
+      }) as typeof fetch), (error: unknown) => {
+        assert.ok(error instanceof SandboxError);
+        assert.equal(error.code, code); assert.equal(error.providerStatus, status);
+        assert.equal(error.status, status === 429 ? 429 : 502);
+        assert.match(error.message, new RegExp(`HTTP ${status}`));
+        assert.equal(`${error.message} ${JSON.stringify(error)}`.includes(key), false);
+        assert.equal(error.message.includes('unsafe-provider-payload'), false);
+        return true;
+      });
+      assert.equal(calls, 1, 'no automatic retry of rejected requests');
+    }
+  }
+});
+test('POD-S15: a failing body cancellation does not mask the received HTTP status or read its contents', async () => {
+  let cancelled = false;
+  await assert.rejects(inspectSandbox({ action: 'product', sku: item.sku }, (async () => {
+    const body = new ReadableStream({ cancel() { cancelled = true; throw Error(key); } });
+    body.getReader = (() => { throw Error('body must not be read'); }) as typeof body.getReader;
+    return new Response(body, { status: 404 });
+  }) as typeof fetch), { code: 'PROVIDER_NOT_FOUND', providerStatus: 404 });
+  assert.equal(cancelled, true);
 });

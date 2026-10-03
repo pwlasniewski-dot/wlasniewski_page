@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, ...result }, { headers });
     } catch (error) {
       const known = error instanceof SandboxError ? error : new SandboxError('INTERNAL', 'Nie udało się sprawdzić Prodigi.');
-      return NextResponse.json({ success: false, code: known.code, error: known.message }, { status: known.status, headers });
+      return NextResponse.json({ success: false, code: known.code, error: known.message, ...(known.providerStatus === undefined ? {} : { providerStatus: known.providerStatus }) }, { status: known.status, headers });
     }
   });
 }

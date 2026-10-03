@@ -35,6 +35,13 @@ function request(value = body, options = {}) { return new NextRequest('http://lo
       assert.equal(providerCalls, before);
     } finally { process.env.NODE_ENV = 'test'; if (previousContext === undefined) delete process.env.CONTEXT; else process.env.CONTEXT = previousContext; }
   });
+  await check('POD-A08 provider HTTP status reaches the UI error field without the raw body', async () => {
+    global.fetch = async () => new Response(JSON.stringify({ error: 'qa-never-return' }), { status: 404 });
+    const response = await route.POST(request()); const data = await response.json();
+    assert.equal(response.status, 502); assert.equal(data.providerStatus, 404);
+    assert.equal(data.code, 'PROVIDER_NOT_FOUND'); assert.match(data.error, /HTTP 404/);
+    assert.equal(JSON.stringify(data).includes('qa-never-return'), false);
+  });
   let configured = false, failQuote = false, missingArea = false, posts = [];
   global.fetch = async (_url, init) => {
     if (init?.method !== 'POST') return new Response(JSON.stringify({ configured }));

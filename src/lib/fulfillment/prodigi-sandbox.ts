@@ -34,9 +34,21 @@ const quoteSchema = z.object({
 export type SandboxProduct = z.infer<typeof productSchema>;
 export type SandboxQuote = z.infer<typeof quoteSchema>;
 export class SandboxError extends Error {
-  constructor(public code: string, message: string, public status = 502) { super(message); }
+  constructor(public code: string, message: string, public status = 502, public providerStatus?: number) { super(message); }
 }
 export function sandboxConfigured() { return Boolean(process.env.PRODIGI_SANDBOX_API_KEY?.trim()); }
+
+/** Only the HTTP status is exposed. Never include provider body, headers or statusText. */
+function providerHttpError(status: number): SandboxError {
+  const prefix = `Prodigi Sandbox (HTTP ${status}): `;
+  if (status === 400) return new SandboxError('PROVIDER_BAD_REQUEST', prefix + 'API odrzuciło żądanie. Sprawdź SKU, wariant i pola druku.', 502, status);
+  if (status === 401 || status === 403) return new SandboxError('CREDENTIALS', prefix + 'API odrzuciło uwierzytelnienie lub uprawnienia. Sprawdź klucz i środowisko sandbox.', 502, status);
+  if (status === 404) return new SandboxError('PROVIDER_NOT_FOUND', prefix + 'Nie znaleziono produktu lub zasobu API. Sprawdź SKU i dostępność katalogu sandbox.', 502, status);
+  if (status === 405) return new SandboxError('PROVIDER_METHOD_NOT_ALLOWED', prefix + 'API nie akceptuje metody żądania dla tej trasy. Integracja wymaga sprawdzenia.', 502, status);
+  if (status === 429) return new SandboxError('RATE_LIMIT', prefix + 'Przekroczono limit zapytań. Spróbuj później.', 429, status);
+  if (status >= 500) return new SandboxError('PROVIDER_ERROR', prefix + 'Błąd serwera API lub jego bramy. Spróbuj ponownie później.', 502, status);
+  return new SandboxError('PROVIDER_ERROR', prefix + 'API nie potwierdziło wyniku. Odpowiedź wymaga sprawdzenia.', 502, status);
+}
 
 export async function boundedJson(body: ReadableStream<Uint8Array> | null, maxBytes: number): Promise<unknown> {
   if (!body) throw new SandboxError('INVALID_JSON', 'Brak danych JSON.', 400);
@@ -76,10 +88,9 @@ export async function inspectSandbox(input: unknown, transport: typeof fetch = f
       ...(request.action === 'quote' ? { body: JSON.stringify({ destinationCountryCode: 'PL', currencyCode: 'PLN', items: request.items }) } : {}),
     });
     if (!response.ok) {
-      await response.body?.cancel();
-      if ([401, 403].includes(response.status)) throw new SandboxError('CREDENTIALS', 'Prodigi odrzuciło klucz piaskownicy. Sprawdź konfigurację serwera.');
-      if (response.status === 429) throw new SandboxError('RATE_LIMIT', 'Prodigi ograniczyło liczbę zapytań. Spróbuj później.', 429);
-      throw new SandboxError('PROVIDER_ERROR', 'Prodigi nie potwierdziło wyniku. Sprawdź SKU i wariant lub spróbuj później.');
+      // A failure to release the body must not hide the status already received.
+      try { await response.body?.cancel(); } catch { /* discard without reading */ }
+      throw providerHttpError(response.status);
     }
     let raw: unknown;
     try { raw = await boundedJson(response.body, 1_048_576); }
