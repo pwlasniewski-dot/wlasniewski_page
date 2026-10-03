@@ -1,3 +1,6 @@
+import {hasProdigiPrintResolution} from '@/lib/fulfillment/prodigi-image-size';
+import {isShopQa} from '@/lib/shop-qa';
+import {readProdigiProduct} from '@/lib/fulfillment/prodigi-catalog';
 import { orderClient } from './order-account';
 import { orderOrigin } from './order-origin';
 import { isClientRecordOwner } from '@/lib/auth/document-access';
@@ -11,7 +14,7 @@ import prisma from '@/lib/db/prisma';
 import { authorizeIndividualGallery } from './individual-access';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
 import { createPayUOrder, extractClientIpv4 } from '@/lib/payu';
-import { priceShopCart, readShopConfig, readShopMetadata, ShopValidationError, type ShopCatalog, type ShopMetadata } from './merchandise';
+import { priceShopCart, customerShopMetadata, readShopConfig, readShopMetadata, ShopValidationError, type ShopCatalog, type ShopMetadata } from './merchandise';
 export const shopSettingKey = (id: number | null) => id === null ? 'gallery_shop_default' : `gallery_shop_${id}`;
 export async function loadGalleryShop(galleryId: number | null) {
  const [setting, globalSetting, products] = await Promise.all([
@@ -19,15 +22,23 @@ export async function loadGalleryShop(galleryId: number | null) {
   galleryId === null ? Promise.resolve(null) : prisma.setting.findUnique({where:{setting_key:shopSettingKey(null)}}),
   prisma.galleryProduct.findMany({where:galleryId === null ? {gallery_id:null} : {OR:[{gallery_id:galleryId},{gallery_id:null}]},orderBy:[{sort_order:'asc'},{id:'asc'}]})
  ]);
+ const prodigiSettings = new Map(await Promise.all(products.filter(p => p.product_type?.startsWith('prodigi')).map(async p => {
+  const row = await prisma.setting.findUnique({where:{setting_key:`prodigi_product_v1_${p.id}`}});
+  return [p.id, readProdigiProduct(row?.setting_value)] as const;
+ })));
+ const liveEnabled = !isShopQa() && ![process.env.CONTEXT, process.env.GALLERY_QA_CONTEXT].some(context => ['deploy-preview','branch-deploy'].includes(context || '')) && process.env.PRODIGI_ORDER_ENV === 'live' && process.env.PRODIGI_LIVE_ORDERS_ENABLED === 'true' && Boolean(process.env.PRODIGI_API_KEY?.trim());
  const inherited = galleryId !== null && !setting;
  const config=readShopConfig((setting || globalSetting)?.setting_value);
  const globalConfig = galleryId === null ? config : readShopConfig(globalSetting?.setting_value);
- const catalog: ShopCatalog={galleryId:galleryId ?? 0,enabled:config.enabled,title:config.title,introduction:config.introduction,buttonLabel:config.buttonLabel,formats:config.formats.filter(f=>f.active),delivery:config.delivery,products:products.filter(p=>!p.archived_at && p.is_active && p.price>0).map(p=>{
+ const catalog: ShopCatalog={galleryId:galleryId ?? 0,enabled:config.enabled,title:config.title,introduction:config.introduction,buttonLabel:config.buttonLabel,formats:config.formats.filter(f=>f.active),delivery:config.delivery,products:products.filter(p=>!p.archived_at && p.is_active && p.price>0).filter(p=> {
+  if (!p.product_type?.startsWith('prodigi')) return true;
+  const spec=prodigiSettings.get(p.id); return liveEnabled && spec?.productId === p.id && spec.environment === 'live' && spec.ordersEnabled && spec.liveQualified;
+ }).map(p=>{
   const globalRule = p.gallery_id === null ? globalConfig.productRules[String(p.id)] : undefined;
   const rule = config.productRules[String(p.id)] || globalRule || {minPhotos:1,maxPhotos:50};
   // A local photo-count override cannot relax a shared product's shipping constraints.
   const deliveryMethods = globalRule?.deliveryMethods ? globalRule.deliveryMethods.filter(method => !rule.deliveryMethods || rule.deliveryMethods.includes(method)) : rule.deliveryMethods;
-  return {id:p.id,title:p.title,description:p.description,price:p.price,image_url:p.image_url,preview_images:readProductImages(p.preview_images),video_url:isProductVideoUrl(p.video_url)?p.video_url:null,sample_pages:readProductImages(p.sample_pages),product_type:p.product_type,nphoto_product_id:p.nphoto_product_id,nphoto_url:p.nphoto_url,...rule,...(deliveryMethods ? {deliveryMethods} : {})};
+  return {...(prodigiSettings.get(p.id) ? {prodigi:prodigiSettings.get(p.id)!} : {}),id:p.id,title:p.title,description:p.description,price:p.price,image_url:p.image_url,preview_images:readProductImages(p.preview_images),video_url:isProductVideoUrl(p.video_url)?p.video_url:null,sample_pages:readProductImages(p.sample_pages),product_type:p.product_type,nphoto_product_id:p.nphoto_product_id,nphoto_url:p.nphoto_url,...rule,...(deliveryMethods ? {deliveryMethods} : {})};
  }).filter(product => hasShopDelivery(config.delivery, product))};
  catalog.enabled = config.enabled && (catalog.formats.length > 0 || catalog.products.length > 0);
  const editableProducts = products.filter(p=>!p.archived_at).map(p => ({...p, preview_images:readProductImages(p.preview_images),video_url:p.video_url,sample_pages:readProductImages(p.sample_pages)}));
@@ -74,7 +85,7 @@ export async function postShopOrder(request:NextRequest,scope:{accessCode:string
   const existing=await prisma.photoOrder.findUnique({where:{idempotency_key:key}});
   if(existing) return existingResponse(existing);
   const {catalog}=await loadGalleryShop(gallery.id);
-  const photos=await prisma.galleryPhoto.findMany({where:{gallery_id:gallery.id},select:{id:true,is_standard:true}});
+  const photos=await prisma.galleryPhoto.findMany({where:{gallery_id:gallery.id},select:{id:true,is_standard:true,download_source_width:true,download_source_height:true}});
   let allowed=photos.map(p=>p.id);
   if(participantId===null) {
    const paid=await prisma.photoOrder.findMany({where:{gallery_id:gallery.id,payment_status:'paid'},select:{photo_ids:true}});
@@ -82,6 +93,11 @@ export async function postShopOrder(request:NextRequest,scope:{accessCode:string
    allowed=photos.filter(p=>p.is_standard || paidIds.has(p.id)).map(p=>p.id);
   }
   const priced=priceShopCart(catalog,body.lines,body.delivery,allowed);
+  for(const line of priced.lines){
+   if(line.kind!=='product'||!line.product?.prodigi)continue;
+   const photo=photos.find(value=>value.id===line.photoIds[0]);
+   if(!hasProdigiPrintResolution(photo?.download_source_width,photo?.download_source_height,line.product.prodigi.variant.printAreaSizes.default))throw new ShopValidationError('Zdjęcie ma za małą lub niepotwierdzoną rozdzielczość do wybranego produktu. Wybierz większy oryginał.',422);
+  }
   if(priced.total!==body.expectedTotal) return NextResponse.json({success:false,code:'PRICE_CHANGED',error:'Cennik się zmienił. Sprawdź aktualne podsumowanie przed płatnością.',catalog,total:priced.total},{status:409});
   if(priced.delivery.method==='locker') await verifyParcelPoint(priced.delivery.pointCode!);
   const client = participantId === null ? await orderClient(request) : null;
@@ -109,5 +125,5 @@ export async function getShopOrder(request:NextRequest,scope:{accessCode:string}
  const metadata=readShopMetadata(order?.product_ids);
  if(!order||!metadata) throw new ShopValidationError('Nie znaleziono zamówienia.',404);
  if(participantId===null && request.headers.get('x-shop-order-key')!==order.idempotency_key) throw new ShopValidationError('Szczegóły zamówienia są dostępne w sesji, w której zostało złożone.',403);
- return NextResponse.json({success:true,order:{id:order.id,payment_status:order.payment_status,total_amount:order.total_amount,paymentUrl:order.payment_status==='pending'?order.payment_url:null,metadata}},{headers:{'Cache-Control':'private, no-store'}});
+ return NextResponse.json({success:true,order:{id:order.id,payment_status:order.payment_status,total_amount:order.total_amount,paymentUrl:order.payment_status==='pending'?order.payment_url:null,metadata:customerShopMetadata(metadata)}},{headers:{'Cache-Control':'private, no-store'}});
  }catch(e){return shopError(e);}}

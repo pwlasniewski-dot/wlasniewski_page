@@ -45,7 +45,7 @@ export async function GET(
         }
         const access = await authorizeIndividualGallery(request, gallery);
         if (access && !access.allowed) {
-            if (!(gallery.group_password || '').trim()) {
+            if (gallery.terms_source === 'SHOP_UPLOAD' || !(gallery.group_password || '').trim()) {
                 return clientJson({
                     success: false,
                     code: 'OWNER_ONLY',

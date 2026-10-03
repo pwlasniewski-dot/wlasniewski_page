@@ -1,0 +1,96 @@
+{
+  "checkedAt": "2026-10-03T16:21:47.210415+00:00",
+  "environment": "sandbox",
+  "scope": "Provider API smoke, not browser upload/PayU/SMTP/delivery E2E",
+  "quotes": [
+    {
+      "sku": "GLOBAL-FAP-10X10",
+      "attributes": {
+        "paperType": "EMA",
+        "substrateWeight": "200gsm"
+      },
+      "outcome": "Created",
+      "shipmentMethod": "Budget",
+      "costSummary": {
+        "items": {
+          "amount": "6.00",
+          "currency": "EUR"
+        },
+        "shipping": {
+          "amount": "3.75",
+          "currency": "EUR"
+        },
+        "branding": {
+          "amount": "0.00",
+          "currency": "EUR"
+        },
+        "totalCost": {
+          "amount": "11.70",
+          "currency": "EUR"
+        },
+        "totalTax": {
+          "amount": "1.95",
+          "currency": "EUR"
+        }
+      }
+    },
+    {
+      "sku": "GLOBAL-CAN-10X10",
+      "attributes": {
+        "edge": "38mm",
+        "frame": "38mm standard stretcher bar",
+        "paperType": "Standard canvas (SC)",
+        "substrateWeight": "400gsm",
+        "wrap": "Black"
+      },
+      "outcome": "Created",
+      "shipmentMethod": "Budget",
+      "costSummary": {
+        "items": {
+          "amount": "18.00",
+          "currency": "EUR"
+        },
+        "shipping": {
+          "amount": "12.89",
+          "currency": "EUR"
+        },
+        "branding": {
+          "amount": "0.00",
+          "currency": "EUR"
+        },
+        "totalCost": {
+          "amount": "37.99",
+          "currency": "EUR"
+        },
+        "totalTax": {
+          "amount": "7.10",
+          "currency": "EUR"
+        }
+      }
+    }
+  ],
+  "fx": {
+    "table": "A",
+    "currency": "euro",
+    "code": "EUR",
+    "rates": [
+      {
+        "no": "192/A/NBP/2026",
+        "effectiveDate": "2026-10-02",
+        "mid": 4.3745
+      }
+    ]
+  },
+  "order": {
+    "id": "ord_1176535",
+    "created": "Created",
+    "replay": {
+      "outcome": "AlreadyExists",
+      "sameId": true
+    },
+    "stage": "InProgress",
+    "cancelAvailable": "Yes",
+    "finalStage": "Cancelled",
+    "physicalDelivery": false
+  }
+}

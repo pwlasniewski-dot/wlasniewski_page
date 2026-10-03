@@ -100,9 +100,10 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
     if (mode === 'account') { onAction?.('offer_open'); setIntent(selection); replaceShopIntent(selection); }
     else window.location.assign(shopAccountHref(selection));
   };
-  const renderAction = (selection: ShopIntent) => mode === 'public'
+  const renderGalleryAction = (selection: ShopIntent) => mode === 'public'
     ? <a className={action} href={shopAccountHref(selection)} data-analytics={`shop-offer-${selection.kind}`} onClick={() => trackShopIntent('offer_selected', selection)}>{catalog.offer.buttonLabel}<span aria-hidden="true">→</span></a>
     : <button type="button" className={action} onClick={() => choose(selection)}>{catalog.offer.buttonLabel}<span aria-hidden="true">→</span></button>;
+  const renderAction = (selection: ShopIntent) => <div className="space-y-2">{renderGalleryAction(selection)}{catalog.offer.personalizationEnabled && <a className={secondary + ' block text-center'} href={`/sklep/personalizacja?${selection.kind === 'product' ? `shopProduct=${selection.productId}` : `shopFormat=${selection.formatId}`}`}>{catalog.offer.personalizationButtonLabel}</a>}</div>;
 
   const content = <section id="produkty-fotograficzne" aria-labelledby={headingId} className={`scroll-mt-28 border-t border-stone-700/60 text-stone-100 ${mode === 'public' ? `py-12 sm:py-16 ${className}` : 'px-4 py-7 sm:px-6'}`}>
     {mode === 'public' && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(storefrontStructuredData(catalog)).replace(/</g, '\\u003c') }} />}

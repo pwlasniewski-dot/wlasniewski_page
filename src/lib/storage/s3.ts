@@ -1,4 +1,4 @@
-import { S3Client, DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, DeleteObjectCommand, GetObjectCommand, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Readable } from 'stream';
@@ -271,4 +271,18 @@ export async function deleteFromS3(fileUrl: string): Promise<void> {
         console.error('S3 Delete Error:', error);
         throw new Error(`Failed to delete from S3: ${error.message}`);
     }
+}
+
+/** Private customer personalization staging. Callers only receive capabilities for server-generated keys. */
+export async function createPrivateShopUploadUrl(key: string, contentType: 'image/jpeg' | 'image/png', size: number, sha256: string) {
+    if (!/^shop-personalization\/staging\/\d+\/[a-f0-9-]{36}$/.test(key) || !Number.isSafeInteger(size) || size < 1 || size > 20 * 1024 * 1024 || !/^[a-f0-9]{64}$/.test(sha256)) throw new Error('Invalid private upload capability');
+    const checksum = Buffer.from(sha256, 'hex').toString('base64');
+    const command = new PutObjectCommand({Bucket: process.env.S3_BUCKET || 'wlasniewski-photo-storage', Key: key, ContentType: contentType, ContentLength: size, ChecksumSHA256: checksum, IfNoneMatch: '*'});
+    const url = await getSignedUrl(s3Client, command, {expiresIn: 600, unhoistableHeaders: new Set(['x-amz-checksum-sha256'])});
+    return {url, headers: {'Content-Type': contentType, 'x-amz-checksum-sha256': checksum, 'If-None-Match': '*'}};
+}
+export async function headPrivateShopUpload(key: string) {
+    if (!/^shop-personalization\/staging\/\d+\/[a-f0-9-]{36}$/.test(key)) throw new Error('Invalid private upload key');
+    const result = await s3Client.send(new HeadObjectCommand({Bucket: process.env.S3_BUCKET || 'wlasniewski-photo-storage', Key: key, ChecksumMode: 'ENABLED'}));
+    return {size: result.ContentLength, contentType: result.ContentType, checksum: result.ChecksumSHA256};
 }

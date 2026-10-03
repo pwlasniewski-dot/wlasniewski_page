@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { hasProdigiPrintResolution } from '@/lib/fulfillment/prodigi-image-size';
+import ProdigiPrintAreaPreview from './ProdigiPrintAreaPreview';
 import InPostPointPicker from './InPostPointPicker';
 import { GalleryProductPreviewDialog } from './GalleryProductPreview';
 import type { ShopCatalog, ShopLine, ShopDelivery } from '@/lib/galleries/merchandise';
@@ -253,9 +255,10 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   const productMissingPhotos = product ? Math.max(0, product.minPhotos - productPhotos.length) : 0;
   const productExcessPhotos = product ? Math.max(0, productPhotos.length - product.maxPhotos) : 0;
   const productHasUnavailablePhotos = productPhotos.some(id => !photoById(id));
+  const productLowResolution = !!product?.prodigi && productPhotos.some(id => { const photo = photoById(id); return !hasProdigiPrintResolution(photo?.width, photo?.height, product.prodigi?.variant.printAreaSizes.default); });
   const productCartFull = !editingProduct && remaining === 0;
-  const productSelectionValid = !!product && !productCartFull && !productHasUnavailablePhotos && productMissingPhotos === 0 && productExcessPhotos === 0;
-  const productSelectionMessage = productCartFull
+  const productSelectionValid = !!product && !productLowResolution && !productCartFull && !productHasUnavailablePhotos && productMissingPhotos === 0 && productExcessPhotos === 0;
+  const productSelectionMessage = productLowResolution ? 'Zdjęcie ma zbyt małą lub niepotwierdzoną rozdzielczość. Dodaj większy oryginał lub wybierz mniejszy produkt.' : productCartFull
     ? 'Koszyk jest pełny. Usuń pozycję z koszyka, aby dodać ten produkt.'
     : productHasUnavailablePhotos
       ? 'Jedno z wybranych zdjęć jest już niedostępne. Usuń je z wyboru.'
@@ -272,7 +275,8 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   const quantities = printQuantities(lines);
   const selectedPrintPrice = printUnitAmount(currentFormat,(quantities[format] || 0)+selected.length*quantity);
   const linePrice = (line: CartLine) => line.kind === 'print' ? printUnitAmount(catalog.formats.find(item => item.id === line.formatId),quantities[line.formatId]) : catalog.products.find(item => item.id === line.productId)?.price || 0;
-  const invalidLines = lines.length > 500 || lines.some(line => line.kind === 'print' ? !catalog.formats.some(item => item.id === line.formatId && item.active) || !photos.some(photo => photo.id === line.photoId) : !catalog.products.some(item => item.id === line.productId && line.photoIds.length >= item.minPhotos && line.photoIds.length <= item.maxPhotos) || line.photoIds.some(id => !photos.some(photo => photo.id === id)));
+  const lowResolutionLines = lines.some(line => line.kind === 'product' && (() => { const item = catalog.products.find(value => value.id === line.productId); return !!item?.prodigi && line.photoIds.some(id => { const photo = photoById(id); return !hasProdigiPrintResolution(photo?.width, photo?.height, item.prodigi?.variant.printAreaSizes.default); }); })());
+  const invalidLines = lowResolutionLines || lines.length > 500 || lines.some(line => line.kind === 'print' ? !catalog.formats.some(item => item.id === line.formatId && item.active) || !photos.some(photo => photo.id === line.photoId) : !catalog.products.some(item => item.id === line.productId && line.photoIds.length >= item.minPhotos && line.photoIds.length <= item.maxPhotos) || line.photoIds.some(id => !photos.some(photo => photo.id === id)));
   const subtotal = lines.reduce((sum, line) => sum + linePrice(line) * line.quantity, 0);
   const deliveryPrice = availableDelivery?.[delivery.method]?.amount || 0;
   const total = subtotal + deliveryPrice;
@@ -296,7 +300,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
     setNotice('Usunięto z koszyka. Możesz cofnąć usunięcie.');
   };
   const addProduct = () => {
-    if (!product || productPhotos.some(id => !photoById(id)) || (!editingProduct && remaining === 0) || productPhotos.length < product.minPhotos || productPhotos.length > product.maxPhotos || addInFlight.current) return;
+    if (!productSelectionValid || !product || productPhotos.some(id => !photoById(id)) || (!editingProduct && remaining === 0) || productPhotos.length < product.minPhotos || productPhotos.length > product.maxPhotos || addInFlight.current) return;
     addInFlight.current = true;
     setLines(previous => [...previous.filter(line => line.id !== editingProduct), { id: editingProduct || newId(), kind: 'product', productId: product.id, photoIds: productPhotos, coverPhotoId: productPhotos[0], quantity: productQuantity }]);
     delete productDrafts.current[product.id]; setEditingProduct(null);
@@ -398,6 +402,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
           {!catalog.products.length && <p className="rounded-3xl border border-dashed border-stone-300 bg-white px-6 py-16 text-center text-stone-500">Fotograf nie udostępnił jeszcze produktów w tej galerii.</p>}
           {product && <div ref={productConfigRef} className="scroll-mt-6 rounded-3xl border border-stone-200 bg-white p-4 sm:p-7">
             <h4 className="text-xl font-semibold">{product.title} — wybór zdjęć</h4><p className="my-3">{product.maxPhotos === 1 ? 'Wybierz jedno zdjęcie produktu. Możesz je zmienić, wskazując inne zdjęcie.' : `Wybierz ${product.minPhotos === product.maxPhotos ? product.minPhotos : `${product.minPhotos}–${product.maxPhotos}`} zdjęć. Pierwsze zdjęcie jest zdjęciem głównym do projektu. Projekt i układ przygotuje fotograf zgodnie z opisem produktu.`} Wybrano: {productPhotos.length}.</p>
+            {product.prodigi && productPhotos[0] && photoById(productPhotos[0]) && <ProdigiPrintAreaPreview spec={product.prodigi} photo={photoById(productPhotos[0])!} />}
             <div className="mb-4 flex flex-wrap gap-2">{product.minPhotos === product.maxPhotos && product.maxPhotos > 1 && <button type="button" className={button} onClick={() => setProductPhotos(photos.slice(0, product.maxPhotos).map(photo => photo.id))}>Zaznacz pierwsze {product.maxPhotos} zdjęć</button>}{productPhotos.length > 0 && <button type="button" className={button} onClick={() => setProductPhotos([])}>Wyczyść wybór</button>}</div>
             <p id="product-selection-status" role="status" aria-live="polite" className={`mb-3 rounded-xl px-4 py-3 text-sm font-medium ${productSelectionValid ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900'}`}>{productSelectionMessage}</p>
             <div className="mb-4 flex flex-wrap items-end gap-3"><label>Ilość produktów<input aria-label="Ilość produktów" className={input} type="number" inputMode="numeric" min="1" max="99" value={productQuantity} onChange={event => setProductQuantity(Math.max(1, Math.min(99, Math.floor(Number(event.target.value)) || 1)))} /></label><button type="button" className={primary} aria-describedby="product-selection-status" disabled={!productSelectionValid} onClick={addProduct}>{productCtaLabel} · {money(product.price * productQuantity)}</button><button type="button" className={button} onClick={() => { setProductId(null); setProductPhotos([]); setEditingProduct(null); delete productDrafts.current[product.id]; }}>Anuluj wybór produktu</button></div>
@@ -405,6 +410,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
             {renderPhotos(true)}
           </div>}
         </section>}
+        {tab === 'cart' && lowResolutionLines && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">Zdjęcie w koszyku nie spełnia wymagań rozdzielczości. Zmień zdjęcie lub usuń ten produkt przed płatnością.</p>}
         {tab === 'cart' && <section aria-label="Twój koszyk">
           <h3 className="mb-4 font-serif text-3xl font-medium tracking-tight sm:text-4xl">Twój koszyk</h3>
           <div className="mb-5 flex flex-wrap gap-3"><button className={button} onClick={() => navigate('gallery')}>Dodaj odbitki z galerii</button><button className={button} onClick={() => navigate('products')}>{product ? 'Kontynuuj wybór produktu' : 'Dodaj produkt'}</button>{checkedLines.length > 0 && <button className={button} onClick={() => removeLines(checkedLines)}>Usuń zaznaczone ({checkedLines.length})</button>}{removed.length > 0 && <button className={button} disabled={lines.length + removed.length > 500} title={lines.length + removed.length > 500 ? 'Najpierw zwolnij miejsce w koszyku (limit 500 pozycji)' : undefined} onClick={() => { setLines(previous => [...previous, ...removed]); setRemoved([]); setNotice('Przywrócono usunięte pozycje.'); }}>Cofnij usunięcie</button>}</div>
