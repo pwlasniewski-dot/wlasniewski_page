@@ -7,12 +7,12 @@ export type PrintFormat = { id: string; label: string; widthMm: number; heightMm
 export type ProductShopRule = {minPhotos: number; maxPhotos: number; deliveryMethods?: ('locker' | 'courier')[]};
 export type ShopProduct = { prodigi?: ProdigiProductConfig; id: number; title: string; description: string | null; price: number; image_url: string | null; preview_images?: string[]; video_url?: string | null; sample_pages?: string[]; product_type: string | null; minPhotos: number; maxPhotos: number; deliveryMethods?: ('locker' | 'courier')[]; nphoto_product_id?: string | null; nphoto_url?: string | null };
 export type ShopConfig = { version: 1; enabled: boolean; title: string; introduction: string; buttonLabel: string; formats: PrintFormat[]; productRules: Record<string, ProductShopRule>; delivery: {locker: {enabled: boolean; amount: number}; courier: {enabled: boolean; amount: number}; pickup?: {enabled: boolean; amount: number; instructions: string}}; publicOffer?: PublicShopOffer };
-export type ShopCatalog = Omit<ShopConfig, 'version' | 'productRules' | 'publicOffer'> & {galleryId: number; products: ShopProduct[]};
+export type ShopCatalog = Omit<ShopConfig, 'version' | 'productRules' | 'publicOffer'> & {sandboxCheckoutEnabled?: boolean; galleryId: number; products: ShopProduct[]};
 export type ShopCrop = {mode: 'fit' | 'fill'; x: number; y: number; zoom: number};
 export type ShopLine = {id: string; kind: 'print'; photoId: number; formatId: string; quantity: number; crop: ShopCrop; confirmed: boolean} | {id: string; kind: 'product'; productId: number; photoIds: number[]; coverPhotoId: number; quantity: number};
 export type ShopDelivery = {method: 'locker' | 'courier' | 'pickup'; recipientName: string; email: string; phone: string; pointCode?: string; instructions?: string; address?: {street: string; postalCode: string; city: string}};
 export type PricedShopLine = ShopLine & {title: string; unitAmount: number; lineTotal: number; format?: PrintFormat; product?: {prodigi?: ProdigiProductConfig; image_url?: string | null; title: string; description: string | null; nphoto_product_id?: string | null; nphoto_url?: string | null}};
-export type ShopMetadata = {customerId?: number; kind: 'gallery_merchandise'; version: 1; lines: PricedShopLine[]; delivery: ShopDelivery & {amount: number}; fulfillment: {status: 'new' | 'ordered' | 'received' | 'packed' | 'shipped' | 'collected' | 'cancelled'; trackingNumber: string | null}};
+export type ShopMetadata = {checkoutEnvironment?: 'sandbox'; customerId?: number; kind: 'gallery_merchandise'; version: 1; lines: PricedShopLine[]; delivery: ShopDelivery & {amount: number}; fulfillment: {status: 'new' | 'ordered' | 'received' | 'packed' | 'shipped' | 'collected' | 'cancelled'; trackingNumber: string | null}};
 export class ShopValidationError extends Error { constructor(message: string, public status = 400) {super(message); this.name = 'ShopValidationError';} }
 function check(ok: unknown, message: string): asserts ok {if (!ok) throw new ShopValidationError(message);}
 function integer(value: unknown, min: number, max: number) {return typeof value === 'number' && Number.isSafeInteger(value) && value >= min && value <= max;}
@@ -59,7 +59,7 @@ export function printQuantities(lines: ShopLine[]): Record<string, number> {
   return totals;
  }, Object.create(null));
 }
-export function priceShopCart(catalog: ShopCatalog, input: unknown, deliveryInput: unknown, allowedPhotoIds: number[]) {
+export function priceShopCart(catalog: ShopCatalog, input: unknown, deliveryInput: unknown, allowedPhotoIds: number[], policy: { prodigiEnvironment: 'sandbox' | 'live' } = { prodigiEnvironment: 'live' }) {
  check(catalog.enabled, 'Sklep jest obecnie niedostępny.');
  check(Array.isArray(input) && input.length > 0 && input.length <= 500, 'Koszyk musi zawierać od 1 do 500 pozycji.');
  const allowed = new Set(allowedPhotoIds); const ids = new Set<string>();
@@ -79,7 +79,9 @@ export function priceShopCart(catalog: ShopCatalog, input: unknown, deliveryInpu
   const product = catalog.products.find(p=>p.id===line.productId); check(product, 'Produkt nie jest dostępny.');
   if (product.prodigi || product.product_type?.startsWith('prodigi')) {
    const spec = readProdigiProduct(product.prodigi);
-   check(spec && spec.productId === product.id && spec.environment === 'live' && spec.liveQualified && spec.ordersEnabled, 'Ten produkt nie jest jeszcze dostępny do zakupu.');
+   check(spec && spec.productId === product.id && (policy.prodigiEnvironment === 'sandbox'
+    ? spec.environment === 'sandbox' && spec.sandboxOrdersEnabled === true && !spec.ordersEnabled && !spec.liveQualified
+    : spec.environment === 'live' && spec.liveQualified && spec.ordersEnabled), 'Ten produkt nie jest jeszcze dostępny do zakupu.');
    check(line.photoIds?.length === 1 && spec.requiredAssets.length === 1 && spec.requiredAssets[0] === 'default', 'Ten produkt wymaga jednego zdjęcia do druku.');
   }
   check(Array.isArray(line.photoIds) && line.photoIds.length >= product.minPhotos && line.photoIds.length <= product.maxPhotos && new Set(line.photoIds).size === line.photoIds.length, 'Sprawdź liczbę zdjęć w produkcie.');

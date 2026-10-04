@@ -5,7 +5,7 @@ import {rateLimit} from '@/lib/rate-limit';
 import {readShopMetadata} from '@/lib/galleries/merchandise';
 import {boundedJson} from '@/lib/fulfillment/prodigi-sandbox';
 import {callbackIndexKey,callbackTokenHash} from '@/lib/fulfillment/prodigi-callback';
-import {prodigiOrderRequest,parseProviderOrder,validProviderId,type ProdigiOrderState} from '@/lib/fulfillment/prodigi-orders';
+import {prodigiOrderRequest,assertProdigiCheckoutEnvironment,parseProviderOrder,validProviderId,type ProdigiOrderState} from '@/lib/fulfillment/prodigi-orders';
 import {notifyProdigiCustomer} from '@/lib/fulfillment/prodigi-notification-server';
 export const dynamic='force-dynamic';export const maxDuration=45;
 const headers={'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'};
@@ -28,6 +28,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{token:s
   const previous=metadata.providerFulfillment;
   if(!previous?.orderId)return reply(503);
   if(previous.callbackKeyHash!==hash||previous.environment!==index.data.environment||previous.idempotencyKey!==index.data.idempotencyKey)return reply(404);
+  assertProdigiCheckoutEnvironment(previous.environment,metadata);
   const providerId=validProviderId(previous.orderId);
   const raw=await prodigiOrderRequest(previous.environment,`/Orders/${providerId}`,'GET') as {order?:{merchantReference?:string;idempotencyKey?:string}};
   if(raw.order?.merchantReference!==`photo-order-${order.id}`||raw.order?.idempotencyKey!==previous.idempotencyKey)return reply(503);

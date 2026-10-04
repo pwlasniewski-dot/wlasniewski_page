@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { authorizeIndividualGallery } from './individual-access';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
-import { createPayUOrder, extractClientIpv4 } from '@/lib/payu';
+import { createPayUOrder, extractClientIpv4, assertShopQaPayment } from '@/lib/payu';
 import { priceShopCart, customerShopMetadata, readShopConfig, readShopMetadata, ShopValidationError, type ShopCatalog, type ShopMetadata } from './merchandise';
 export const shopSettingKey = (id: number | null) => id === null ? 'gallery_shop_default' : `gallery_shop_${id}`;
 export async function loadGalleryShop(galleryId: number | null) {
@@ -65,12 +65,17 @@ export async function authorizeShop(request: NextRequest, scope: {accessCode:str
  return {gallery,participantId};
 }
 export function shopError(error: unknown) {return NextResponse.json({success:false,error:error instanceof ShopValidationError ? error.message:'Nie udało się obsłużyć sklepu. Spróbuj ponownie.'},{status:error instanceof ShopValidationError ? error.status:500});}
-export async function getShop(request: NextRequest, scope: {accessCode:string} | {participantId:number}) {try {const {gallery}=await authorizeShop(request,scope); const {catalog}=await loadGalleryShop(gallery.id); return NextResponse.json({success:true,catalog},{headers:{'Cache-Control':'private, no-store'}});}catch(error){return shopError(error);}}
+export async function getShop(request: NextRequest, scope: {accessCode:string} | {participantId:number}) {try {const {gallery}=await authorizeShop(request,scope); const {catalog}=await loadGalleryShop(gallery.id); if(isShopQa()){catalog.sandboxCheckoutEnabled=false;try{await assertShopQaPayment(orderOrigin(request.url));catalog.sandboxCheckoutEnabled=true;}catch{/* QA remains preview-only until sandbox payment setup is verified. */}} return NextResponse.json({success:true,catalog},{headers:{'Cache-Control':'private, no-store'}});}catch(error){return shopError(error);}}
 function canonical(value: unknown): string {if(Array.isArray(value)) return '['+value.map(canonical).join(',')+']'; if(value && typeof value==='object') return '{'+Object.entries(value).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>JSON.stringify(k)+':'+canonical(v)).join(',')+'}'; return JSON.stringify(value);}
 export function shopCheckoutFingerprint(galleryId:number, participantId:number|null, body:unknown) {return createHash('sha256').update(canonical({galleryId,participantId,body})).digest('hex');}
 export async function postShopOrder(request:NextRequest,scope:{accessCode:string}|{participantId:number}) {
  try {
   const {gallery,participantId}=await authorizeShop(request,scope);
+  const sandboxCheckout = isShopQa();
+  if (sandboxCheckout) {
+   try { await assertShopQaPayment(orderOrigin(request.url)); }
+   catch { throw new ShopValidationError('Płatności testowe nie są skonfigurowane dla tej wersji sklepu.',503); }
+  }
   const key=request.headers.get('idempotency-key');
   if(!key || !/^[A-Za-z0-9_-]{16,128}$/.test(key)) throw new ShopValidationError('Brak poprawnego identyfikatora zamówienia.');
   const body=await request.json().catch(()=>null);
@@ -92,7 +97,7 @@ export async function postShopOrder(request:NextRequest,scope:{accessCode:string
    const paidIds=new Set<number>(paid.flatMap(o=>{try {const ids=JSON.parse(o.photo_ids);return Array.isArray(ids)?ids.filter((id:unknown)=>typeof id==='number'):[];}catch{return [];}}));
    allowed=photos.filter(p=>p.is_standard || paidIds.has(p.id)).map(p=>p.id);
   }
-  const priced=priceShopCart(catalog,body.lines,body.delivery,allowed);
+  const priced=priceShopCart(catalog,body.lines,body.delivery,allowed,{prodigiEnvironment:sandboxCheckout?'sandbox':'live'});
   for(const line of priced.lines){
    if(line.kind!=='product'||!line.product?.prodigi)continue;
    const photo=photos.find(value=>value.id===line.photoIds[0]);
@@ -102,7 +107,7 @@ export async function postShopOrder(request:NextRequest,scope:{accessCode:string
   if(priced.delivery.method==='locker') await verifyParcelPoint(priced.delivery.pointCode!);
   const client = participantId === null ? await orderClient(request) : null;
   const accountBuyer = client && isClientRecordOwner(gallery, client) ? client : null;
-  const metadata:ShopMetadata={...(accountBuyer ? {customerId:accountBuyer.id} : {}),kind:'gallery_merchandise',version:1,lines:priced.lines,delivery:priced.delivery,fulfillment:{status:'new',trackingNumber:null}};
+  const metadata:ShopMetadata={...(sandboxCheckout ? {checkoutEnvironment:'sandbox' as const} : {}),...(accountBuyer ? {customerId:accountBuyer.id} : {}),kind:'gallery_merchandise',version:1,lines:priced.lines,delivery:priced.delivery,fulfillment:{status:'new',trackingNumber:null}};
   let order;
   try {order=await prisma.photoOrder.create({data:{gallery_id:gallery.id,participant_id:participantId,photo_ids:'[]',photo_count:priced.lines.filter(l=>l.kind==='print').reduce((sum,l)=>sum+l.quantity,0),product_ids:JSON.stringify(metadata),total_amount:priced.total,payment_status:'initializing',idempotency_key:key,checkout_fingerprint:fingerprint}});}catch(error){if((error as {code?:string})?.code!=='P2002') throw error; const raced=await prisma.photoOrder.findUnique({where:{idempotency_key:key}});if(!raced) throw error;return existingResponse(raced);}
   try {

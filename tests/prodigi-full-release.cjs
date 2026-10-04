@@ -17,7 +17,7 @@ const load=Module._load;Module._load=function(name,...args){
 const gate=require('../src/lib/fulfillment/prodigi-release-gate.ts');
 const {POST}=require('../src/app/api/admin/galleries/[id]/shop/orders/[orderId]/prodigi/route.ts');
 const context={params:Promise.resolve({id:'12',orderId:'50'})};
-const request=action=>new NextRequest('http://localhost/api/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,approved:true})});
+const request=action=>new NextRequest('http://localhost/api/test',{method:'POST',headers:{'Content-Type':'application/json',origin:'https://deploy-preview-99--helpful-axolotl-cc1cbb.netlify.app'},body:JSON.stringify({action,approved:true})});
 function seed(){
  network=[];callbackIndexes=[];mode='ok';changedAsset=false;payments=[{amount:11900,refunded_amount:0}];
  const now=Date.now(),input={orderId:'50',customerId:'customer-1',currency:'PLN',nowMs:now,cancelled:false,submission:'not_submitted',session:'not_required',lines:[{id:'one',kind:'print',amountGrosze:9900,sku:'GLOBAL-FAP-10X10',attributes:{paperType:'EMA'},quantity:1,printArea:'default',crop:{x:0,y:0,width:1,height:1},asset:{id:'1',sha256:'a'.repeat(64),orderId:'50',customerId:'customer-1',kind:'final',preflight:'passed'},approval:null}],shippingGrosze:2000,payment:{settledGrosze:0,refundedGrosze:0,requiredGrosze:11900,disputed:false},delivery:{recipient:'Anna Testowa',addressLine1:'Testowa 1',city:'Warszawa',postalCode:'00-001',countryCode:'PL',service:'Budget'},quote:null};
@@ -35,5 +35,13 @@ function seed(){
  seed();changedAsset=true;assert.equal((await POST(request('create'),context)).status,409);assert.equal(network.length,0);console.log('PASS changed HQ fingerprint blocks supplier submission');
  seed();mode='ambiguous';r=await POST(request('create'),context);assert.equal(r.status,502);assert.equal(JSON.parse(order.product_ids).providerFulfillment.state,'unknown');assert.equal((await POST(request('create'),context)).status,409);assert.equal(network.length,1);console.log('PASS ambiguous provider outcome persists unknown and blocks all retry');
  seed();const both=await Promise.all([POST(request('create'),context),POST(request('create'),context)]);assert.deepEqual(both.map(r=>r.status).sort(),[200,409]);assert.equal(network.length,1);console.log('PASS concurrent create attempts CAS allows only one supplier call');
+ process.env.PRODIGI_ORDER_ENV='sandbox';process.env.PRODIGI_SANDBOX_API_KEY='fixture-only';process.env.NODE_ENV='test';process.env.GALLERY_QA_CONTEXT='deploy-preview';process.env.DATABASE_URL='postgresql://u:p@production.test/db';process.env.GALLERY_QA_DATABASE_URL='postgresql://u:p@qa.test/db';
+ const sandboxSeed=()=>{seed();const metadata=JSON.parse(order.product_ids);metadata.checkoutEnvironment='sandbox';Object.assign(metadata.lines[0].product.prodigi,{environment:'sandbox',ordersEnabled:false,liveQualified:false,sandboxOrdersEnabled:true});order.product_ids=JSON.stringify(metadata);};
+ sandboxSeed();order.payment_status='pending';assert.equal((await POST(request('create'),context)).status,409);assert.equal(network.length,0);
+ sandboxSeed();const race=await Promise.all([POST(request('create'),context),POST(request('create'),context)]);assert.deepEqual(race.map(r=>r.status).sort(),[200,409]);assert.equal(network.length,1);assert.match(network[0].url,/api\.sandbox\.prodigi\.com/);assert.match(network[0].body.callbackUrl,/^https:\/\/deploy-preview-99--helpful-axolotl-cc1cbb\.netlify\.app\//);assert.equal(network[0].body.idempotencyKey,'photo-order-50-sandbox-v1');assert.equal(JSON.parse(callbackIndexes[0].setting_value).environment,'sandbox');assert.equal((await POST(request('create'),context)).status,409);
+ sandboxSeed();mode='ambiguous';assert.equal((await POST(request('create'),context)).status,502);assert.equal((await POST(request('create'),context)).status,409);assert.equal(network.length,1);
+ seed();assert.equal((await POST(request('create'),context)).status,409);assert.equal(network.length,0);
+ sandboxSeed();process.env.GALLERY_QA_DATABASE_URL=process.env.DATABASE_URL;assert.equal((await POST(request('create'),context)).status,500);assert.equal(network.length,0);
+ console.log('PASS isolated marked QA paid-buffer submission stays sandbox, preview callback bound; unpaid/copied production/same DB/replay/race/ambiguous outcome blocked');
  await reset();
 })().catch(error=>{console.error(error);process.exitCode=1;});

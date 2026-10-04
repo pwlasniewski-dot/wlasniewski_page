@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import {isShopQa} from '../shop-qa';
+import {isShopQa,shopDatabaseUrl} from '../shop-qa';
 import { boundedJson } from './prodigi-sandbox';
 export type ProdigiEnvironment = 'sandbox' | 'live';
 export type ProdigiOrderState = {environment:ProdigiEnvironment; state:'submitting'|'unknown'|'accepted'|'cancelled'; idempotencyKey:string; updatedAt:string; orderId?:string; stage?:string; outcome?:string; issueCount?:number; shipments?:Array<{id:string; trackingNumber:string|null; trackingUrl:string|null}>; approvedBy:number; approvedAt:string; callbackKeyHash?:string};
@@ -37,3 +37,11 @@ export function parseProviderOrder(input:unknown){
 export function validProviderId(value:unknown){return id.parse(value);}
 export const prodigiSnapshotSchema=z.object({sku:z.string().regex(/^[A-Za-z0-9_-]{1,100}$/),environment:z.enum(['sandbox','live']),variant:z.object({attributes:z.record(z.string().max(60),z.string().max(100))}),requiredAssets:z.array(z.string().regex(/^[A-Za-z0-9_-]{1,60}$/)).min(1).max(8),shippingMethod:z.enum(['Budget','Standard','StandardPlus','Express','Overnight']).default('Standard')});
 export const SANDBOX_SAMPLE='https://pwintyimages.blob.core.windows.net/samples/stars/test-sample-grey.png';
+
+/** A copied production order is not a QA order. Only server-created sandbox checkout snapshots qualify. */
+export function assertProdigiCheckoutEnvironment(environment:ProdigiEnvironment,metadata:{checkoutEnvironment?:unknown}) {
+ if(environment==='sandbox'){
+  if(!isShopQa()||metadata.checkoutEnvironment!=='sandbox')throw new ProdigiOrderError('Sandbox wymaga odizolowanej bazy QA i testowego zamówienia.');
+  shopDatabaseUrl();
+ }else if(metadata.checkoutEnvironment==='sandbox')throw new ProdigiOrderError('Zamówienie testowe nie może trafić do produkcji.');
+}

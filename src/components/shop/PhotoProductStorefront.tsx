@@ -6,7 +6,7 @@ import { GalleryProductPreviewDialog } from '@/components/galleries/GalleryProdu
 import { parseShopIntent, replaceShopIntent, shopAccountHref, shopGalleryHref, trackShopIntent, type ShopIntent } from '@/lib/galleries/shop-intent';
 import type { PublicShopCatalog } from '@/lib/galleries/public-offer';
 import type { ShopProduct } from '@/lib/galleries/merchandise';
-import PersonalizationShop from '@/components/shop/PersonalizationShop';
+import GuestProductPreview from '@/components/shop/GuestProductPreview';
 import PrintPriceTiers from '@/components/galleries/PrintPriceTiers';
 
 type ClientGallery = { id: number; access_code: string; client_name: string; photo_count: number; created_at: string; gallery_mode?: string };
@@ -41,7 +41,6 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
   const [intent, setIntent] = useState<ShopIntent | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [personalization, setPersonalization] = useState<ShopIntent | null>(null);
-  const personalizer = useRef<HTMLDivElement>(null);
   const [preview, setPreview] = useState<ShopProduct | null>(null);
   const [galleries, setGalleries] = useState<ClientGallery[] | null>(null);
   const [galleryError, setGalleryError] = useState('');
@@ -71,7 +70,6 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
     if (new URLSearchParams(window.location.search).get('shopPersonalize') === '1') { setPersonalization(selection); setExpanded(true); }
     else if (mode === 'account') setIntent(selection);
   }, [mode]);
-  useEffect(() => { if (personalization && loaded) personalizer.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }); }, [personalization, loaded]);
   useEffect(() => { if (mode === 'account' && intent) setExpanded(true); }, [mode, intentKey]);
   useEffect(() => {
     if (intent && loaded && (mode === 'public' || expanded)) {
@@ -118,7 +116,10 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
     const url = new URL(window.location.href); url.searchParams.set('shopPersonalize', '1');
     window.history.replaceState(window.history.state, '', url.pathname + url.search + '#personalizacja-produktu');
   };
-  const renderAction = (selection: ShopIntent) => <div className="space-y-2">{renderGalleryAction(selection)}{catalog.offer.personalizationEnabled && selection.kind === 'product' && products.some(product => product.id === selection.productId && product.personalizationEligible) && <button type="button" className={secondary + ' block w-full text-center'} onClick={() => personalize(selection)}>{catalog.offer.personalizationButtonLabel}</button>}</div>;
+  const renderAction = (selection: ShopIntent) => catalog.offer.personalizationEnabled && selection.kind === 'product' && products.some(product => product.id === selection.productId && product.personalizationEligible)
+    ? <button type="button" className={action} onClick={() => personalize(selection)}>{catalog.offer.personalizationButtonLabel}</button>
+    : renderGalleryAction(selection);
+
 
   const content = <section id="produkty-fotograficzne" aria-labelledby={headingId} className={`scroll-mt-28 border-t border-stone-700/60 text-stone-100 ${mode === 'public' ? `py-12 sm:py-16 ${className}` : 'px-4 py-7 sm:px-6'}`}>
     {mode === 'public' && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(storefrontStructuredData(catalog)).replace(/</g, '\\u003c') }} />}
@@ -137,11 +138,8 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
         <div className="flex flex-1 flex-col p-5 sm:p-6"><h3 className="text-xl font-medium leading-snug">{product.title}</h3>{product.description && <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm leading-6 text-stone-400">{product.description}</p>}<p className="mt-4 text-xs text-stone-500">Zdjęcia do produktu: {product.minPhotos === product.maxPhotos ? product.minPhotos : `${product.minPhotos}–${product.maxPhotos}`}</p><p className="mt-auto pt-6 text-2xl font-medium tracking-tight">{money(product.price)}</p><button type="button" className="my-3 min-h-11 text-left text-sm text-stone-300 underline decoration-stone-600 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-300" aria-label={`Szczegóły produktu: ${product.title}`} onClick={() => setPreview(product)}>Szczegóły i zdjęcia</button>{renderAction({ kind: 'product', productId: product.id })}</div>
       </article>)}
     </div>}
-    {personalization && catalog.offer.personalizationEnabled && <div id="personalizacja-produktu" ref={personalizer} className="mt-8 scroll-mt-24">
-      <button type="button" className={`${secondary} mb-3`} onClick={() => { setPersonalization(null); replaceShopIntent(null); const url = new URL(window.location.href); url.searchParams.delete('shopPersonalize'); window.history.replaceState(window.history.state, '', url.pathname + url.search + '#produkty-fotograficzne'); }}>Zamknij personalizację</button>
-      <PersonalizationShop embedded initialIntent={personalization} />
-    </div>}
-    {preview && <GalleryProductPreviewDialog product={preview} onClose={() => setPreview(null)} onChoose={() => choose({ kind: 'product', productId: preview.id })} />}
+    {personalization?.kind === 'product' && catalog.offer.personalizationEnabled && products.filter(product=>product.id===personalization.productId && product.personalizationEligible).map(product=><GuestProductPreview key={product.id} product={product} onClose={()=>{setPersonalization(null);replaceShopIntent(null);const url=new URL(window.location.href);url.searchParams.delete('shopPersonalize');url.searchParams.delete('shopCheckout');window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);}} />)}
+    {preview && <GalleryProductPreviewDialog product={preview} onClose={() => setPreview(null)} onChoose={() => { const selection: ShopIntent={kind:'product',productId:preview.id}; if(catalog.offer.personalizationEnabled && products.some(product=>product.id===preview.id && product.personalizationEligible))personalize(selection);else choose(selection); }} />}
   </section>;
   return mode === 'public' ? content : <details open={expanded} onToggle={event => setExpanded(event.currentTarget.open)} className={`rounded-2xl border border-stone-700/70 bg-stone-900/25 ${className}`}>
     <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 rounded-2xl px-5 py-4 text-stone-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d8c7a7] [&::-webkit-details-marker]:hidden">

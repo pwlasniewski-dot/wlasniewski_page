@@ -270,7 +270,8 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   const productHasUnavailablePhotos = productPhotos.some(id => !photoById(id));
   const productLowResolution = !!product?.prodigi && productPhotos.some(id => { const photo = photoById(id); return !hasProdigiPrintResolution(photo?.width, photo?.height, product.prodigi?.variant.printAreaSizes.default); });
   const productCartFull = !editingProduct && remaining === 0;
-  const productPreviewOnly = !!product?.prodigi && (!product.prodigi.ordersEnabled || product.prodigi.environment !== 'live');
+  const canOrderProduct = (item: ShopCatalog['products'][number]) => !item.prodigi || (item.prodigi.environment === 'live' ? item.prodigi.ordersEnabled && item.prodigi.liveQualified : catalog.sandboxCheckoutEnabled === true && item.prodigi.sandboxOrdersEnabled === true && !item.prodigi.ordersEnabled && !item.prodigi.liveQualified);
+  const productPreviewOnly = !!product && !canOrderProduct(product);
   const productSelectionValid = !!product && !productPreviewOnly && !productLowResolution && !productCartFull && !productHasUnavailablePhotos && productMissingPhotos === 0 && productExcessPhotos === 0;
   const productSelectionMessage = productPreviewOnly ? 'Podgląd testowy — zamawianie tego produktu jest wyłączone.' : productLowResolution ? 'Zdjęcie ma zbyt małą lub niepotwierdzoną rozdzielczość. Dodaj większy oryginał lub wybierz mniejszy produkt.' : productCartFull
     ? 'Koszyk jest pełny. Usuń pozycję z koszyka, aby dodać ten produkt.'
@@ -290,7 +291,9 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   const selectedPrintPrice = printUnitAmount(currentFormat,(quantities[format] || 0)+selected.length*quantity);
   const linePrice = (line: CartLine) => line.kind === 'print' ? printUnitAmount(catalog.formats.find(item => item.id === line.formatId),quantities[line.formatId]) : catalog.products.find(item => item.id === line.productId)?.price || 0;
   const lowResolutionLines = lines.some(line => line.kind === 'product' && (() => { const item = catalog.products.find(value => value.id === line.productId); return !!item?.prodigi && line.photoIds.some(id => { const photo = photoById(id); return !hasProdigiPrintResolution(photo?.width, photo?.height, item.prodigi?.variant.printAreaSizes.default); }); })());
-  const invalidLines = lowResolutionLines || lines.length > 500 || lines.some(line => line.kind === 'print' ? !catalog.formats.some(item => item.id === line.formatId && item.active) || !photos.some(photo => photo.id === line.photoId) : !catalog.products.some(item => item.id === line.productId && line.photoIds.length >= item.minPhotos && line.photoIds.length <= item.maxPhotos) || line.photoIds.some(id => !photos.some(photo => photo.id === id)));
+  const prodigiCartLines = lines.filter(line => line.kind === 'product' && catalog.products.find(item => item.id === line.productId)?.prodigi);
+  const incompatibleCart = prodigiCartLines.length > 0 && (prodigiCartLines.length !== lines.length || prodigiCartLines.length > 10 || new Set(prodigiCartLines.map(line => line.kind === 'product' ? catalog.products.find(item => item.id === line.productId)?.prodigi?.shippingMethod : undefined)).size > 1);
+  const invalidLines = incompatibleCart || lowResolutionLines || lines.length > 500 || lines.some(line => line.kind === 'print' ? !catalog.formats.some(item => item.id === line.formatId && item.active) || !photos.some(photo => photo.id === line.photoId) : !catalog.products.some(item => item.id === line.productId && canOrderProduct(item) && line.photoIds.length >= item.minPhotos && line.photoIds.length <= item.maxPhotos) || line.photoIds.some(id => !photos.some(photo => photo.id === id)));
   const subtotal = lines.reduce((sum, line) => sum + linePrice(line) * line.quantity, 0);
   const deliveryPrice = availableDelivery?.[delivery.method]?.amount || 0;
   const total = subtotal + deliveryPrice;
@@ -392,6 +395,8 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
         <div className="mx-auto w-full max-w-[1280px]">
         <p role="status" className={notice ? "mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" : "sr-only"}>{notice}</p>
         {pendingOrder && <div className="mb-4 rounded-xl border border-amber-300 p-4"><p>Płatność zamówienia {pendingOrder.id} jest w trakcie weryfikacji. Koszyk jest zachowany.</p><button className={button} disabled={checkingPayment} onClick={() => void checkPayment(pendingOrder)}>{checkingPayment ? 'Sprawdzam płatność…' : 'Sprawdź status płatności'}</button>{pendingPaymentUrl && <a className={`${primary} mt-3 inline-flex items-center sm:ml-3`} href={pendingPaymentUrl}>Wróć do płatności</a>}</div>}
+        {catalog.sandboxCheckoutEnabled && <p role="status" className="mb-4 rounded-lg bg-amber-50 p-3 text-amber-900">Tryb testowy — płatność i realizacja zamówienia odbywają się w środowisku testowym.</p>}
+        {incompatibleCart && <p role="alert" className="mb-4 rounded-lg bg-amber-50 p-3 text-amber-900">Produkty z drukarni zamów osobno, z jednym sposobem wysyłki i maksymalnie 10 pozycjami.</p>}
         {invalidLines && <p role="alert" className="mb-4 rounded-lg bg-amber-50 text-amber-900 p-3">Część pozycji jest już niedostępna. Zmień format lub usuń niedostępne pozycje przed płatnością.</p>}
         {error && <p role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-red-800">{error}</p>}
         {tab === 'gallery' && <section aria-label="Wybierz odbitki">

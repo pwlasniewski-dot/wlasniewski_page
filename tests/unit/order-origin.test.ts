@@ -1,10 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {orderOrigin} from '../../src/lib/galleries/order-origin';
-const keys=['NODE_ENV','CONTEXT','GALLERY_QA_CONTEXT','NEXT_PUBLIC_BASE_URL','NEXT_PUBLIC_APP_URL','NEXT_PUBLIC_SITE_URL','URL'] as const;
+const keys=['DEPLOY_PRIME_URL','NODE_ENV','CONTEXT','GALLERY_QA_CONTEXT','NEXT_PUBLIC_BASE_URL','NEXT_PUBLIC_APP_URL','NEXT_PUBLIC_SITE_URL','URL'] as const;
 const preview='https://deploy-preview-99--helpful-axolotl-cc1cbb.netlify.app';
 function setup(t:{after:(fn:()=>void)=>void}){const old=Object.fromEntries(keys.map(key=>[key,process.env[key]]));for(const key of keys)delete process.env[key];process.env.NODE_ENV='production';process.env.NEXT_PUBLIC_BASE_URL='https://wlasniewski.pl';t.after(()=>{for(const key of keys){if(old[key]===undefined)delete process.env[key];else process.env[key]=old[key];}});}
 test('runtime QA marker alone keeps PayU return on the preview origin',t=>{setup(t);process.env.GALLERY_QA_CONTEXT='deploy-preview';assert.equal(orderOrigin(`${preview}/api/galleries/example/shop/order`),preview);});
 test('runtime branch marker works when CONTEXT is blank',t=>{setup(t);process.env.CONTEXT=' ';process.env.GALLERY_QA_CONTEXT='branch-deploy';assert.equal(orderOrigin('https://main--helpful-axolotl-cc1cbb.netlify.app/api/shop'),'https://main--helpful-axolotl-cc1cbb.netlify.app');});
 test('production context wins over stale QA marker and cannot return to preview',t=>{setup(t);process.env.CONTEXT='production';process.env.GALLERY_QA_CONTEXT='deploy-preview';assert.equal(orderOrigin(`${preview}/api/shop`),'https://wlasniewski.pl');process.env.NODE_ENV='development';assert.equal(orderOrigin('http://localhost:3000/api/shop'),'https://wlasniewski.pl');});
 test('without an explicit preview marker production remains canonical',t=>{setup(t);assert.equal(orderOrigin(`${preview}/api/shop`),'https://wlasniewski.pl');assert.equal(orderOrigin(),'https://wlasniewski.pl');});
+
+test('trusted Netlify preview URL wins over rewritten internal request URL, also without request',t=>{setup(t);process.env.GALLERY_QA_CONTEXT='deploy-preview';process.env.DEPLOY_PRIME_URL=preview;assert.equal(orderOrigin('http://localhost:3000/api/shop'),preview);assert.equal(orderOrigin(),preview);});
+test('production ignores even valid preview deploy metadata',t=>{setup(t);process.env.CONTEXT='production';process.env.DEPLOY_PRIME_URL=preview;assert.equal(orderOrigin('http://localhost:3000/api/shop'),'https://wlasniewski.pl');});
+test('preview metadata rejects unrelated domains, credentials, ports and path/query decorations',t=>{setup(t);process.env.CONTEXT='deploy-preview';for(const value of ['https://evil.example','https://deploy-preview-99--site.netlify.app.evil.test',preview+'/wrong',preview+'?redirect=evil',preview+'#hash',preview.replace('https://','https://user:pass@'),preview.replace('.app','.app:8443'),'http://deploy-preview-99--site.netlify.app','https://main--site.netlify.app']){process.env.DEPLOY_PRIME_URL=value;assert.equal(orderOrigin('https://request.example/api/shop'),'https://request.example');}});

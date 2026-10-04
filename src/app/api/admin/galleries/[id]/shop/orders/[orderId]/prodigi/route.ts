@@ -11,7 +11,7 @@ import {isTrustedAdminOrigin} from '@/lib/auth/admin-origin';
 import {readShopMetadata} from '@/lib/galleries/merchandise';
 import {getPrivateS3DownloadUrl} from '@/lib/storage/s3';
 import {boundedJson} from '@/lib/fulfillment/prodigi-sandbox';
-import {orderEnvironment,orderCredentials,prodigiOrderRequest,parseProviderOrder,prodigiSnapshotSchema,validProviderId,ProdigiOrderError,type ProdigiOrderState} from '@/lib/fulfillment/prodigi-orders';
+import {orderEnvironment,orderCredentials,assertProdigiCheckoutEnvironment,prodigiOrderRequest,parseProviderOrder,prodigiSnapshotSchema,validProviderId,ProdigiOrderError,type ProdigiOrderState} from '@/lib/fulfillment/prodigi-orders';
 export const dynamic='force-dynamic';
 export const maxDuration=60;
 const headers={'Cache-Control':'private, no-store'};
@@ -27,8 +27,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
  if(!order||!metadata)throw new ProdigiOrderError('Nie znaleziono zamówienia.',404);
  const previous=metadata.providerFulfillment;
  const environment=previous?.environment || orderEnvironment();orderCredentials(environment);
- // Real customer orders must never be sent to the test network, even with masked images.
- if(environment!=='live')throw new ProdigiOrderError('Zamówienia klientów wymagają środowiska live. Sandbox testuj na danych demonstracyjnych.');
+ assertProdigiCheckoutEnvironment(environment,metadata);
  const persist=async(next:ProdigiOrderState,expected:string)=>{if(next.state==='cancelled')metadata.fulfillment={...metadata.fulfillment,status:'cancelled'};if(next.state==='accepted'){const tracking=next.shipments?.map(s=>s.trackingNumber).filter(Boolean).join(', ')||null;metadata.fulfillment={status:next.stage?.toLowerCase()==='complete'?'shipped':'ordered',trackingNumber:tracking};}const result=await prisma.photoOrder.updateMany({where:{id:order.id,gallery_id:galleryId,product_ids:expected},data:{product_ids:JSON.stringify({...metadata,providerFulfillment:next})}});if(result.count!==1)throw new ProdigiOrderError('Zamówienie zmieniło się równocześnie. Odśwież stan.');await notifyProdigiCustomer(order.id,metadata.delivery.email,next).catch(()=>{});};
  if(input.action==='reconcile'){
   if(!previous||!['submitting','unknown'].includes(previous.state))throw new ProdigiOrderError('Wyjaśnienie dotyczy tylko nieznanego wyniku.');
@@ -58,7 +57,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
  const photoIds=metadata.lines.flatMap(line=>line.kind==='product'?line.photoIds:[line.photoId]);
  const photos=await prisma.galleryPhoto.findMany({where:{gallery_id:galleryId,id:{in:photoIds}},select:{id:true,download_source_url:true}});
  if(input.action==='prepare'){
-  metadata.prodigiPrepared=await prepareProdigiOrder(order,metadata,photos);
+  metadata.prodigiPrepared=await prepareProdigiOrder(order,metadata,photos,undefined,environment);
   const saved=await prisma.photoOrder.updateMany({where:{id:order.id,product_ids:order.product_ids,payment_status:'paid'},data:{product_ids:JSON.stringify(metadata)}});
   if(saved.count!==1)throw new ProdigiOrderError('Zamówienie zmieniło się. Przygotuj ponownie.');
   const proofs=await Promise.all(Object.entries(metadata.prodigiPrepared.sources).map(async([lineId,source])=>({lineId,url:await getPrivateS3DownloadUrl(source.objectKey,900)})));
@@ -76,7 +75,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
  }
  // Re-read bytes and server catalog snapshot; changed bytes invalidate the saved proof fingerprint.
  if(!metadata.prodigiPrepared.approvedBy||metadata.prodigiPrepared.input.lines.some(line=>line.kind==='print'&&!line.approval))throw new ProdigiOrderError('Najpierw zatwierdź podgląd.');
- const prepared=await prepareProdigiOrder(order,metadata,photos,metadata.prodigiPrepared);
+ const prepared=await prepareProdigiOrder(order,metadata,photos,metadata.prodigiPrepared,environment);
 
  const d=metadata.delivery;
  if(d.method!=='courier'||!d.address?.street||!/^\d{2}-\d{3}$/.test(d.address.postalCode)||!d.address.city||!d.recipientName)throw new ProdigiOrderError('Prodigi wymaga pełnego adresu kuriera w Polsce.');
@@ -84,7 +83,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
  for(const line of metadata.lines){
   if(line.kind!=='product')throw new ProdigiOrderError('Rozdziel zamówienie mieszane przed realizacją Prodigi.');
   const parsed=prodigiSnapshotSchema.safeParse((line.product as unknown as {prodigi?:unknown})?.prodigi);
-  if(!parsed.success||parsed.data.environment!=='live')throw new ProdigiOrderError('Brak zatwierdzonego produkcyjnego snapshotu produktu.');
+  if(!parsed.success||parsed.data.environment!==environment)throw new ProdigiOrderError('Brak zatwierdzonego produkcyjnego snapshotu produktu.');
   const s=parsed.data;
   if(s.requiredAssets.length!==1||s.requiredAssets[0]!=='default'||line.photoIds.length!==1)throw new ProdigiOrderError('Ten produkt wymaga indywidualnego przygotowania pól druku.');
   if(!Number.isSafeInteger(line.quantity)||line.quantity<1||line.quantity>99)throw new ProdigiOrderError('Nieprawidłowa liczba sztuk.');
@@ -96,8 +95,8 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   items.push({merchantReference:line.id,sku:s.sku,copies:line.quantity,sizing:'fitPrintArea',attributes:s.variant.attributes,assets:[{printArea:'default',md5Hash:prepared.sources[line.id].md5,url:await getPrivateS3DownloadUrl(prepared.sources[line.id].objectKey,7*24*3600)}]});
  }
  if(items.length===0||items.length>100)throw new ProdigiOrderError('Nieprawidłowa liczba pozycji.');
- const callback=createProdigiCallback();
- const now=new Date().toISOString();const state:ProdigiOrderState={environment,callbackKeyHash:callback.hash,state:'submitting',idempotencyKey:`photo-order-${order.id}-live-v1`,updatedAt:now,approvedAt:new Date(metadata.prodigiPrepared.input.lines.flatMap(line=>line.kind==='print'&&line.approval?[line.approval.approvedAtMs]:[])[0]).toISOString(),approvedBy:metadata.prodigiPrepared.approvedBy!};
+ const callback=createProdigiCallback(environment,request.headers.get('origin')||undefined);
+ const now=new Date().toISOString();const state:ProdigiOrderState={environment,callbackKeyHash:callback.hash,state:'submitting',idempotencyKey:`photo-order-${order.id}-${environment}-v1`,updatedAt:now,approvedAt:new Date(metadata.prodigiPrepared.input.lines.flatMap(line=>line.kind==='print'&&line.approval?[line.approval.approvedAtMs]:[])[0]).toISOString(),approvedBy:metadata.prodigiPrepared.approvedBy!};
  // CAS is acquired before the network side effect and intentionally never automatically cleared.
  const locked=JSON.stringify({...metadata,providerFulfillment:state});
  const lock=await prisma.$transaction(async tx=>{

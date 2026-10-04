@@ -32,5 +32,15 @@ const props={endpoint:'/api/test/shop',inline:true,initialIntent:{kind:'product'
  assert.ok(document.body.textContent.includes('Produkt testowy'));
  assert.equal(button(/^Dodaj produkt do koszyka/).disabled,true);
  await reset();
+ catalog.sandboxCheckoutEnabled=true;
+ catalog.products[0].prodigi.sandboxOrdersEnabled=true;
+ await mount(UI,{...props,endpoint:'/api/sandbox-ready/shop',photos:[photo],preferredPhotoId:1});
+ assert.equal(button(/^Dodaj produkt do koszyka/).disabled,false);
+ assert.ok(document.body.textContent.includes('Tryb testowy'));
+ await reset();
+ catalog.sandboxCheckoutEnabled=false;
+ await mount(UI,{...props,endpoint:'/api/sandbox-not-ready/shop',photos:[photo],preferredPhotoId:1});
+ assert.equal(button(/^Dodaj produkt do koszyka/).disabled,true);
+ await reset();
  console.log('PASS inline chosen product with no photos; new upload selection and accurate fit; manual clear preserved; low resolution blocks cart; unavailable intent reported');
 })().catch(error=>{console.error(error);process.exitCode=1;});

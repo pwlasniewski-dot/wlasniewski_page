@@ -9,9 +9,10 @@ export const prodigiProductSchema = z.object({
   variant: z.object({ attributes: z.record(z.string(), z.string()), printAreaSizes: z.record(z.string(), z.object({ horizontalResolution: z.number().int().positive(), verticalResolution: z.number().int().positive() })) }),
   requiredAssets: z.array(z.string()).min(1), shippingMethod: z.string().min(1),
   ordersEnabled: z.boolean(), liveQualified: z.boolean(), destination: z.literal('PL'),
+  sandboxOrdersEnabled: z.boolean().optional(),
 });
 export type ProdigiProductConfig = z.infer<typeof prodigiProductSchema>;
-/** QA can display sandbox products, but the cart and order guards still reject buying them. */
+/** Display is separate from permission to order; sandbox checkout requires an explicit QA opt-in. */
 export function canDisplayProdigiProduct(spec: ProdigiProductConfig | null | undefined, productId: number, isolatedQa: boolean, liveEnabled: boolean) {
   if (!spec || spec.productId !== productId) return false;
   if (isolatedQa) return spec.environment === 'sandbox' && !spec.ordersEnabled && !spec.liveQualified && spec.requiredAssets.length === 1 && spec.requiredAssets[0] === 'default';
