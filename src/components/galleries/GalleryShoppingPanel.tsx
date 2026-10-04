@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { hasProdigiPrintResolution } from '@/lib/fulfillment/prodigi-image-size';
 import ProdigiPrintAreaPreview from './ProdigiPrintAreaPreview';
@@ -9,11 +9,11 @@ import { GalleryProductPreviewDialog } from './GalleryProductPreview';
 import type { ShopCatalog, ShopLine, ShopDelivery } from '@/lib/galleries/merchandise';
 import {printUnitAmount, printQuantities} from '@/lib/galleries/merchandise';
 import PrintPriceTiers from './PrintPriceTiers';
-import { parseShopIntent, replaceShopIntent, trackShopIntent } from '@/lib/galleries/shop-intent';
+import { type ShopIntent, parseShopIntent, replaceShopIntent, trackShopIntent } from '@/lib/galleries/shop-intent';
 import { availableShopDelivery } from '@/lib/galleries/shop-delivery';
 
 type Photo = { id: number; file_url: string; thumbnail_url?: string | null; width?: number | null; height?: number | null };
-type Props = { endpoint: string; headers?: Record<string, string>; photos: Photo[]; onAvailabilityChange?: (enabled: boolean) => void };
+type Props = { endpoint: string; headers?: Record<string, string>; photos: Photo[]; onAvailabilityChange?: (enabled: boolean) => void; initialIntent?: ShopIntent; inline?: boolean; preferredPhotoId?: number };
 type CartLine = ShopLine;
 const money = (value: number) => new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value / 100);
 const button = 'min-h-11 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-800 transition-colors hover:border-stone-500 hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-600 disabled:opacity-40 disabled:cursor-not-allowed';
@@ -26,7 +26,7 @@ const photoCountLabel = (count: number) => {
   return count === 1 ? 'zdjęcie' : last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? 'zdjęcia' : 'zdjęć';
 };
 
-export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, onAvailabilityChange }: Props) {
+export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, onAvailabilityChange, initialIntent, inline = false, preferredPhotoId }: Props) {
   const [catalog, setCatalog] = useState<ShopCatalog | null>(null);
   const [catalogLoadedEndpoint, setCatalogLoadedEndpoint] = useState<string | null>(null);
   const [catalogError, setCatalogError] = useState('');
@@ -68,6 +68,9 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   const carouselRef = useRef<HTMLDivElement>(null);
   const idempotency = useRef<{ body: string; key: string } | null>(null);
   const headersKey = JSON.stringify(headers);
+  const initialIntentKey = JSON.stringify(initialIntent || null);
+  const preferredHandled = useRef<string | null>(null);
+  const renderPanel = (children: ReactNode) => inline ? children : createPortal(children, document.body);
   const availableDelivery = catalog ? availableShopDelivery(catalog, lines) : null;
   const activeEndpoint = useRef(endpoint);
   activeEndpoint.current = endpoint;
@@ -149,7 +152,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
     try { pending = JSON.parse(sessionStorage.getItem(`gallery-shop-pending:${endpoint}`) || 'null'); } catch {}
     const returnedId = Number(new URLSearchParams(window.location.search).get('shopOrder'));
     if (returnedId > 0 && !pending) pending = { id: returnedId, lines: [], key: '' };
-    if (pending?.id) { setPendingOrder(pending); setOpen(true); setTab('cart'); void checkPayment(pending); }
+    if (pending?.id) { intentHandledEndpoint.current = `${endpoint}:${initialIntentKey}`; setPendingOrder(pending); setOpen(true); setTab('cart'); void checkPayment(pending); }
   }, [endpoint, headersKey]);
 
   useEffect(() => {
@@ -184,19 +187,20 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   }, [endpoint, headersKey, onAvailabilityChange, catalogAttempt]);
 
   useEffect(() => {
-    if (catalogLoadedEndpoint !== endpoint || hydratedEndpoint !== endpoint || intentHandledEndpoint.current === endpoint) return;
+    if (catalogLoadedEndpoint !== endpoint || hydratedEndpoint !== endpoint || intentHandledEndpoint.current === `${endpoint}:${initialIntentKey}`) return;
     // A payment return always wins. A public product link can never replace that state.
     if (pendingOrder || checkingPayment || new URLSearchParams(window.location.search).has('shopOrder')) return;
-    const intent = parseShopIntent(window.location.search);
+    const intent = initialIntent || parseShopIntent(window.location.search);
     if (!intent) return;
-    intentHandledEndpoint.current = endpoint;
+    intentHandledEndpoint.current = `${endpoint}:${initialIntentKey}`;
     const offered = catalog?.enabled && (intent.kind === 'product'
       ? catalog.products.find(item => item.id === intent.productId)
       : catalog.formats.find(item => item.id === intent.formatId && item.active));
     if (!offered) {
+      setProductId(null); setProductPhotos([]); setEditingProduct(null);
       setNotice('Wybrany produkt nie jest dostępny w tej galerii. Możesz wybrać inną pozycję z oferty lub skontaktować się z fotografem.');
       if (catalog?.enabled) { setOpen(true); setTab(intent.kind === 'product' ? 'products' : 'gallery'); }
-      replaceShopIntent(null);
+      if (!inline || !initialIntent) replaceShopIntent(null);
       return;
     }
     setOpen(true); setCheckout(false); setError('');
@@ -206,9 +210,9 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
       setEditingProduct(null); setProductId(intent.productId); setProductPhotos(saved?.photos || []); setProductQuantity(saved?.quantity || 1); setTab('products');
     } else { setFormat(intent.formatId); setTab('gallery'); }
     setNotice('Produkt wybrany. Sprawdź cenę w tej galerii i zaznacz zdjęcia. Nic nie zostało jeszcze dodane do koszyka.');
-    replaceShopIntent(null);
+    if (!inline || !initialIntent) replaceShopIntent(null);
     trackShopIntent('selection_opened', intent);
-  }, [catalog, catalogLoadedEndpoint, hydratedEndpoint, endpoint, pendingOrder, checkingPayment]);
+  }, [catalog, catalogLoadedEndpoint, hydratedEndpoint, endpoint, pendingOrder, checkingPayment, initialIntentKey]);
 
   useEffect(() => {
     if (!availableDelivery || availableDelivery[delivery.method]?.enabled) return;
@@ -220,7 +224,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   }, [availableDelivery?.locker.enabled, availableDelivery?.courier.enabled, availableDelivery?.pickup?.enabled, delivery.method]);
 
   useEffect(() => {
-    if (!open || !catalog?.enabled) return;
+    if (inline || !open || !catalog?.enabled) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     dialogRef.current?.focus();
@@ -238,7 +242,16 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
     };
     document.addEventListener('keydown', onKey);
     return () => { document.body.style.overflow = previous; document.removeEventListener('keydown', onKey); entryRef.current?.focus(); };
-  }, [open, catalog?.enabled]);
+  }, [open, catalog?.enabled, inline]);
+
+  useEffect(() => {
+    if (!preferredPhotoId || !photos.some(photo => photo.id === preferredPhotoId)) return;
+    const item = catalog?.products.find(item => item.id === productId);
+    const key = `${endpoint}:${productId}:${preferredPhotoId}`;
+    if (!item?.prodigi || item.maxPhotos !== 1 || preferredHandled.current === key) return;
+    preferredHandled.current = key;
+    setProductPhotos([preferredPhotoId]);
+  }, [preferredPhotoId, photos, productId, catalog, endpoint]);
 
   if (!catalog?.enabled) return catalogError ? <div role="alert" className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900"><p>{catalogError}</p><button type="button" className={`${button} mt-3`} onClick={() => setCatalogAttempt(value => value + 1)}>Wczytaj ofertę ponownie</button></div> : notice ? <p role="status" className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900">{notice}</p> : null;
   const remaining = Math.max(0, 500 - lines.length);
@@ -257,8 +270,9 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   const productHasUnavailablePhotos = productPhotos.some(id => !photoById(id));
   const productLowResolution = !!product?.prodigi && productPhotos.some(id => { const photo = photoById(id); return !hasProdigiPrintResolution(photo?.width, photo?.height, product.prodigi?.variant.printAreaSizes.default); });
   const productCartFull = !editingProduct && remaining === 0;
-  const productSelectionValid = !!product && !productLowResolution && !productCartFull && !productHasUnavailablePhotos && productMissingPhotos === 0 && productExcessPhotos === 0;
-  const productSelectionMessage = productLowResolution ? 'Zdjęcie ma zbyt małą lub niepotwierdzoną rozdzielczość. Dodaj większy oryginał lub wybierz mniejszy produkt.' : productCartFull
+  const productPreviewOnly = !!product?.prodigi && (!product.prodigi.ordersEnabled || product.prodigi.environment !== 'live');
+  const productSelectionValid = !!product && !productPreviewOnly && !productLowResolution && !productCartFull && !productHasUnavailablePhotos && productMissingPhotos === 0 && productExcessPhotos === 0;
+  const productSelectionMessage = productPreviewOnly ? 'Podgląd testowy — zamawianie tego produktu jest wyłączone.' : productLowResolution ? 'Zdjęcie ma zbyt małą lub niepotwierdzoną rozdzielczość. Dodaj większy oryginał lub wybierz mniejszy produkt.' : productCartFull
     ? 'Koszyk jest pełny. Usuń pozycję z koszyka, aby dodać ten produkt.'
     : productHasUnavailablePhotos
       ? 'Jedno z wybranych zdjęć jest już niedostępne. Usuń je z wyboru.'
@@ -361,13 +375,13 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   };
 
   return <>
-    <div className="gallery-shop-invitation mb-8 flex flex-wrap items-center justify-between gap-5 rounded-3xl border border-stone-200 bg-[#f7f5f0] p-6 text-stone-900 sm:p-8">
+    {!inline && <div className="gallery-shop-invitation mb-8 flex flex-wrap items-center justify-between gap-5 rounded-3xl border border-stone-200 bg-[#f7f5f0] p-6 text-stone-900 sm:p-8">
       <div><h2 className="text-xl font-semibold">{catalog.title}</h2><p className="mt-1 text-stone-600">{catalog.introduction}</p></div>
       <button ref={entryRef} type="button" className={primary} onClick={() => setOpen(true)}>{catalog.buttonLabel || 'Zamów odbitki i produkty'}{lines.length ? ` · Koszyk (${lines.length})` : ''}</button>
-    </div>
-    {open && createPortal(<div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Zakupy w galerii" tabIndex={-1} className="fixed inset-0 z-[200] flex flex-col bg-[#faf9f6] text-stone-900 [color-scheme:light]">
+    </div>}
+    {(open || inline) && renderPanel(<div ref={dialogRef} role={inline ? "region" : "dialog"} aria-modal={inline ? undefined : true} aria-label="Zakupy w galerii" tabIndex={-1} className={`${inline ? "relative rounded-3xl border border-stone-200" : "fixed inset-0 z-[200]"} flex flex-col bg-[#faf9f6] text-stone-900 [color-scheme:light]`}>
       <header className="shrink-0 border-b border-stone-200 bg-white px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-8">
-        <div className="flex items-center justify-between gap-3"><h2 className="min-w-0 flex-1 truncate text-lg font-medium tracking-tight sm:text-xl" title={catalog.title}>{catalog.title}</h2><button type="button" className={button} onClick={() => setOpen(false)}>Wróć do oglądania</button></div>
+        <div className="flex items-center justify-between gap-3"><h2 className="min-w-0 flex-1 truncate text-lg font-medium tracking-tight sm:text-xl" title={catalog.title}>{catalog.title}</h2>{!inline && <button type="button" className={button} onClick={() => setOpen(false)}>Wróć do oglądania</button>}</div>
         <nav aria-label="Nawigacja zakupów" className="mx-auto mt-4 grid max-w-2xl grid-cols-3 gap-1 rounded-2xl bg-stone-100 p-1">{(['gallery', 'products', 'cart'] as const).map(value => <button key={value} type="button" className={`${value === 'products' ? 'gallery-products-tab' : ''} min-h-11 rounded-xl px-2 py-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-600 ${tab === value ? 'bg-white text-stone-950 shadow-sm' : 'text-stone-500 hover:text-stone-900'}`} aria-current={tab === value ? 'page' : undefined} onClick={() => navigate(value)}>{value === 'gallery' ? 'Galeria' : value === 'products' ? 'Produkty' : `Koszyk (${lines.length})`}</button>)}</nav>
       </header>
       {tab === 'products' && product && <div data-product-selection-banner role="status" aria-live="polite" className={`shrink-0 border-b-2 px-4 py-3 text-sm sm:px-8 ${productExcessPhotos > 0 ? 'border-red-500 bg-red-50 text-red-900' : productSelectionValid ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-amber-400 bg-amber-50 text-amber-950'}`}>
@@ -401,8 +415,8 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
           </article>)}</div>
           {!catalog.products.length && <p className="rounded-3xl border border-dashed border-stone-300 bg-white px-6 py-16 text-center text-stone-500">Fotograf nie udostępnił jeszcze produktów w tej galerii.</p>}
           {product && <div ref={productConfigRef} className="scroll-mt-6 rounded-3xl border border-stone-200 bg-white p-4 sm:p-7">
-            <h4 className="text-xl font-semibold">{product.title} — wybór zdjęć</h4><p className="my-3">{product.maxPhotos === 1 ? 'Wybierz jedno zdjęcie produktu. Możesz je zmienić, wskazując inne zdjęcie.' : `Wybierz ${product.minPhotos === product.maxPhotos ? product.minPhotos : `${product.minPhotos}–${product.maxPhotos}`} zdjęć. Pierwsze zdjęcie jest zdjęciem głównym do projektu. Projekt i układ przygotuje fotograf zgodnie z opisem produktu.`} Wybrano: {productPhotos.length}.</p>
-            {product.prodigi && productPhotos[0] && photoById(productPhotos[0]) && <ProdigiPrintAreaPreview spec={product.prodigi} photo={photoById(productPhotos[0])!} />}
+            <h4 className="text-xl font-semibold">{product.title} — wybór zdjęć</h4>{productPreviewOnly && <p role="status" className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Produkt testowy — możesz sprawdzić zdjęcie i podgląd. Zamawianie jest wyłączone.</p>}<p className="my-3">{product.maxPhotos === 1 ? 'Wybierz jedno zdjęcie produktu. Możesz je zmienić, wskazując inne zdjęcie.' : `Wybierz ${product.minPhotos === product.maxPhotos ? product.minPhotos : `${product.minPhotos}–${product.maxPhotos}`} zdjęć. Pierwsze zdjęcie jest zdjęciem głównym do projektu. Projekt i układ przygotuje fotograf zgodnie z opisem produktu.`} Wybrano: {productPhotos.length}.</p>
+            {product.prodigi && productPhotos[0] && photoById(productPhotos[0]) && <ProdigiPrintAreaPreview title={product.title} spec={product.prodigi} photo={photoById(productPhotos[0])!} />}
             <div className="mb-4 flex flex-wrap gap-2">{product.minPhotos === product.maxPhotos && product.maxPhotos > 1 && <button type="button" className={button} onClick={() => setProductPhotos(photos.slice(0, product.maxPhotos).map(photo => photo.id))}>Zaznacz pierwsze {product.maxPhotos} zdjęć</button>}{productPhotos.length > 0 && <button type="button" className={button} onClick={() => setProductPhotos([])}>Wyczyść wybór</button>}</div>
             <p id="product-selection-status" role="status" aria-live="polite" className={`mb-3 rounded-xl px-4 py-3 text-sm font-medium ${productSelectionValid ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900'}`}>{productSelectionMessage}</p>
             <div className="mb-4 flex flex-wrap items-end gap-3"><label>Ilość produktów<input aria-label="Ilość produktów" className={input} type="number" inputMode="numeric" min="1" max="99" value={productQuantity} onChange={event => setProductQuantity(Math.max(1, Math.min(99, Math.floor(Number(event.target.value)) || 1)))} /></label><button type="button" className={primary} aria-describedby="product-selection-status" disabled={!productSelectionValid} onClick={addProduct}>{productCtaLabel} · {money(product.price * productQuantity)}</button><button type="button" className={button} onClick={() => { setProductId(null); setProductPhotos([]); setEditingProduct(null); delete productDrafts.current[product.id]; }}>Anuluj wybór produktu</button></div>
@@ -438,7 +452,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
         <div className="flex items-center justify-between gap-3"><button type="button" className="min-h-11 text-left text-sm text-stone-600 underline decoration-stone-300 underline-offset-4" onClick={() => mainRef.current?.scrollTo?.({ top: 0 })}>Format i ilość<br /><span className="font-medium text-stone-900">{selected.length} zdjęć × {quantity} szt. · {currentFormat?.label}</span></button><button type="button" className={primary} disabled={selected.length > remaining || selected.some(id => !photoById(id)) || !currentFormat} onClick={addPrints}>Dodaj · {money(selected.length * quantity * selectedPrintPrice)}</button></div>
       </footer>}
       {preview && <div data-shop-preview className="absolute inset-0 z-10 flex flex-col bg-black p-4 text-white" role="dialog" aria-label="Podgląd zdjęcia"><div className="flex justify-end gap-3"><button className={button} onClick={() => { setPreview(null); navigate('cart'); }}>Koszyk ({lines.length})</button><button autoFocus className={button} onClick={() => setPreview(null)}>Zamknij podgląd</button></div><img src={preview.file_url} alt={`Zdjęcie ${preview.id}`} className="min-h-0 flex-1 object-contain" /></div>}
-    </div>, document.body)}
+    </div>)}
     {open && previewProduct && <GalleryProductPreviewDialog product={previewProduct} onClose={() => setProductPreviewId(null)} onChoose={() => { chooseProduct(previewProduct.id); setProductPreviewId(null); }} />}
   </>;
 }

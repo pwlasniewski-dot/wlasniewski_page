@@ -1,6 +1,6 @@
 import {hasProdigiPrintResolution} from '@/lib/fulfillment/prodigi-image-size';
 import {isShopQa} from '@/lib/shop-qa';
-import {readProdigiProduct} from '@/lib/fulfillment/prodigi-catalog';
+import {readProdigiProduct,canDisplayProdigiProduct} from '@/lib/fulfillment/prodigi-catalog';
 import { orderClient } from './order-account';
 import { orderOrigin } from './order-origin';
 import { isClientRecordOwner } from '@/lib/auth/document-access';
@@ -32,7 +32,7 @@ export async function loadGalleryShop(galleryId: number | null) {
  const globalConfig = galleryId === null ? config : readShopConfig(globalSetting?.setting_value);
  const catalog: ShopCatalog={galleryId:galleryId ?? 0,enabled:config.enabled,title:config.title,introduction:config.introduction,buttonLabel:config.buttonLabel,formats:config.formats.filter(f=>f.active),delivery:config.delivery,products:products.filter(p=>!p.archived_at && p.is_active && p.price>0).filter(p=> {
   if (!p.product_type?.startsWith('prodigi')) return true;
-  const spec=prodigiSettings.get(p.id); return liveEnabled && spec?.productId === p.id && spec.environment === 'live' && spec.ordersEnabled && spec.liveQualified;
+  return canDisplayProdigiProduct(prodigiSettings.get(p.id), p.id, isShopQa(), liveEnabled);
  }).map(p=>{
   const globalRule = p.gallery_id === null ? globalConfig.productRules[String(p.id)] : undefined;
   const rule = config.productRules[String(p.id)] || globalRule || {minPhotos:1,maxPhotos:50};

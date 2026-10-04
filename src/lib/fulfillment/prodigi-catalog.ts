@@ -11,6 +11,12 @@ export const prodigiProductSchema = z.object({
   ordersEnabled: z.boolean(), liveQualified: z.boolean(), destination: z.literal('PL'),
 });
 export type ProdigiProductConfig = z.infer<typeof prodigiProductSchema>;
+/** QA can display sandbox products, but the cart and order guards still reject buying them. */
+export function canDisplayProdigiProduct(spec: ProdigiProductConfig | null | undefined, productId: number, isolatedQa: boolean, liveEnabled: boolean) {
+  if (!spec || spec.productId !== productId) return false;
+  if (isolatedQa) return spec.environment === 'sandbox' && !spec.ordersEnabled && !spec.liveQualified && spec.requiredAssets.length === 1 && spec.requiredAssets[0] === 'default';
+  return liveEnabled && spec.environment === 'live' && spec.ordersEnabled && spec.liveQualified;
+}
 export function readProdigiProduct(value: unknown): ProdigiProductConfig | null {
   try { const parsed = prodigiProductSchema.safeParse(typeof value === 'string' ? JSON.parse(value) : value); return parsed.success ? parsed.data : null; } catch { return null; }
 }

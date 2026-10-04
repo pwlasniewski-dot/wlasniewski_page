@@ -1,3 +1,4 @@
+import { readProdigiProduct } from '@/lib/fulfillment/prodigi-catalog';
 import { hasShopDelivery } from './shop-delivery';
 import { defaultPickupDelivery } from './merchandise';
 import type { PrintFormat, ShopConfig, ShopProduct } from './merchandise';
@@ -23,7 +24,7 @@ export type PublicShopOffer = {
 export type PublicShopCatalog = {
     offer: PublicShopOffer;
     formats: PrintFormat[];
-    products: ShopProduct[];
+    products: (ShopProduct & { personalizationEligible?: boolean })[];
     delivery: ShopConfig['delivery'];
 };
 
@@ -68,8 +69,10 @@ export function publicShopCatalog(config: ShopConfig, activeSharedProducts: Shop
     });
     const products = offer.productIds.flatMap(id => {
         const product = activeSharedProducts.find(p => p.id === id && p.price > 0 && hasShopDelivery(config.delivery, p));
+        const spec = readProdigiProduct(product?.prodigi);
+        const personalizationEligible = !!spec && spec.requiredAssets.length === 1 && spec.requiredAssets[0] === 'default' && product?.minPhotos === 1 && product?.maxPhotos === 1;
         // Do not expose supplier IDs, URLs, timestamps or internal catalogue fields.
-        return product ? [{ id: product.id, title: product.title, description: product.description,
+        return product ? [{ personalizationEligible, id: product.id, title: product.title, description: product.description,
             price: product.price, image_url: product.image_url, preview_images: product.preview_images || [], video_url: product.video_url || null, sample_pages: product.sample_pages || [],
             product_type: product.product_type, minPhotos: product.minPhotos, maxPhotos: product.maxPhotos,
             ...(product.deliveryMethods ? { deliveryMethods: [...product.deliveryMethods] } : {}) }] : [];

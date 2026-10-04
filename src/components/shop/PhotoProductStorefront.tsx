@@ -6,6 +6,7 @@ import { GalleryProductPreviewDialog } from '@/components/galleries/GalleryProdu
 import { parseShopIntent, replaceShopIntent, shopAccountHref, shopGalleryHref, trackShopIntent, type ShopIntent } from '@/lib/galleries/shop-intent';
 import type { PublicShopCatalog } from '@/lib/galleries/public-offer';
 import type { ShopProduct } from '@/lib/galleries/merchandise';
+import PersonalizationShop from '@/components/shop/PersonalizationShop';
 import PrintPriceTiers from '@/components/galleries/PrintPriceTiers';
 
 type ClientGallery = { id: number; access_code: string; client_name: string; photo_count: number; created_at: string; gallery_mode?: string };
@@ -39,6 +40,8 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
   const [attempt, setAttempt] = useState(0);
   const [intent, setIntent] = useState<ShopIntent | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [personalization, setPersonalization] = useState<ShopIntent | null>(null);
+  const personalizer = useRef<HTMLDivElement>(null);
   const [preview, setPreview] = useState<ShopProduct | null>(null);
   const [galleries, setGalleries] = useState<ClientGallery[] | null>(null);
   const [galleryError, setGalleryError] = useState('');
@@ -63,7 +66,12 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
     onAvailabilityChange?.(available, catalog?.offer.buttonLabel || '');
   }, [catalog, onAvailabilityChange]);
 
-  useEffect(() => { if (mode === 'account') setIntent(parseShopIntent(window.location.search)); }, [mode]);
+  useEffect(() => {
+    const selection = parseShopIntent(window.location.search);
+    if (new URLSearchParams(window.location.search).get('shopPersonalize') === '1') { setPersonalization(selection); setExpanded(true); }
+    else if (mode === 'account') setIntent(selection);
+  }, [mode]);
+  useEffect(() => { if (personalization && loaded) personalizer.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }); }, [personalization, loaded]);
   useEffect(() => { if (mode === 'account' && intent) setExpanded(true); }, [mode, intentKey]);
   useEffect(() => {
     if (intent && loaded && (mode === 'public' || expanded)) {
@@ -103,7 +111,14 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
   const renderGalleryAction = (selection: ShopIntent) => mode === 'public'
     ? <a className={action} href={shopAccountHref(selection)} data-analytics={`shop-offer-${selection.kind}`} onClick={() => trackShopIntent('offer_selected', selection)}>{catalog.offer.buttonLabel}<span aria-hidden="true">→</span></a>
     : <button type="button" className={action} onClick={() => choose(selection)}>{catalog.offer.buttonLabel}<span aria-hidden="true">→</span></button>;
-  const renderAction = (selection: ShopIntent) => <div className="space-y-2">{renderGalleryAction(selection)}{catalog.offer.personalizationEnabled && <a className={secondary + ' block text-center'} href={`/sklep/personalizacja?${selection.kind === 'product' ? `shopProduct=${selection.productId}` : `shopFormat=${selection.formatId}`}`}>{catalog.offer.personalizationButtonLabel}</a>}</div>;
+  const personalize = (selection: ShopIntent) => {
+    trackShopIntent('offer_selected', selection);
+    setPreview(null); setIntent(null); setPersonalization(selection); setExpanded(true);
+    replaceShopIntent(selection);
+    const url = new URL(window.location.href); url.searchParams.set('shopPersonalize', '1');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + '#personalizacja-produktu');
+  };
+  const renderAction = (selection: ShopIntent) => <div className="space-y-2">{renderGalleryAction(selection)}{catalog.offer.personalizationEnabled && selection.kind === 'product' && products.some(product => product.id === selection.productId && product.personalizationEligible) && <button type="button" className={secondary + ' block w-full text-center'} onClick={() => personalize(selection)}>{catalog.offer.personalizationButtonLabel}</button>}</div>;
 
   const content = <section id="produkty-fotograficzne" aria-labelledby={headingId} className={`scroll-mt-28 border-t border-stone-700/60 text-stone-100 ${mode === 'public' ? `py-12 sm:py-16 ${className}` : 'px-4 py-7 sm:px-6'}`}>
     {mode === 'public' && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(storefrontStructuredData(catalog)).replace(/</g, '\\u003c') }} />}
@@ -121,6 +136,10 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
         <button type="button" aria-label={`Zobacz produkt: ${product.title}`} className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-stone-700" onClick={() => setPreview(product)}><ProductImage src={product.image_url} alt={product.title} /></button>
         <div className="flex flex-1 flex-col p-5 sm:p-6"><h3 className="text-xl font-medium leading-snug">{product.title}</h3>{product.description && <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm leading-6 text-stone-400">{product.description}</p>}<p className="mt-4 text-xs text-stone-500">Zdjęcia do produktu: {product.minPhotos === product.maxPhotos ? product.minPhotos : `${product.minPhotos}–${product.maxPhotos}`}</p><p className="mt-auto pt-6 text-2xl font-medium tracking-tight">{money(product.price)}</p><button type="button" className="my-3 min-h-11 text-left text-sm text-stone-300 underline decoration-stone-600 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-300" aria-label={`Szczegóły produktu: ${product.title}`} onClick={() => setPreview(product)}>Szczegóły i zdjęcia</button>{renderAction({ kind: 'product', productId: product.id })}</div>
       </article>)}
+    </div>}
+    {personalization && catalog.offer.personalizationEnabled && <div id="personalizacja-produktu" ref={personalizer} className="mt-8 scroll-mt-24">
+      <button type="button" className={`${secondary} mb-3`} onClick={() => { setPersonalization(null); replaceShopIntent(null); const url = new URL(window.location.href); url.searchParams.delete('shopPersonalize'); window.history.replaceState(window.history.state, '', url.pathname + url.search + '#produkty-fotograficzne'); }}>Zamknij personalizację</button>
+      <PersonalizationShop embedded initialIntent={personalization} />
     </div>}
     {preview && <GalleryProductPreviewDialog product={preview} onClose={() => setPreview(null)} onChoose={() => choose({ kind: 'product', productId: preview.id })} />}
   </section>;

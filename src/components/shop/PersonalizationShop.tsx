@@ -2,14 +2,19 @@
 import { useEffect, useRef, useState } from 'react';
 import GalleryShoppingPanel from '@/components/galleries/GalleryShoppingPanel';
 import { prepareShopPhoto } from '@/lib/uploads/prepare-shop-photo';
+import { parseShopIntent, replaceShopIntent, type ShopIntent } from '@/lib/galleries/shop-intent';
 import type { PublicShopCatalog } from '@/lib/galleries/public-offer';
 type Photo = { id: number; previewUrl: string; width: number; height: number };
 type Session = { galleryId: number; accessCode: string; photos: Photo[]; limits: { fileBytes: number; totalBytes: number; photos: number; maxPixels: number; minDimension: number } };
 const button = 'inline-flex min-h-12 items-center justify-center rounded-xl bg-stone-900 px-5 py-3 font-medium text-white disabled:opacity-40';
-export default function PersonalizationShop() {
+type Props = { embedded?: boolean; initialIntent?: ShopIntent | null };
+export default function PersonalizationShop({ embedded = false, initialIntent }: Props = {}) {
  const [catalog,setCatalog] = useState<PublicShopCatalog | null>(null); const [loaded,setLoaded] = useState(false);
  const [session,setSession] = useState<Session | null>(null); const [busy,setBusy] = useState(false); const [progress,setProgress] = useState(0); const [error,setError] = useState(''); const [login,setLogin] = useState(false); const [notice,setNotice] = useState('');
  const [stage,setStage]=useState('');
+ const [selection,setSelection]=useState<ShopIntent | null>(initialIntent ?? null);
+ const [preferredPhotoId,setPreferredPhotoId]=useState<number | undefined>();
+ useEffect(()=>{setSelection(initialIntent ?? parseShopIntent(window.location.search));},[initialIntent]);
  const lock=useRef(false); const xhr=useRef<XMLHttpRequest|null>(null); const alive=useRef(true);
  const auth = (): Record<string,string> => { const token=localStorage.getItem('client_token') || localStorage.getItem('user_token'); return token ? { Authorization: `Bearer ${token}` } : {}; };
  useEffect(() => { alive.current=true; const controller=new AbortController(); fetch('/api/shop/catalog',{cache:'no-store',signal:controller.signal}).then(async response=>{const data=await response.json();if(!response.ok || !data.success)throw Error('Nie udało się odczytać oferty.');if(alive.current)setCatalog(data.catalog);}).catch(e=>{if(alive.current)setError(e.message);}).finally(()=>{if(alive.current)setLoaded(true);});return()=>{alive.current=false;controller.abort();xhr.current?.abort();};},[]);
@@ -29,19 +34,29 @@ export default function PersonalizationShop() {
    const ticket=await request('upload',{fileName:file.name,contentType:file.type,size:file.size,sha256});
    await new Promise<void>((resolve,reject)=>{const transfer=new XMLHttpRequest();xhr.current=transfer;transfer.open('PUT',ticket.url);transfer.timeout=120000;Object.entries(ticket.headers as Record<string,string>).forEach(([key,value])=>transfer.setRequestHeader(key,value));transfer.upload.onprogress=e=>{if(e.lengthComputable && alive.current)setProgress(Math.round(e.loaded/e.total*100));};transfer.onload=()=>transfer.status>=200 && transfer.status<300?resolve():reject(Error('Nie udało się przesłać pliku. Spróbuj ponownie.'));transfer.onerror=()=>reject(Error('Przerwano połączenie podczas wysyłania zdjęcia.'));transfer.ontimeout=()=>reject(Error('Przekroczono czas wysyłania zdjęcia.'));transfer.onabort=()=>reject(Error('Wysyłanie anulowane.'));transfer.send(file);});
    if(alive.current)setStage('Zapisywanie i sprawdzanie zdjęcia…');
-   await request('complete',{uploadId:ticket.uploadId});const refreshed=await request('session');if(alive.current){setSession(refreshed);setProgress(100);setNotice('Zdjęcie zapisane. Wybierz produkt i sprawdź podgląd pola druku.');}
+   await request('complete',{uploadId:ticket.uploadId});const refreshed=await request('session');if(alive.current){setSession(refreshed);setProgress(100);setPreferredPhotoId(refreshed.photos.find((photo:Photo)=>!session.photos.some(existing=>existing.id===photo.id))?.id);setNotice('Zdjęcie zapisane. Sprawdź podgląd przed dodaniem do koszyka.');}
   } catch(e){if(alive.current)setError(e instanceof Error?e.message:'Nie udało się przesłać zdjęcia.');}
   finally{lock.current=false;xhr.current=null;if(alive.current)setBusy(false);}
  }
  const offer=catalog?.offer;
- return <main className="min-h-screen bg-stone-50 px-4 pb-16 pt-28 text-stone-900 sm:px-8"><div className="mx-auto max-w-5xl space-y-6"><a href="/karta-podarunkowa#produkty-fotograficzne" className="underline">Wróć do oferty produktów</a>
+ const eligibleProducts=catalog?.products.filter(product=>product.personalizationEligible) ?? [];
+ const selectedProduct=selection?.kind==='product' ? eligibleProducts.find(product=>product.id===selection.productId) : null;
+ const selectedFormat=selection?.kind==='print' ? catalog?.formats.find(format=>format.id===selection.formatId) : null;
+ const chosenTitle=selectedProduct?.title || selectedFormat?.label;
+ const returnTo=typeof window!=='undefined' ? window.location.pathname + window.location.search + window.location.hash : '/sklep/personalizacja';
+ const Container=embedded ? 'div' : 'main';
+ const Heading=embedded ? 'h2' : 'h1';
+ return <Container className={embedded ? "rounded-2xl bg-stone-50 p-4 text-stone-900 sm:p-6" : "min-h-screen bg-stone-50 px-4 pb-16 pt-28 text-stone-900 sm:px-8"}><div className="mx-auto max-w-5xl space-y-6">{!embedded && <a href="/karta-podarunkowa#produkty-fotograficzne" className="underline">Wróć do oferty produktów</a>}
   {!loaded && <p role="status">Wczytywanie oferty…</p>}
-  {loaded && catalog && !offer?.personalizationEnabled && <p role="status">Dodawanie własnych zdjęć jest obecnie niedostępne.</p>}
-  {offer?.personalizationEnabled && <><header><h1 className="text-3xl font-semibold sm:text-4xl">{offer.personalizationTitle}</h1><p className="mt-4 max-w-3xl text-stone-600">{offer.personalizationIntroduction}</p></header>
-   {!session && <button className={button} disabled={busy} onClick={()=>void start()}>{busy?'Wczytywanie…':offer.personalizationButtonLabel}</button>}
+  {loaded && !error && !offer?.personalizationEnabled && <p role="status">Dodawanie własnych zdjęć jest obecnie niedostępne.</p>}
+  {offer?.personalizationEnabled && !eligibleProducts.length && <p role="status">Brak produktów dostępnych do personalizacji własnym zdjęciem. Spróbuj ponownie później.</p>}
+  {offer?.personalizationEnabled && eligibleProducts.length>0 && <><header><Heading className="text-2xl font-semibold sm:text-3xl">{chosenTitle || offer.personalizationTitle}</Heading>{selectedProduct?.image_url && !session && <img src={selectedProduct.image_url} alt={selectedProduct.title} className="mt-4 h-40 w-full object-contain" />}<p className="mt-4 max-w-3xl text-stone-600">{offer.personalizationIntroduction}</p></header>
+   {!embedded && <label className="block font-medium">Wybierz produkt<select aria-label="Produkt do personalizacji" className="mt-2 block min-h-12 w-full rounded-xl border border-stone-300 bg-white p-3" value={selectedProduct?.id ?? ''} onChange={event=>{const next:ShopIntent={kind:'product',productId:Number(event.target.value)};setSelection(next);replaceShopIntent(next);}}><option value="" disabled>Wybierz produkt</option>{eligibleProducts.map(product=><option key={product.id} value={product.id}>{product.title}</option>)}</select></label>}
+   {selection && !chosenTitle && <p role="status">Wybrany produkt nie jest już dostępny do personalizacji. Wybierz inny produkt w sklepie.</p>}
+   {!session && <button className={button} disabled={busy || !chosenTitle} onClick={()=>void start()}>{busy?'Wczytywanie…':offer.personalizationButtonLabel}</button>}
    {session && <section aria-label="Twoje zdjęcia do personalizacji" className="space-y-4 rounded-2xl border border-stone-200 bg-white p-5"><label className="block font-medium">Dodaj zdjęcie JPEG, PNG lub HEIC/HEIF<input aria-label="Dodaj własne zdjęcie" className="mt-3 block w-full text-sm" type="file" accept="image/jpeg,image/png,image/heic,image/heif,.jpg,.jpeg,.png,.heic,.heif" disabled={busy} onChange={event=>{const file=event.target.files?.[0];event.target.value='';if(file)void upload(file);}} /></label><p className="text-sm text-stone-600">Do {Math.floor(session.limits.fileBytes/1024/1024)} MB na plik. Zdjęcia HEIC/HEIF z iPhone’a zamieniamy automatycznie na JPG. Zdjęcia są przypisane do Twojego konta. Dodawaj tylko zdjęcia, do których masz prawa.</p>{busy && <div role="status"><progress aria-label="Postęp przesyłania zdjęcia" value={progress} max="100" className="w-full" />{stage} {progress > 0 ? `${progress}%` : ''}</div>}<div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{session.photos.map(photo=><figure key={photo.id} className="rounded-xl bg-stone-100 p-2"><img src={photo.previewUrl} alt={`Twoje zdjęcie ${photo.id}`} className="aspect-square w-full object-contain" /><figcaption className="mt-2 text-xs">{photo.width} × {photo.height} px</figcaption></figure>)}</div></section>}
-   {session && session.photos.length>0 && <GalleryShoppingPanel endpoint={`/api/galleries/${encodeURIComponent(session.accessCode)}/shop`} headers={auth()} photos={session.photos.map(photo=>({id:photo.id,file_url:photo.previewUrl,thumbnail_url:photo.previewUrl,width:photo.width,height:photo.height}))} />}
+   {session && <GalleryShoppingPanel initialIntent={selection ?? undefined} inline={embedded || !!selection} preferredPhotoId={preferredPhotoId} endpoint={`/api/galleries/${encodeURIComponent(session.accessCode)}/shop`} headers={auth()} photos={session.photos.map(photo=>({id:photo.id,file_url:photo.previewUrl,thumbnail_url:photo.previewUrl,width:photo.width,height:photo.height}))} />}
   </>}
-  {login && <a href={`/logowanie?returnTo=${encodeURIComponent('/sklep/personalizacja' + (typeof window !== 'undefined' ? window.location.search : ''))}`} className={button}>Zaloguj się na swoje konto</a>}{error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}{notice && <p role="status" className="rounded-xl bg-emerald-50 p-4 text-emerald-800">{notice}</p>}
- </div></main>;
+  {login && <a href={`/logowanie?returnTo=${encodeURIComponent(returnTo)}`} className={button}>Zaloguj się na swoje konto</a>}{error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}{notice && <p role="status" className="rounded-xl bg-emerald-50 p-4 text-emerald-800">{notice}</p>}
+ </div></Container>;
 }
