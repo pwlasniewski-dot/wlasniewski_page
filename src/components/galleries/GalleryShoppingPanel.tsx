@@ -270,7 +270,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   const productHasUnavailablePhotos = productPhotos.some(id => !photoById(id));
   const productLowResolution = !!product?.prodigi && productPhotos.some(id => { const photo = photoById(id); return !hasProdigiPrintResolution(photo?.width, photo?.height, product.prodigi?.variant.printAreaSizes.default); });
   const productCartFull = !editingProduct && remaining === 0;
-  const canOrderProduct = (item: ShopCatalog['products'][number]) => !item.prodigi || (item.prodigi.environment === 'live' ? item.prodigi.ordersEnabled && item.prodigi.liveQualified : catalog.sandboxCheckoutEnabled === true && item.prodigi.sandboxOrdersEnabled === true && !item.prodigi.ordersEnabled && !item.prodigi.liveQualified);
+  const canOrderProduct = (item: ShopCatalog['products'][number]) => !item.prodigi || (item.prodigi.environment === 'live' ? item.prodigi.ordersEnabled && item.prodigi.liveQualified : (catalog.sandboxCartEnabled === true || catalog.sandboxCheckoutEnabled === true) && item.prodigi.sandboxOrdersEnabled === true && !item.prodigi.ordersEnabled && !item.prodigi.liveQualified);
   const productPreviewOnly = !!product && !canOrderProduct(product);
   const productSelectionValid = !!product && !productPreviewOnly && !productLowResolution && !productCartFull && !productHasUnavailablePhotos && productMissingPhotos === 0 && productExcessPhotos === 0;
   const productSelectionMessage = productPreviewOnly ? 'Podgląd testowy — zamawianie tego produktu jest wyłączone.' : productLowResolution ? 'Zdjęcie ma zbyt małą lub niepotwierdzoną rozdzielczość. Dodaj większy oryginał lub wybierz mniejszy produkt.' : productCartFull
@@ -293,6 +293,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   const lowResolutionLines = lines.some(line => line.kind === 'product' && (() => { const item = catalog.products.find(value => value.id === line.productId); return !!item?.prodigi && line.photoIds.some(id => { const photo = photoById(id); return !hasProdigiPrintResolution(photo?.width, photo?.height, item.prodigi?.variant.printAreaSizes.default); }); })());
   const prodigiCartLines = lines.filter(line => line.kind === 'product' && catalog.products.find(item => item.id === line.productId)?.prodigi);
   const incompatibleCart = prodigiCartLines.length > 0 && (prodigiCartLines.length !== lines.length || prodigiCartLines.length > 10 || new Set(prodigiCartLines.map(line => line.kind === 'product' ? catalog.products.find(item => item.id === line.productId)?.prodigi?.shippingMethod : undefined)).size > 1);
+  const paymentUnavailable = catalog.sandboxCartEnabled === true && catalog.sandboxCheckoutEnabled !== true;
   const invalidLines = incompatibleCart || lowResolutionLines || lines.length > 500 || lines.some(line => line.kind === 'print' ? !catalog.formats.some(item => item.id === line.formatId && item.active) || !photos.some(photo => photo.id === line.photoId) : !catalog.products.some(item => item.id === line.productId && canOrderProduct(item) && line.photoIds.length >= item.minPhotos && line.photoIds.length <= item.maxPhotos) || line.photoIds.some(id => !photos.some(photo => photo.id === id)));
   const subtotal = lines.reduce((sum, line) => sum + linePrice(line) * line.quantity, 0);
   const deliveryPrice = availableDelivery?.[delivery.method]?.amount || 0;
@@ -325,7 +326,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   };
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (busy || pendingOrder || !lines.length || invalidLines || !availableDelivery?.[delivery.method]?.enabled) return;
+    if (paymentUnavailable || busy || pendingOrder || !lines.length || invalidLines || !availableDelivery?.[delivery.method]?.enabled) return;
     setBusy(true); setError('');
     const body = JSON.stringify({ lines, delivery, expectedTotal: total });
     if (!idempotency.current) {
@@ -395,7 +396,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
         <div className="mx-auto w-full max-w-[1280px]">
         <p role="status" className={notice ? "mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" : "sr-only"}>{notice}</p>
         {pendingOrder && <div className="mb-4 rounded-xl border border-amber-300 p-4"><p>Płatność zamówienia {pendingOrder.id} jest w trakcie weryfikacji. Koszyk jest zachowany.</p><button className={button} disabled={checkingPayment} onClick={() => void checkPayment(pendingOrder)}>{checkingPayment ? 'Sprawdzam płatność…' : 'Sprawdź status płatności'}</button>{pendingPaymentUrl && <a className={`${primary} mt-3 inline-flex items-center sm:ml-3`} href={pendingPaymentUrl}>Wróć do płatności</a>}</div>}
-        {catalog.sandboxCheckoutEnabled && <p role="status" className="mb-4 rounded-lg bg-amber-50 p-3 text-amber-900">Tryb testowy — płatność i realizacja zamówienia odbywają się w środowisku testowym.</p>}
+        {(catalog.sandboxCartEnabled || catalog.sandboxCheckoutEnabled) && <p role="status" className="mb-4 rounded-lg bg-amber-50 p-3 text-amber-900">Tryb testowy — płatność i realizacja zamówienia odbywają się w środowisku testowym.</p>}
         {incompatibleCart && <p role="alert" className="mb-4 rounded-lg bg-amber-50 p-3 text-amber-900">Produkty z drukarni zamów osobno, z jednym sposobem wysyłki i maksymalnie 10 pozycjami.</p>}
         {invalidLines && <p role="alert" className="mb-4 rounded-lg bg-amber-50 text-amber-900 p-3">Część pozycji jest już niedostępna. Zmień format lub usuń niedostępne pozycje przed płatnością.</p>}
         {error && <p role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-red-800">{error}</p>}
@@ -443,11 +444,12 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
           </article>; })}</div>
           {!!lines.length && <div className="mt-8 rounded-3xl border border-stone-200 bg-white p-5 sm:p-8"><p className="mb-3 text-xl font-semibold">Produkty: {money(subtotal)}</p>{!checkout && <button className={primary} onClick={() => setCheckout(true)}>Dostawa i podsumowanie</button>}
             {checkout && <form onSubmit={submit} className="space-y-4">
+              {paymentUnavailable && <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">Możesz sprawdzić koszyk i dostawę. Płatność testowa nie jest jeszcze dostępna.</p>}
               {!availableDelivery?.locker.enabled && !availableDelivery?.courier.enabled && !availableDelivery?.pickup?.enabled && <p role="alert" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">Brak wspólnego sposobu dostawy dla produktów w koszyku. Zmień koszyk lub skontaktuj się z fotografem przed zamówieniem.</p>}
               <label className="block">Sposób dostawy<select className={input} aria-label="Sposób dostawy" value={delivery.method} onChange={event => setDelivery(previous => ({ ...previous, method: event.target.value as ShopDelivery['method'] }))}>{Object.entries(availableDelivery || {}).filter(([, value]) => value.enabled).map(([key, value]) => <option value={key} key={key}>{key === 'locker' ? 'InPost Paczkomat' : key === 'pickup' ? 'Odbiór osobisty' : 'Kurier'} · {money(value.amount)}</option>)}</select></label>
               <div className="grid gap-4 sm:grid-cols-2">{(['recipientName', 'email', 'phone'] as const).map(field => <label key={field}>{field === 'recipientName' ? 'Imię i nazwisko' : field === 'email' ? 'E-mail' : 'Telefon'}<input className={input} required autoComplete={field === 'recipientName' ? 'name' : field === 'email' ? 'email' : 'tel'} type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'} value={delivery[field]} onChange={event => setDelivery(previous => ({ ...previous, [field]: event.target.value }))} /></label>)}</div>
               {delivery.method === 'locker' ? <InPostPointPicker value={delivery.pointCode || ''} onChange={pointCode => setDelivery(previous => ({ ...previous, pointCode }))} /> : delivery.method === 'courier' ? <div className="grid gap-4 sm:grid-cols-3">{(['street', 'postalCode', 'city'] as const).map(field => <label key={field}>{field === 'street' ? 'Ulica, numer domu i lokalu' : field === 'postalCode' ? 'Kod pocztowy' : 'Miejscowość'}<input className={input} required value={delivery.address?.[field] || ''} onChange={event => setDelivery(previous => ({ ...previous, address: { street: '', postalCode: '', city: '', ...previous.address, [field]: event.target.value } }))} /></label>)}</div> : <p className="whitespace-pre-line rounded-xl bg-stone-100 p-4 text-sm text-stone-700">{availableDelivery?.pickup?.instructions}</p>}
-              <p>Dostawa: {money(deliveryPrice)} · Razem: <strong>{money(total)}</strong></p><button className={primary} disabled={busy || !!pendingOrder || invalidLines || !availableDelivery?.[delivery.method]?.enabled} type="submit">{busy ? 'Przygotowuję płatność…' : `Zamawiam i płacę ${money(total)}`}</button><button className={`${button} sm:ml-3`} type="button" onClick={() => setCheckout(false)}>Wróć do koszyka</button>
+              <p>Dostawa: {money(deliveryPrice)} · Razem: <strong>{money(total)}</strong></p><button className={primary} disabled={paymentUnavailable || busy || !!pendingOrder || invalidLines || !availableDelivery?.[delivery.method]?.enabled} type="submit">{busy ? 'Przygotowuję płatność…' : `Zamawiam i płacę ${money(total)}`}</button><button className={`${button} sm:ml-3`} type="button" onClick={() => setCheckout(false)}>Wróć do koszyka</button>
             </form>}
           </div>}
         </section>}

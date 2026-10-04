@@ -1,7 +1,10 @@
 import {hasProdigiPrintResolution} from '@/lib/fulfillment/prodigi-image-size';
-import {isShopQa} from '@/lib/shop-qa';
+import {isShopQa,shopDatabaseUrl} from '@/lib/shop-qa';
 import {readProdigiProduct,canDisplayProdigiProduct} from '@/lib/fulfillment/prodigi-catalog';
 import { orderClient } from './order-account';
+import { readShopGuest, guestOwnsGallery } from './shop-guest';
+import { isTrustedAdminOrigin } from '@/lib/auth/admin-origin';
+import { boundedJson } from '@/lib/fulfillment/prodigi-sandbox';
 import { orderOrigin } from './order-origin';
 import { isClientRecordOwner } from '@/lib/auth/document-access';
 import { orderAccountPath } from './order-presentation';
@@ -65,12 +68,16 @@ export async function authorizeShop(request: NextRequest, scope: {accessCode:str
  return {gallery,participantId};
 }
 export function shopError(error: unknown) {return NextResponse.json({success:false,error:error instanceof ShopValidationError ? error.message:'Nie udało się obsłużyć sklepu. Spróbuj ponownie.'},{status:error instanceof ShopValidationError ? error.status:500});}
-export async function getShop(request: NextRequest, scope: {accessCode:string} | {participantId:number}) {try {const {gallery}=await authorizeShop(request,scope); const {catalog}=await loadGalleryShop(gallery.id); if(isShopQa()){catalog.sandboxCheckoutEnabled=false;try{await assertShopQaPayment(orderOrigin(request.url));catalog.sandboxCheckoutEnabled=true;}catch{/* QA remains preview-only until sandbox payment setup is verified. */}} return NextResponse.json({success:true,catalog},{headers:{'Cache-Control':'private, no-store'}});}catch(error){return shopError(error);}}
+export async function getShop(request: NextRequest, scope: {accessCode:string} | {participantId:number}) {try {const {gallery}=await authorizeShop(request,scope); const {catalog}=await loadGalleryShop(gallery.id); if(isShopQa()){shopDatabaseUrl();catalog.sandboxCartEnabled=true;catalog.sandboxCheckoutEnabled=false;try{await assertShopQaPayment(orderOrigin(request.url));catalog.sandboxCheckoutEnabled=true;}catch{/* QA remains preview-only until sandbox payment setup is verified. */}} return NextResponse.json({success:true,catalog},{headers:{'Cache-Control':'private, no-store'}});}catch(error){return shopError(error);}}
 function canonical(value: unknown): string {if(Array.isArray(value)) return '['+value.map(canonical).join(',')+']'; if(value && typeof value==='object') return '{'+Object.entries(value).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>JSON.stringify(k)+':'+canonical(v)).join(',')+'}'; return JSON.stringify(value);}
 export function shopCheckoutFingerprint(galleryId:number, participantId:number|null, body:unknown) {return createHash('sha256').update(canonical({galleryId,participantId,body})).digest('hex');}
 export async function postShopOrder(request:NextRequest,scope:{accessCode:string}|{participantId:number}) {
  try {
   const {gallery,participantId}=await authorizeShop(request,scope);
+  if(gallery.terms_source==='SHOP_UPLOAD_GUEST'){
+   if(!isTrustedAdminOrigin(request))throw new ShopValidationError('Nieprawidłowe pochodzenie żądania.',403);
+   if(request.headers.get('content-type')?.split(';')[0].trim()!=='application/json')throw new ShopValidationError('Wymagane dane JSON.',415);
+  }
   const sandboxCheckout = isShopQa();
   if (sandboxCheckout) {
    try { await assertShopQaPayment(orderOrigin(request.url)); }
@@ -78,7 +85,7 @@ export async function postShopOrder(request:NextRequest,scope:{accessCode:string
   }
   const key=request.headers.get('idempotency-key');
   if(!key || !/^[A-Za-z0-9_-]{16,128}$/.test(key)) throw new ShopValidationError('Brak poprawnego identyfikatora zamówienia.');
-  const body=await request.json().catch(()=>null);
+  const body=gallery.terms_source==='SHOP_UPLOAD_GUEST' ? await boundedJson(request.body,65536).catch(()=>null) : await request.json().catch(()=>null);
   if(!body || !Number.isSafeInteger(body.expectedTotal)) throw new ShopValidationError('Nieprawidłowe zamówienie.');
   const fingerprint=shopCheckoutFingerprint(gallery.id,participantId,{lines:body.lines,delivery:body.delivery,expectedTotal:body.expectedTotal});
   const existingResponse=(order:{id:number;gallery_id:number;participant_id:number|null;checkout_fingerprint:string|null;payment_status:string;payment_url:string|null})=> {
@@ -105,14 +112,20 @@ export async function postShopOrder(request:NextRequest,scope:{accessCode:string
   }
   if(priced.total!==body.expectedTotal) return NextResponse.json({success:false,code:'PRICE_CHANGED',error:'Cennik się zmienił. Sprawdź aktualne podsumowanie przed płatnością.',catalog,total:priced.total},{status:409});
   if(priced.delivery.method==='locker') await verifyParcelPoint(priced.delivery.pointCode!);
-  const client = participantId === null ? await orderClient(request) : null;
+  const guest = gallery.terms_source === 'SHOP_UPLOAD_GUEST' ? await readShopGuest(request) : null;
+  if(gallery.terms_source === 'SHOP_UPLOAD_GUEST' && (!guest || gallery.client_id !== null || !await guestOwnsGallery(request,gallery.id))) throw new ShopValidationError('Sesja zakupów wygasła. Otwórz ponownie wybrany produkt.',401);
+  const client = participantId === null && !guest ? await orderClient(request) : null;
   const accountBuyer = client && isClientRecordOwner(gallery, client) ? client : null;
-  const metadata:ShopMetadata={...(sandboxCheckout ? {checkoutEnvironment:'sandbox' as const} : {}),...(accountBuyer ? {customerId:accountBuyer.id} : {}),kind:'gallery_merchandise',version:1,lines:priced.lines,delivery:priced.delivery,fulfillment:{status:'new',trackingNumber:null}};
+  const metadata:ShopMetadata={...(sandboxCheckout ? {checkoutEnvironment:'sandbox' as const} : {}),...(guest ? {guestOwnerId:guest.id} : {}),...(accountBuyer ? {customerId:accountBuyer.id} : {}),kind:'gallery_merchandise',version:1,lines:priced.lines,delivery:priced.delivery,fulfillment:{status:'new',trackingNumber:null}};
   let order;
   try {order=await prisma.photoOrder.create({data:{gallery_id:gallery.id,participant_id:participantId,photo_ids:'[]',photo_count:priced.lines.filter(l=>l.kind==='print').reduce((sum,l)=>sum+l.quantity,0),product_ids:JSON.stringify(metadata),total_amount:priced.total,payment_status:'initializing',idempotency_key:key,checkout_fingerprint:fingerprint}});}catch(error){if((error as {code?:string})?.code!=='P2002') throw error; const raced=await prisma.photoOrder.findUnique({where:{idempotency_key:key}});if(!raced) throw error;return existingResponse(raced);}
   try {
    const origin=orderOrigin(request.url);
-   const result=await createPayUOrder({description:`Zamówienie odbitek i produktów #${order.id}`,currencyCode:'PLN',totalAmount:priced.total,extOrderId:`GALLERY_${order.id}_${Date.now()}`,buyer:{email:priced.delivery.email,firstName:priced.delivery.recipientName.split(' ')[0],lastName:priced.delivery.recipientName.split(' ').slice(1).join(' ') || '-',language:'pl'},products:[...priced.lines.map(l=>({name:l.title,unitPrice:l.unitAmount,quantity:l.quantity})),...(priced.delivery.amount ? [{name:'Dostawa',unitPrice:priced.delivery.amount,quantity:1}]:[])],continueUrl:accountBuyer ? `${origin}${orderAccountPath(order.id)}` : participantId ? `${origin}/galeria/grupowa?shopOrder=${order.id}`:`${origin}/galeria/${gallery.access_code}?shopOrder=${order.id}`},extractClientIpv4(request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')));
+   const selectedProduct=priced.lines.find(line=>line.kind==='product');
+   const guestReturn=new URL('/karta-podarunkowa',origin);
+   guestReturn.searchParams.set('shopPersonalize','1');guestReturn.searchParams.set('shopCheckout','1');guestReturn.searchParams.set('shopOrder',String(order.id));
+   if(selectedProduct?.kind==='product')guestReturn.searchParams.set('shopProduct',String(selectedProduct.productId));
+   const result=await createPayUOrder({description:`Zamówienie odbitek i produktów #${order.id}`,currencyCode:'PLN',totalAmount:priced.total,extOrderId:`GALLERY_${order.id}_${Date.now()}`,buyer:{email:priced.delivery.email,firstName:priced.delivery.recipientName.split(' ')[0],lastName:priced.delivery.recipientName.split(' ').slice(1).join(' ') || '-',language:'pl'},products:[...priced.lines.map(l=>({name:l.title,unitPrice:l.unitAmount,quantity:l.quantity})),...(priced.delivery.amount ? [{name:'Dostawa',unitPrice:priced.delivery.amount,quantity:1}]:[])],continueUrl:guest ? guestReturn.toString() : accountBuyer ? `${origin}${orderAccountPath(order.id)}` : participantId ? `${origin}/galeria/grupowa?shopOrder=${order.id}`:`${origin}/galeria/${gallery.access_code}?shopOrder=${order.id}`},extractClientIpv4(request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')));
    await prisma.photoOrder.updateMany({where:{id:order.id,payment_status:'initializing'},data:{payment_status:'pending',payment_id:result.orderId,payment_url:result.redirectUri}});
    return NextResponse.json({success:true,orderId:order.id,paymentUrl:result.redirectUri});
   } catch {

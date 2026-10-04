@@ -39,7 +39,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{token:s
   const updated=await prisma.photoOrder.updateMany({where:{id:order.id,gallery_id:order.gallery_id,product_ids:order.product_ids},data:{product_ids:JSON.stringify({...metadata,providerFulfillment:next})}});
   if(updated.count!==1)return reply(503);
   // Notification helper has its own durable deduplication claim. Never send the callback payload to email.
-  await notifyProdigiCustomer(order.id,metadata.delivery.email,next);
+  await notifyProdigiCustomer(order.id,metadata.delivery.email,next,metadata.guestOwnerId);
   return reply(200,true);
  }catch{return reply(503);}
 }

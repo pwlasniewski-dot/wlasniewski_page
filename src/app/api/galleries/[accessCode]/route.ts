@@ -45,11 +45,11 @@ export async function GET(
         }
         const access = await authorizeIndividualGallery(request, gallery);
         if (access && !access.allowed) {
-            if (gallery.terms_source === 'SHOP_UPLOAD' || !(gallery.group_password || '').trim()) {
+            if (['SHOP_UPLOAD','SHOP_UPLOAD_GUEST'].includes(gallery.terms_source) || !(gallery.group_password || '').trim()) {
                 return clientJson({
                     success: false,
                     code: 'OWNER_ONLY',
-                    error: 'Ta galeria jest prywatna. Właściciel musi wejść po zalogowaniu.',
+                    error: 'Ta galeria jest prywatna. Wymagana jest sesja właściciela.',
                 }, { status: 403, correlationId: operation.correlationId });
             }
             const denied = galleryAccessDenied(access);

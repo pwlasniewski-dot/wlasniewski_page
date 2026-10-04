@@ -34,11 +34,12 @@ global.fetch=async url=>{requests.push(url);return url==='/api/shop/catalog'?rep
  await click(button('Przejdź do zamówienia'));
  assert.equal(section.querySelector('h2').textContent,'Fine art');
  await click(section.querySelector('button.bg-stone-900'));
- const link=document.querySelector('a[href^="/logowanie?"]');assert.ok(link);
- const destination=new URLSearchParams(link.getAttribute('href').split('?')[1]).get('returnTo');
- assert.equal(destination,'/karta-podarunkowa?shopProduct=50&shopPersonalize=1&shopCheckout=1#personalizacja-produktu');
+ assert.equal(document.querySelector('a[href^="/logowanie?"]'),null);
+ assert.ok(requests.some(url=>url.endsWith('/personalization/session')));
+ assert.ok(document.querySelector('[role="alert"]'));
+ assert.equal(new URLSearchParams(window.location.search).get('shopProduct'),'50');
  assert.ok(document.querySelector('[aria-modal="true"]'));
- const first=section.querySelector('button');const last=[...section.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled])')].pop();
+ const first=section.querySelector('button');const last=[...section.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled])')].filter(item=>!item.closest('[hidden]')).pop();
  last.focus();await act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true})));assert.equal(document.activeElement,first);
  first.focus();await act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Tab',shiftKey:true,bubbles:true,cancelable:true})));assert.equal(document.activeElement,last);
  await act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true})));assert.equal(document.querySelector('[role="dialog"]'),null);assert.equal(document.body.style.overflow,'');assert.equal(document.activeElement,trigger);
@@ -51,5 +52,5 @@ global.fetch=async url=>{requests.push(url);return url==='/api/shop/catalog'?rep
  await mount(Personalization,{});
  assert.ok(document.body.textContent.includes('Brak produktów dostępnych do personalizacji'));
  assert.equal(document.querySelector('input[type="file"]'),null);
- await reset();console.log('PASS independent guest store CTA, zero-upload local preview, 401 order login roundtrip, modal Tab/Escape, null and empty catalog');
+ await reset();console.log('PASS independent guest store CTA, zero-upload local preview, guest session error without login redirect, modal Tab/Escape, null and empty catalog');
 })().catch(error=>{console.error(error);process.exitCode=1;});

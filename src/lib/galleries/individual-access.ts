@@ -1,3 +1,5 @@
+import {isTrustedAdminOrigin} from '@/lib/auth/admin-origin';
+import {guestOwnsGallery} from './shop-guest';
 import { NextRequest, NextResponse } from 'next/server';
 import { extractToken, generateToken, verifyToken } from '@/lib/auth/jwt';
 import prisma from '@/lib/db/prisma';
@@ -37,6 +39,10 @@ export async function authorizeIndividualGallery(
 
     // Customer-upload galleries never grant access through a shared password, gallery cookie,
     // matching email alone or an administrator preview token. They require the active owner.
+    if (gallery.terms_source === 'SHOP_UPLOAD_GUEST') {
+        const allowed=gallery.client_id===null && (request.method==='GET'||request.method==='HEAD'||isTrustedAdminOrigin(request)) && await guestOwnsGallery(request,gallery.id);
+        return {allowed,reason:allowed?'owner':'denied'};
+    }
     if (gallery.terms_source === 'SHOP_UPLOAD') {
         const tokens = [extractToken(request.headers.get('authorization')), request.cookies.get('client_token')?.value, request.cookies.get('user_token')?.value].filter((value): value is string => Boolean(value));
         for (const token of tokens) {

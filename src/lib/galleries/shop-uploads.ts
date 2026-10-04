@@ -8,15 +8,18 @@ import {readShopConfig} from './merchandise';
 import {hasExpectedMagicBytes} from '@/lib/uploads/magic-bytes';
 export const shopUploadLimits={fileBytes:20*1024*1024,totalBytes:50*1024*1024,photos:100,maxPixels:60_000_000,minDimension:100};
 export class ShopUploadError extends Error{constructor(message:string,public status=400){super(message);}}
-export type UploadClient={id:number;email:string;name:string|null};
+export type UploadClient={id:number|string;email:string;name:string|null};
 const requestSchema=z.object({fileName:z.string().min(1).max(180),contentType:z.enum(['image/jpeg','image/png']),size:z.number().int().min(1).max(shopUploadLimits.fileBytes),sha256:z.string().regex(/^[a-fA-F0-9]{64}$/)}).strict();
-export type ShopUploadRecord={version:1;clientId:number;galleryId:number;uploadId:string;state:'pending'|'processing'|'complete'|'failed';size:number;contentType:'image/jpeg'|'image/png';sha256:string;expiresAt:number;createdAt:number;stageKey:string;claim?:string;claimedAt?:number;photoId?:number;storedBytes?:number;hqKey?:string;thumbnailKey?:string;normalizedSha256?:string};
-const markerKey=(clientId:number)=>`shop_personalization_gallery_v1_${clientId}`;
-const prefix=(clientId:number)=>`shop_personalization_upload_v1_${clientId}_`;
-const uploadKey=(clientId:number,uploadId:string)=>prefix(clientId)+uploadId;
+export type ShopUploadRecord={version:1;clientId:number|string;galleryId:number;uploadId:string;state:'pending'|'processing'|'complete'|'failed';size:number;contentType:'image/jpeg'|'image/png';sha256:string;expiresAt:number;createdAt:number;stageKey:string;claim?:string;claimedAt?:number;photoId?:number;storedBytes?:number;hqKey?:string;thumbnailKey?:string;normalizedSha256?:string};
+const isGuest=(client:UploadClient)=>typeof client.id==='string';
+const ownerWhere=(client:UploadClient)=>({client_id:isGuest(client)?null:client.id as number,terms_source:isGuest(client)?'SHOP_UPLOAD_GUEST':'SHOP_UPLOAD'});
+const validOwnerId=(id:unknown)=>typeof id==='number'?Number.isSafeInteger(id)&&id>0:typeof id==='string'&&/^guest_[a-f0-9]{64}$/.test(id);
+const markerKey=(clientId:number|string)=>`shop_personalization_gallery_v1_${clientId}`;
+const prefix=(clientId:number|string)=>`shop_personalization_upload_v1_${clientId}_`;
+const uploadKey=(clientId:number|string,uploadId:string)=>prefix(clientId)+uploadId;
 const photoKey=(photoId:number)=>`shop_personalization_photo_v1_${photoId}`;
 function validId(value:unknown):asserts value is string{if(typeof value!=='string'||! /^[a-f0-9-]{36}$/.test(value))throw new ShopUploadError('Nieprawidłowy identyfikator przesyłania.');}
-function parseRecord(raw:string|null|undefined):ShopUploadRecord{try{const value=JSON.parse(raw||'');if(value.version!==1||!Number.isSafeInteger(value.clientId)||!Number.isSafeInteger(value.galleryId)||!Number.isSafeInteger(value.size)||!['pending','processing','complete','failed'].includes(value.state)||!Number.isFinite(value.expiresAt)||!Number.isFinite(value.createdAt))throw Error();validId(value.uploadId);if(value.clientId<1||value.galleryId<1||value.size<1||value.size>shopUploadLimits.fileBytes||!['image/jpeg','image/png'].includes(value.contentType)||typeof value.sha256!=='string'||! /^[a-f0-9]{64}$/.test(value.sha256))throw Error();if(value.state==='complete'&&(!Number.isSafeInteger(value.photoId)||value.photoId<1||!Number.isSafeInteger(value.storedBytes)||value.storedBytes<1))throw Error();if(value.stageKey!==`shop-personalization/staging/${value.clientId}/${value.uploadId}`)throw Error();return value;}catch{throw new ShopUploadError('Zapis pliku wymaga sprawdzenia.',409);}}
+function parseRecord(raw:string|null|undefined):ShopUploadRecord{try{const value=JSON.parse(raw||'');if(value.version!==1||!validOwnerId(value.clientId)||!Number.isSafeInteger(value.galleryId)||!Number.isSafeInteger(value.size)||!['pending','processing','complete','failed'].includes(value.state)||!Number.isFinite(value.expiresAt)||!Number.isFinite(value.createdAt))throw Error();validId(value.uploadId);if(value.galleryId<1||value.size<1||value.size>shopUploadLimits.fileBytes||!['image/jpeg','image/png'].includes(value.contentType)||typeof value.sha256!=='string'||! /^[a-f0-9]{64}$/.test(value.sha256))throw Error();if(value.state==='complete'&&(!Number.isSafeInteger(value.photoId)||value.photoId<1||!Number.isSafeInteger(value.storedBytes)||value.storedBytes<1))throw Error();if(value.stageKey!==`shop-personalization/staging/${value.clientId}/${value.uploadId}`)throw Error();return value;}catch{throw new ShopUploadError('Zapis pliku wymaga sprawdzenia.',409);}}
 export function requirePrivateShopStorage(){if(process.env.SHOP_UPLOADS_PRIVATE_STORAGE_CONFIRMED!=='true')throw new ShopUploadError('Dodawanie własnych zdjęć nie jest jeszcze skonfigurowane. Skontaktuj się z fotografem.',503);}
 export function publicUploadPhoto(photo:{id:number;width:number|null;height:number|null}){return{id:photo.id,previewUrl:`/api/shop/personalization/photos/${photo.id}`,width:photo.width,height:photo.height};}
 export async function requirePersonalizationEnabled(){const setting=await prisma.setting.findUnique({where:{setting_key:'gallery_shop_default'}});const config=readShopConfig(setting?.setting_value);if(!config.enabled||config.publicOffer?.personalizationEnabled!==true)throw new ShopUploadError('Dodawanie własnych zdjęć jest obecnie wyłączone.',404);}
@@ -25,14 +28,14 @@ export async function personalizationSession(client:UploadClient){
  const gallery=await prisma.$transaction(async tx=>{
   await acquireAdvisoryTransactionLock(tx,`shop-personalization-${client.id}`);
   const marker=await tx.setting.findUnique({where:{setting_key:markerKey(client.id)}});
-  if(marker){const galleryId=Number(marker.setting_value);const existing=await tx.clientGallery.findFirst({where:{id:galleryId,client_id:client.id,is_active:true,terms_source:'SHOP_UPLOAD'}});if(!existing)throw new ShopUploadError('Galeria własnych zdjęć jest niedostępna.',409);return existing;}
-  const created=await tx.clientGallery.create({data:{client_id:client.id,client_email:client.email,client_name:client.name||client.email,description:'Prywatne zdjęcia do personalizacji produktów',access_code:randomBytes(32).toString('hex'),terms_source:'SHOP_UPLOAD',gallery_mode:'INDIVIDUAL',is_active:true,price_per_premium:0,allow_extra_photo_purchase:false}});
+  if(marker){const galleryId=Number(marker.setting_value);const existing=await tx.clientGallery.findFirst({where:{id:galleryId,...ownerWhere(client),is_active:true}});if(!existing)throw new ShopUploadError('Galeria własnych zdjęć jest niedostępna.',409);return existing;}
+  const created=await tx.clientGallery.create({data:{...ownerWhere(client),client_email:client.email,client_name:client.name||client.email||'Gość sklepu',description:'Prywatne zdjęcia do personalizacji produktów',access_code:randomBytes(32).toString('hex'),gallery_mode:'INDIVIDUAL',is_active:true,price_per_premium:0,allow_extra_photo_purchase:false}});
   await tx.setting.create({data:{setting_key:markerKey(client.id),setting_value:String(created.id)}});return created;
  });
  const photos=await prisma.galleryPhoto.findMany({where:{gallery_id:gallery.id},select:{id:true,width:true,height:true},orderBy:{id:'desc'},take:shopUploadLimits.photos});
  return {galleryId:gallery.id,accessCode:gallery.access_code,photos:photos.map(publicUploadPhoto),limits:shopUploadLimits};
 }
-async function ownedGallery(client:UploadClient){const marker=await prisma.setting.findUnique({where:{setting_key:markerKey(client.id)}});const galleryId=Number(marker?.setting_value);if(!Number.isSafeInteger(galleryId)||galleryId<1)throw new ShopUploadError('Najpierw otwórz personalizację produktu.',409);const gallery=await prisma.clientGallery.findFirst({where:{id:galleryId,client_id:client.id,is_active:true,terms_source:'SHOP_UPLOAD'}});if(!gallery)throw new ShopUploadError('Galeria jest niedostępna.',404);return gallery;}
+async function ownedGallery(client:UploadClient){const marker=await prisma.setting.findUnique({where:{setting_key:markerKey(client.id)}});const galleryId=Number(marker?.setting_value);if(!Number.isSafeInteger(galleryId)||galleryId<1)throw new ShopUploadError('Najpierw otwórz personalizację produktu.',409);const gallery=await prisma.clientGallery.findFirst({where:{id:galleryId,...ownerWhere(client),is_active:true}});if(!gallery)throw new ShopUploadError('Galeria jest niedostępna.',404);return gallery;}
 function occupied(records:ShopUploadRecord[],now:number,exclude?:string){const active=records.filter(r=>r.uploadId!==exclude&&(r.state==='complete'||r.state==='processing'||r.state==='pending'&&r.expiresAt>now));return {count:active.length,bytes:active.reduce((sum,r)=>sum+(r.state==='complete'?r.storedBytes??r.size:r.size),0)};}
 export async function beginShopUpload(client:UploadClient,input:unknown){
  await requirePersonalizationEnabled();requirePrivateShopStorage();const parsed=requestSchema.safeParse(input);if(!parsed.success)throw new ShopUploadError('Wybierz JPEG lub PNG do 20 MB. Zdjęcia HEIC/HEIF są automatycznie przygotowywane przed przesłaniem.');
@@ -76,7 +79,7 @@ export async function completeShopUpload(client:UploadClient,uploadId:unknown){
    const current=await tx.setting.findUnique({where:{setting_key:key}});if(current?.setting_value!==claimedRaw)throw new ShopUploadError('Stan pliku zmienił się. Odśwież widok.',409);
    const rows=await tx.setting.findMany({where:{setting_key:{startsWith:prefix(client.id)}}});const used=occupied(rows.map(r=>parseRecord(r.setting_value)),Date.now(),uploadId);
    if(used.count>=shopUploadLimits.photos||used.bytes+storedBytes>shopUploadLimits.totalBytes)throw new ShopUploadError('Brak miejsca w limicie 50 MB własnych zdjęć.',413);
-   const active=await tx.clientGallery.findFirst({where:{id:gallery.id,client_id:client.id,is_active:true,terms_source:'SHOP_UPLOAD'}});if(!active)throw new ShopUploadError('Galeria jest niedostępna.',404);
+   const active=await tx.clientGallery.findFirst({where:{id:gallery.id,...ownerWhere(client),is_active:true}});if(!active)throw new ShopUploadError('Galeria jest niedostępna.',404);
    const bucket=process.env.S3_BUCKET||'wlasniewski-photo-storage',region=process.env.S3_REGION||'eu-north-1';
    const created=await tx.galleryPhoto.create({data:{gallery_id:gallery.id,file_url:'',thumbnail_url:null,download_source_url:`https://${bucket}.s3.${region}.amazonaws.com/${hqKey}`,file_size:image.hq.length,width:image.width,height:image.height,download_source_width:image.width,download_source_height:image.height,is_standard:true}});
    const photoUrl=`/api/shop/personalization/photos/${created.id}`;
@@ -89,7 +92,8 @@ export async function completeShopUpload(client:UploadClient,uploadId:unknown){
 }
 export async function readPersonalizationPhoto(client:UploadClient,id:number){
  if(!Number.isSafeInteger(id)||id<1)throw new ShopUploadError('Nie znaleziono zdjęcia.',404);
- const photo=await prisma.galleryPhoto.findFirst({where:{id,gallery:{client_id:client.id,is_active:true,terms_source:'SHOP_UPLOAD'}},select:{gallery_id:true}});if(!photo)throw new ShopUploadError('Nie znaleziono zdjęcia.',404);
+ const gallery=await ownedGallery(client);
+ const photo=await prisma.galleryPhoto.findFirst({where:{id,gallery_id:gallery.id,gallery:{...ownerWhere(client),is_active:true}},select:{gallery_id:true}});if(!photo)throw new ShopUploadError('Nie znaleziono zdjęcia.',404);
  const marker=await prisma.setting.findUnique({where:{setting_key:photoKey(id)}});let parsed;try{parsed=JSON.parse(marker?.setting_value||'');}catch{throw new ShopUploadError('Nie znaleziono zdjęcia.',404);}
  validId(parsed.uploadId);
  if(parsed.version!==1||parsed.clientId!==client.id||parsed.galleryId!==photo.gallery_id||parsed.thumbnailKey!==`shop-personalization/${client.id}/final/${parsed.uploadId}-thumb.jpg`)throw new ShopUploadError('Nie znaleziono zdjęcia.',404);

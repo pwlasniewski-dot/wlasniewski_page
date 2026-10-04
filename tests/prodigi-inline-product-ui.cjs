@@ -42,5 +42,11 @@ const props={endpoint:'/api/test/shop',inline:true,initialIntent:{kind:'product'
  await mount(UI,{...props,endpoint:'/api/sandbox-not-ready/shop',photos:[photo],preferredPhotoId:1});
  assert.equal(button(/^Dodaj produkt do koszyka/).disabled,true);
  await reset();
+ catalog.sandboxCartEnabled=true;
+ await mount(UI,{...props,endpoint:'/api/sandbox-cart-only/shop',photos:[photo],preferredPhotoId:1});
+ assert.equal(button(/^Dodaj produkt do koszyka/).disabled,false);
+ await click(button(/^Dodaj produkt do koszyka/));await click(button(/^Koszyk/));await click(button('Dostawa i podsumowanie'));
+ assert.ok(document.body.textContent.includes('Płatność testowa nie jest jeszcze dostępna'));assert.equal(button(/^Zamawiam i płacę/).disabled,true);
+ await reset();
  console.log('PASS inline chosen product with no photos; new upload selection and accurate fit; manual clear preserved; low resolution blocks cart; unavailable intent reported');
 })().catch(error=>{console.error(error);process.exitCode=1;});

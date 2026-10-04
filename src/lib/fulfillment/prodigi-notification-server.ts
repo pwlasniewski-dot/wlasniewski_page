@@ -2,12 +2,13 @@ import prisma from '@/lib/db/prisma';
 import {sendEmail} from '@/lib/email/sender';
 import {isShopQa,shopDatabaseUrl} from '@/lib/shop-qa';
 import {orderOrigin} from '@/lib/galleries/order-origin';
+import {guestOrderPath} from '@/lib/galleries/guest-order-link';
 import {orderAccountPath} from '@/lib/galleries/order-presentation';
 import {prodigiCustomerNotification} from './prodigi-notification';
 import type {ProdigiOrderState} from './prodigi-orders';
 /** Durable claim prevents refresh/replay from sending duplicate email. Ambiguous SMTP failures need manual review. */
-export async function notifyProdigiCustomer(orderId:number,email:string,state:ProdigiOrderState){
- const message=prodigiCustomerNotification(orderId,state,`${orderOrigin()}${orderAccountPath(orderId)}`);
+export async function notifyProdigiCustomer(orderId:number,email:string,state:ProdigiOrderState,guestOwnerId?:string){
+ const message=prodigiCustomerNotification(orderId,state,`${orderOrigin()}${guestOwnerId ? guestOrderPath(orderId,guestOwnerId) : orderAccountPath(orderId)}`);
  if(!message)return {status:'not_applicable'};
  const key=`prodigi_notification_v1_${message.key}`;
  const capture=state.environment==='sandbox'||isShopQa();
