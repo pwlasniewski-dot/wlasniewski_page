@@ -7,6 +7,12 @@ import { isProductImageUrl } from './product-media';
 
 /** Presentation only. Product data and amounts always come from the shared shop. */
 export type PublicShopOffer = {
+    personalizationSessionEnabled?: boolean;
+    personalizationQualityMessage?: string;
+    personalizationSessionTitle?: string;
+    personalizationSessionDescription?: string;
+    personalizationSessionButtonLabel?: string;
+    personalizationSessionUrl?: string;
     personalizationEnabled?: boolean;
     personalizationTitle?: string;
     personalizationIntroduction?: string;
@@ -31,6 +37,12 @@ export type PublicShopCatalog = {
 
 export function defaultPublicOffer(): PublicShopOffer {
     return {
+        personalizationSessionEnabled: true,
+        personalizationQualityMessage: 'To zdjęcie może stracić ostrość w tym rozmiarze. Wybierz większy oryginał albo mniejszy format.',
+        personalizationSessionTitle: 'A może nowe zdjęcie, specjalnie na Twoją ścianę?',
+        personalizationSessionDescription: 'Umów sesję — przygotujemy fotografie, które wykorzystasz na obrazie, w albumie lub jako prezent.',
+        personalizationSessionButtonLabel: 'Sprawdź ofertę sesji',
+        personalizationSessionUrl: '/sesja-rodzinna',
         personalizationEnabled: false, personalizationTitle: 'Produkty z Twoim zdjęciem', personalizationIntroduction: 'Dodaj własne zdjęcie i wybierz produkt. Przed płatnością zobaczysz podsumowanie z dostawą.', personalizationButtonLabel: 'Dodaj własne zdjęcie',
         enabled: false,
         title: 'Twoje fotografie. Pięknie oprawione.',
@@ -55,8 +67,12 @@ export function validatePublicOffer(value: unknown): PublicShopOffer {
     check(Array.isArray(p.formatIds) && p.formatIds.length <= 100 && p.formatIds.every(id => typeof id === 'string' && /^[a-zA-Z0-9_-]{1,60}$/.test(id)) && new Set(p.formatIds).size === p.formatIds.length, 'Wybierz unikalne formaty do prezentacji.');
     check(p.personalizationEnabled === undefined || typeof p.personalizationEnabled === 'boolean', 'Sprawdź ustawienie własnych zdjęć.');
     for (const key of ['personalizationTitle', 'personalizationIntroduction', 'personalizationButtonLabel'] as const) check(p[key] === undefined || (typeof p[key] === 'string' && p[key]!.trim().length > 0 && p[key]!.length <= (key === 'personalizationIntroduction' ? 2000 : 200)), 'Sprawdź treści personalizacji.');
+    check(p.personalizationSessionEnabled === undefined || typeof p.personalizationSessionEnabled === 'boolean', 'Sprawdź widoczność propozycji sesji.');
+    for (const key of ['personalizationQualityMessage', 'personalizationSessionTitle', 'personalizationSessionDescription', 'personalizationSessionButtonLabel'] as const) check(p[key] === undefined || (typeof p[key] === 'string' && p[key]!.trim().length > 0 && p[key]!.length <= (key === 'personalizationSessionDescription' || key === 'personalizationQualityMessage' ? 2000 : 200)), 'Sprawdź treści propozycji sesji.');
+    check(p.personalizationSessionUrl === undefined || (typeof p.personalizationSessionUrl === 'string' && p.personalizationSessionUrl.length <= 2000 && /^\/(?!\/)[^\s\\]*$/.test(p.personalizationSessionUrl)), 'Link do sesji musi prowadzić do strony w tym serwisie.');
     // Explicit projection: unknown fields must never reach a public endpoint.
-    return { personalizationEnabled: p.personalizationEnabled ?? false, personalizationTitle: p.personalizationTitle ?? defaultPublicOffer().personalizationTitle, personalizationIntroduction: p.personalizationIntroduction ?? defaultPublicOffer().personalizationIntroduction, personalizationButtonLabel: p.personalizationButtonLabel ?? defaultPublicOffer().personalizationButtonLabel, enabled: p.enabled, title: p.title, introduction: p.introduction, buttonLabel: p.buttonLabel, emptyMessage: p.emptyMessage,
+    const defaults = defaultPublicOffer();
+    return { personalizationSessionEnabled: p.personalizationSessionEnabled ?? defaults.personalizationSessionEnabled, personalizationQualityMessage: p.personalizationQualityMessage ?? defaults.personalizationQualityMessage, personalizationSessionTitle: p.personalizationSessionTitle ?? defaults.personalizationSessionTitle, personalizationSessionDescription: p.personalizationSessionDescription ?? defaults.personalizationSessionDescription, personalizationSessionButtonLabel: p.personalizationSessionButtonLabel ?? defaults.personalizationSessionButtonLabel, personalizationSessionUrl: p.personalizationSessionUrl ?? defaults.personalizationSessionUrl, personalizationEnabled: p.personalizationEnabled ?? false, personalizationTitle: p.personalizationTitle ?? defaultPublicOffer().personalizationTitle, personalizationIntroduction: p.personalizationIntroduction ?? defaultPublicOffer().personalizationIntroduction, personalizationButtonLabel: p.personalizationButtonLabel ?? defaultPublicOffer().personalizationButtonLabel, enabled: p.enabled, title: p.title, introduction: p.introduction, buttonLabel: p.buttonLabel, emptyMessage: p.emptyMessage,
         formatIds: [...p.formatIds], productIds: [...p.productIds], printImageUrl: p.printImageUrl, printImageAlt: p.printImageAlt, layout: p.layout };
 }
 
