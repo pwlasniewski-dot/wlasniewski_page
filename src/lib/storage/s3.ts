@@ -7,7 +7,7 @@ import type { Readable } from 'stream';
 const accessKeyId = (process.env.MY_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || '').trim();
 const secretAccessKey = (process.env.MY_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY || '').trim();
 
-const s3Client = new S3Client({
+export const s3Client = new S3Client({
     region: process.env.S3_REGION || 'eu-north-1',
     credentials: {
         accessKeyId,
