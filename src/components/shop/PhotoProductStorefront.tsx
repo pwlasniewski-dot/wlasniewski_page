@@ -4,7 +4,7 @@ import { hasShopDelivery } from '@/lib/galleries/shop-delivery';
 import { useEffect, useId, useRef, useState } from 'react';
 import { GalleryProductPreviewDialog } from '@/components/galleries/GalleryProductPreview';
 import { parseShopIntent, replaceShopIntent, shopAccountHref, shopGalleryHref, trackShopIntent, type ShopIntent } from '@/lib/galleries/shop-intent';
-import type { PublicShopCatalog } from '@/lib/galleries/public-offer';
+import { defaultPublicOffer, type PublicShopCatalog } from '@/lib/galleries/public-offer';
 import type { ShopProduct } from '@/lib/galleries/merchandise';
 import GuestProductPreview from '@/components/shop/GuestProductPreview';
 import PrintPriceTiers from '@/components/galleries/PrintPriceTiers';
@@ -67,9 +67,9 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
 
   useEffect(() => {
     const selection = parseShopIntent(window.location.search);
-    if (new URLSearchParams(window.location.search).get('shopPersonalize') === '1') { setPersonalization(selection); setExpanded(true); }
+    if (selection?.kind === 'product' && catalog?.offer.personalizationEnabled && catalog.products.some(product => product.id === selection.productId && product.personalizationEligible)) { setPersonalization(selection); setIntent(null); setExpanded(true); }
     else if (mode === 'account') setIntent(selection);
-  }, [mode]);
+  }, [mode, catalog]);
   useEffect(() => { if (mode === 'account' && intent) setExpanded(true); }, [mode, intentKey]);
   useEffect(() => {
     if (intent && loaded && (mode === 'public' || expanded)) {
@@ -96,6 +96,7 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
   if (loadError) return mode === 'account' ? <div role="status" className={`rounded-2xl border border-stone-700 p-5 text-stone-300 ${className}`}>Oferta produktów jest chwilowo niedostępna. Twoje galerie i pozostałe części panelu nadal działają.<button type="button" className={`${secondary} mt-3 block`} onClick={() => setAttempt(value => value + 1)}>Wczytaj ofertę ponownie</button></div> : null;
   // An unpublished shop is not an invitation to purchase drafts or zero-price items.
   if (!catalog?.offer.enabled) return intent && mode === 'account' ? <div role="status" className={`rounded-2xl border border-stone-700 p-5 text-stone-300 ${className}`}>Ta oferta nie jest obecnie dostępna. Możesz nadal przeglądać swoje galerie.<button type="button" className={`${secondary} mt-3 block`} onClick={() => { setIntent(null); replaceShopIntent(null); }}>Zamknij wybór produktu</button></div> : null;
+  const copy = { ...defaultPublicOffer(), ...catalog.offer };
   const formats = catalog.formats.filter(format => format.active && format.unitAmount > 0);
   const products = catalog.products.filter(product => product.price > 0 && hasShopDelivery(catalog.delivery, product));
   const chosen = intent?.kind === 'product' ? products.find(product => product.id === intent.productId) : intent?.kind === 'print' ? formats.find(format => format.id === intent.formatId) : null;
@@ -114,10 +115,14 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
     setPreview(null); setIntent(null); setPersonalization(selection); setExpanded(true);
     replaceShopIntent(selection);
     const url = new URL(window.location.href); url.searchParams.set('shopPersonalize', '1');
-    window.history.replaceState(window.history.state, '', url.pathname + url.search + '#personalizacja-produktu');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + (url.hash === '#personalizacja-produktu' ? '#produkty-fotograficzne' : url.hash));
   };
-  const renderAction = (selection: ShopIntent) => catalog.offer.personalizationEnabled && selection.kind === 'product' && products.some(product => product.id === selection.productId && product.personalizationEligible)
-    ? <button type="button" className={action} onClick={() => personalize(selection)}>{catalog.offer.personalizationButtonLabel}</button>
+  const openProduct = (product: PublicShopCatalog['products'][number]) => {
+    if (catalog.offer.personalizationEnabled && product.personalizationEligible) personalize({ kind: 'product', productId: product.id });
+    else setPreview(product);
+  };
+  const renderAction = (selection: ShopIntent) => selection.kind === 'product'
+    ? <button type="button" className={action} onClick={() => { const product = products.find(item => item.id === selection.productId); if (product) openProduct(product); }}>{copy.productOpenLabel}<span aria-hidden="true">→</span></button>
     : renderGalleryAction(selection);
 
 
@@ -133,12 +138,12 @@ export default function PhotoProductStorefront({ mode = 'public', token, classNa
         <ProductImage src={catalog.offer.printImageUrl} alt={catalog.offer.printImageAlt || format.label} />
         <div className="flex flex-1 flex-col p-5 sm:p-6"><h3 className="text-xl font-medium leading-snug">{format.label}</h3><p className="mt-3 text-sm leading-6 text-stone-400">{format.paper} · {format.widthMm} × {format.heightMm} mm</p><p className="mb-6 mt-auto pt-6 text-2xl font-medium tracking-tight">{money(format.unitAmount)} <span className="text-sm font-normal text-stone-400">/ szt.</span></p><div className="mb-5"><PrintPriceTiers format={format} dark /></div>{renderAction({ kind: 'print', formatId: format.id })}</div>
       </article>)}
-      {products.map(product => <article id={`produkt-${product.id}`} key={product.id} className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-stone-700 bg-[#141413]">
-        <button type="button" aria-label={`Zobacz produkt: ${product.title}`} className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-stone-700" onClick={() => setPreview(product)}><ProductImage src={product.image_url} alt={product.title} /></button>
-        <div className="flex flex-1 flex-col p-5 sm:p-6"><h3 className="text-xl font-medium leading-snug">{product.title}</h3>{product.description && <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm leading-6 text-stone-400">{product.description}</p>}<p className="mt-4 text-xs text-stone-500">Zdjęcia do produktu: {product.minPhotos === product.maxPhotos ? product.minPhotos : `${product.minPhotos}–${product.maxPhotos}`}</p><p className="mt-auto pt-6 text-2xl font-medium tracking-tight">{money(product.price)}</p><button type="button" className="my-3 min-h-11 text-left text-sm text-stone-300 underline decoration-stone-600 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-300" aria-label={`Szczegóły produktu: ${product.title}`} onClick={() => setPreview(product)}>Szczegóły i zdjęcia</button>{renderAction({ kind: 'product', productId: product.id })}</div>
+      {products.map(product => <article id={`produkt-${product.id}`} key={product.id} className="flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-stone-700 bg-[#141413]" onClick={event => { if (!(event.target as HTMLElement).closest('button,a')) openProduct(product); }}>
+        <button type="button" aria-label={`Zobacz produkt: ${product.title}`} className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-stone-700" onClick={() => openProduct(product)}><ProductImage src={product.image_url} alt={product.title} /></button>
+        <div className="flex flex-1 flex-col p-5 sm:p-6"><h3 className="text-xl font-medium leading-snug"><button type="button" className="text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-300" onClick={() => openProduct(product)}>{product.title}</button></h3>{product.description && <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm leading-6 text-stone-400">{product.description}</p>}<p className="mt-4 text-xs text-stone-500">Zdjęcia do produktu: {product.minPhotos === product.maxPhotos ? product.minPhotos : `${product.minPhotos}–${product.maxPhotos}`}</p><p className="mt-auto pt-6 text-2xl font-medium tracking-tight">{money(product.price)}</p><button type="button" className="my-3 min-h-11 text-left text-sm text-stone-300 underline decoration-stone-600 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-300" aria-label={`Szczegóły produktu: ${product.title}`} onClick={() => openProduct(product)}>Szczegóły i zdjęcia</button>{renderAction({ kind: 'product', productId: product.id })}</div>
       </article>)}
     </div>}
-    {personalization?.kind === 'product' && catalog.offer.personalizationEnabled && products.filter(product=>product.id===personalization.productId && product.personalizationEligible).map(product=><GuestProductPreview key={product.id} product={product} onClose={()=>{setPersonalization(null);replaceShopIntent(null);const url=new URL(window.location.href);url.searchParams.delete('shopPersonalize');url.searchParams.delete('shopCheckout');window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);}} />)}
+    {personalization?.kind === 'product' && catalog.offer.personalizationEnabled && products.filter(product=>product.id===personalization.productId && product.personalizationEligible).map(product=><GuestProductPreview key={product.id} product={product} offer={catalog.offer} onClose={()=>{setPersonalization(null);replaceShopIntent(null);const url=new URL(window.location.href);url.searchParams.delete('shopPersonalize');url.searchParams.delete('shopCheckout');window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);}} />)}
     {preview && <GalleryProductPreviewDialog product={preview} onClose={() => setPreview(null)} onChoose={() => { const selection: ShopIntent={kind:'product',productId:preview.id}; if(catalog.offer.personalizationEnabled && products.some(product=>product.id===preview.id && product.personalizationEligible))personalize(selection);else choose(selection); }} />}
   </section>;
   return mode === 'public' ? content : <details open={expanded} onToggle={event => setExpanded(event.currentTarget.open)} className={`rounded-2xl border border-stone-700/70 bg-stone-900/25 ${className}`}>

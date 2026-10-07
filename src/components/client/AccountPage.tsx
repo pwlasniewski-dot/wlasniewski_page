@@ -62,7 +62,7 @@ export default function AccountPage() {
             const intent = parseShopIntent(window.location.search);
             const params = new URLSearchParams(window.location.search);
             const orderReturn = params.get('tab') === 'orders' ? `/konto?${params.toString()}` : null;
-            router.push(orderReturn ? `/logowanie?returnTo=${encodeURIComponent(orderReturn)}` : intent ? `/logowanie?returnTo=${encodeURIComponent(shopAccountHref(intent))}` : '/logowanie');
+            router.push(orderReturn ? `/logowanie?returnTo=${encodeURIComponent(orderReturn)}` : intent ? `/logowanie?returnTo=${encodeURIComponent(shopAccountHref(intent, new URLSearchParams(window.location.search).get('shopSource') === 'gallery' ? 'gallery' : undefined))}` : '/logowanie');
         }
     }, [authLoading, token, router]);
 

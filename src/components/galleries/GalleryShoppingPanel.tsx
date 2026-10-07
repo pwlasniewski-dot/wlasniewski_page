@@ -13,7 +13,7 @@ import { type ShopIntent, parseShopIntent, replaceShopIntent, trackShopIntent } 
 import { availableShopDelivery } from '@/lib/galleries/shop-delivery';
 
 type Photo = { id: number; file_url: string; thumbnail_url?: string | null; width?: number | null; height?: number | null };
-type Props = { endpoint: string; headers?: Record<string, string>; photos: Photo[]; onAvailabilityChange?: (enabled: boolean) => void; initialIntent?: ShopIntent; inline?: boolean; preferredPhotoId?: number; focusedProduct?: boolean };
+type Props = { endpoint: string; headers?: Record<string, string>; photos: Photo[]; onAvailabilityChange?: (enabled: boolean) => void; initialIntent?: ShopIntent; inline?: boolean; preferredPhotoId?: number; focusedProduct?: boolean; addRequest?: number; requestedQuantity?: number; onAdded?: () => void; composedProduct?: boolean; initialTab?: 'cart' };
 type CartLine = ShopLine;
 const money = (value: number) => new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value / 100);
 const button = 'min-h-11 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-800 transition-colors hover:border-stone-500 hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-600 disabled:opacity-40 disabled:cursor-not-allowed';
@@ -26,7 +26,9 @@ const photoCountLabel = (count: number) => {
   return count === 1 ? 'zdjęcie' : last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? 'zdjęcia' : 'zdjęć';
 };
 
-export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, onAvailabilityChange, initialIntent, inline = false, preferredPhotoId, focusedProduct = false }: Props) {
+export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, onAvailabilityChange, initialIntent, inline = false, preferredPhotoId, focusedProduct = false, addRequest = 0, requestedQuantity = 1, onAdded, composedProduct = false, initialTab }: Props) {
+  const addRequested = useRef(0);
+  const addAction = useRef<((quantity?: number) => boolean) | null>(null);
   const [catalog, setCatalog] = useState<ShopCatalog | null>(null);
   const [catalogLoadedEndpoint, setCatalogLoadedEndpoint] = useState<string | null>(null);
   const [catalogError, setCatalogError] = useState('');
@@ -190,7 +192,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
     if (catalogLoadedEndpoint !== endpoint || hydratedEndpoint !== endpoint || intentHandledEndpoint.current === `${endpoint}:${initialIntentKey}`) return;
     // A payment return always wins. A public product link can never replace that state.
     if (pendingOrder || checkingPayment || new URLSearchParams(window.location.search).has('shopOrder')) return;
-    const intent = initialIntent || parseShopIntent(window.location.search);
+    const intent = initialIntent || (new URLSearchParams(window.location.search).get('shopGalleryOffer')==='1' ? null : parseShopIntent(window.location.search));
     if (!intent) return;
     intentHandledEndpoint.current = `${endpoint}:${initialIntentKey}`;
     const offered = catalog?.enabled && (intent.kind === 'product'
@@ -253,6 +255,13 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
     setProductPhotos([preferredPhotoId]);
   }, [preferredPhotoId, photos, productId, catalog, endpoint]);
 
+  useEffect(() => {if(initialTab==='cart' && catalogLoadedEndpoint===endpoint && hydratedEndpoint===endpoint){setOpen(true);setTab('cart');}},[initialTab,catalogLoadedEndpoint,hydratedEndpoint,endpoint]);
+  useEffect(() => {
+    if (!addRequest || addRequest === addRequested.current || !catalog?.enabled || (preferredPhotoId && (productPhotos.length!==1 || productPhotos[0]!==preferredPhotoId))) return;
+    addInFlight.current = false;
+    if (addAction.current?.(requestedQuantity)) { addRequested.current = addRequest; onAdded?.(); }
+  }, [addRequest, requestedQuantity, catalog, productId, productPhotos, photos, preferredPhotoId, onAdded]);
+  addAction.current = null;
   if (!catalog?.enabled) return catalogError ? <div role="alert" className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900"><p>{catalogError}</p><button type="button" className={`${button} mt-3`} onClick={() => setCatalogAttempt(value => value + 1)}>Wczytaj ofertę ponownie</button></div> : notice ? <p role="status" className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900">{notice}</p> : null;
   const remaining = Math.max(0, 500 - lines.length);
   const currentFormat = catalog.formats.find(item => item.id === format);
@@ -318,14 +327,16 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
     setCheckedLines([]);
     setNotice('Usunięto z koszyka. Możesz cofnąć usunięcie.');
   };
-  const addProduct = () => {
-    if (!productSelectionValid || !product || productPhotos.some(id => !photoById(id)) || (!editingProduct && remaining === 0) || productPhotos.length < product.minPhotos || productPhotos.length > product.maxPhotos || addInFlight.current) return;
+  const addProduct = (quantityOverride?: number) => {
+    if (!productSelectionValid || !product || productPhotos.some(id => !photoById(id)) || (!editingProduct && remaining === 0) || productPhotos.length < product.minPhotos || productPhotos.length > product.maxPhotos || addInFlight.current) return false;
     addInFlight.current = true;
-    setLines(previous => [...previous.filter(line => line.id !== editingProduct), { id: editingProduct || newId(), kind: 'product', productId: product.id, photoIds: productPhotos, coverPhotoId: productPhotos[0], quantity: productQuantity }]);
+    setLines(previous => [...previous.filter(line => line.id !== editingProduct), { id: editingProduct || newId(), kind: 'product', productId: product.id, photoIds: productPhotos, coverPhotoId: productPhotos[0], quantity: quantityOverride ?? productQuantity }]);
     delete productDrafts.current[product.id]; setEditingProduct(null);
     if (!focusedProduct) { setProductId(null); setProductPhotos([]); setProductQuantity(1); }
     navigate('cart'); setNotice('Produkt dodany do koszyka.');
+    return true;
   };
+  addAction.current = addProduct;
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (paymentUnavailable || busy || pendingOrder || !lines.length || invalidLines || !availableDelivery?.[delivery.method]?.enabled) return;
@@ -388,7 +399,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
     {(open || inline) && renderPanel(<div ref={dialogRef} role={inline ? "region" : "dialog"} aria-modal={inline ? undefined : true} aria-label="Zakupy w galerii" tabIndex={-1} className={`${inline ? "relative rounded-3xl border border-stone-200" : "fixed inset-0 z-[200]"} flex flex-col bg-[#faf9f6] text-stone-900 [color-scheme:light]`}>
       <header className="shrink-0 border-b border-stone-200 bg-white px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-8">
         <div className="flex items-center justify-between gap-3"><h2 className="min-w-0 flex-1 truncate text-lg font-medium tracking-tight sm:text-xl" title={catalog.title}>{catalog.title}</h2>{!inline && <button type="button" className={button} onClick={() => setOpen(false)}>Wróć do oglądania</button>}</div>
-        <nav aria-label="Nawigacja zakupów" className={`mx-auto mt-4 grid max-w-2xl ${focusedProduct ? 'grid-cols-2' : 'grid-cols-3'} gap-1 rounded-2xl bg-stone-100 p-1`}>{(focusedProduct ? ['products', 'cart'] as const : ['gallery', 'products', 'cart'] as const).map(value => <button key={value} type="button" className={`${value === 'products' ? 'gallery-products-tab' : ''} min-h-11 rounded-xl px-2 py-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-600 ${tab === value ? 'bg-white text-stone-950 shadow-sm' : 'text-stone-500 hover:text-stone-900'}`} aria-current={tab === value ? 'page' : undefined} onClick={() => navigate(value)}>{value === 'gallery' ? 'Galeria' : value === 'products' ? (focusedProduct ? 'Twój produkt' : 'Produkty') : `Koszyk (${lines.length})`}</button>)}</nav>
+        {!composedProduct && <nav aria-label="Nawigacja zakupów" className={`mx-auto mt-4 grid max-w-2xl ${focusedProduct ? 'grid-cols-2' : 'grid-cols-3'} gap-1 rounded-2xl bg-stone-100 p-1`}>{(focusedProduct ? ['products', 'cart'] as const : ['gallery', 'products', 'cart'] as const).map(value => <button key={value} type="button" className={`${value === 'products' ? 'gallery-products-tab' : ''} min-h-11 rounded-xl px-2 py-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-600 ${tab === value ? 'bg-white text-stone-950 shadow-sm' : 'text-stone-500 hover:text-stone-900'}`} aria-current={tab === value ? 'page' : undefined} onClick={() => navigate(value)}>{value === 'gallery' ? 'Galeria' : value === 'products' ? (focusedProduct ? 'Twój produkt' : 'Produkty') : `Koszyk (${lines.length})`}</button>)}</nav>}
       </header>
       {tab === 'products' && product && <div data-product-selection-banner role="status" aria-live="polite" className={`shrink-0 border-b-2 px-4 py-3 text-sm sm:px-8 ${productExcessPhotos > 0 ? 'border-red-500 bg-red-50 text-red-900' : productSelectionValid && !productQualityWarning ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-amber-400 bg-amber-50 text-amber-950'}`}>
         <strong>Wybrano {productPhotos.length} / {product.maxPhotos} zdjęć</strong>
@@ -416,7 +427,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
           {!photos.length && <p className="rounded-2xl border border-dashed border-stone-300 bg-white p-8 text-center text-stone-500">W tej galerii nie ma jeszcze zdjęć do zamówienia.</p>}
           {renderPhotos(false)}
         </section>}
-        {tab === 'products' && <section aria-label="Produkty fotograficzne">
+        {tab === 'products' && !composedProduct && <section aria-label="Produkty fotograficzne">
           {!focusedProduct && <><div className="mb-4 flex flex-wrap justify-between gap-3"><h3 className="font-serif text-3xl font-medium tracking-tight sm:text-4xl">Produkty</h3><div className="flex gap-2 sm:hidden"><button className={button} aria-label="Poprzednie produkty" onClick={() => carouselRef.current?.scrollBy({ left: -340, behavior: 'smooth' })}>←</button><button className={button} aria-label="Następne produkty" onClick={() => carouselRef.current?.scrollBy({ left: 340, behavior: 'smooth' })}>→</button></div></div>
           <div ref={carouselRef} className="gallery-shop-invitation rounded-3xl mb-8 flex snap-x snap-proximity gap-4 overflow-x-auto pb-4 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-3">{catalog.products.map(item => <article key={item.id} className={`flex w-[85%] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border bg-white sm:w-auto ${productId === item.id ? "border-stone-700 ring-1 ring-stone-700" : "border-stone-200"}`}>
             {item.image_url ? <button type="button" aria-label={`Zobacz zdjęcia produktu: ${item.title}`} className="aspect-[4/3] bg-stone-100 p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-700" onClick={() => setProductPreviewId(item.id)}><img src={item.image_url} alt={item.title} className="h-full w-full object-contain" loading="lazy" /></button> : <div className="flex aspect-[4/3] items-center justify-center bg-stone-100" aria-hidden="true"><svg width="76" height="76" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1" className="text-stone-400"><rect x="12" y="8" width="40" height="48" rx="3"/><path d="M19 8v48M26 22h18M26 28h13M26 42h18"/></svg></div>}<div className="flex flex-1 flex-col p-5"><h4 className="text-xl font-semibold">{item.title}</h4><p className="mb-5 mt-2 line-clamp-3 whitespace-pre-line text-sm leading-relaxed text-stone-600">{item.description}</p><p className="mb-4 mt-auto text-xl font-medium">{money(item.price)}</p><button type="button" className="mb-3 min-h-11 text-left text-sm font-medium text-stone-600 underline decoration-stone-300 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-700" aria-label={`Zobacz szczegóły produktu: ${item.title}`} onClick={() => setProductPreviewId(item.id)}>Zobacz szczegóły</button><button className={button} onClick={() => chooseProduct(item.id)}>Wybierz produkt: {item.title}</button></div>
@@ -428,7 +439,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
             {!focusedProduct && product.prodigi && productPhotos[0] && photoById(productPhotos[0]) && <ProdigiPrintAreaPreview title={product.title} spec={product.prodigi} photo={photoById(productPhotos[0])!} />}
             <div className="mb-4 flex flex-wrap gap-2">{product.minPhotos === product.maxPhotos && product.maxPhotos > 1 && <button type="button" className={button} onClick={() => setProductPhotos(photos.slice(0, product.maxPhotos).map(photo => photo.id))}>Zaznacz pierwsze {product.maxPhotos} zdjęć</button>}{!focusedProduct && productPhotos.length > 0 && <button type="button" className={button} onClick={() => setProductPhotos([])}>Wyczyść wybór</button>}</div>
             <p id="product-selection-status" role="status" aria-live="polite" className={`mb-3 rounded-xl px-4 py-3 text-sm font-medium ${productSelectionValid && !productQualityWarning ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900'}`}>{productSelectionMessage}</p>
-            <div className="mb-4 flex flex-wrap items-end gap-3"><label>Ilość produktów<input aria-label="Ilość produktów" className={input} type="number" inputMode="numeric" min="1" max="99" value={productQuantity} onChange={event => setProductQuantity(Math.max(1, Math.min(99, Math.floor(Number(event.target.value)) || 1)))} /></label><button type="button" className={primary} aria-describedby="product-selection-status" disabled={!productSelectionValid} onClick={addProduct}>{productCtaLabel} · {money(product.price * productQuantity)}</button>{!focusedProduct && <button type="button" className={button} onClick={() => { setProductId(null); setProductPhotos([]); setEditingProduct(null); delete productDrafts.current[product.id]; }}>Anuluj wybór produktu</button>}</div>
+            <div className="mb-4 flex flex-wrap items-end gap-3"><label>Ilość produktów<input aria-label="Ilość produktów" className={input} type="number" inputMode="numeric" min="1" max="99" value={productQuantity} onChange={event => setProductQuantity(Math.max(1, Math.min(99, Math.floor(Number(event.target.value)) || 1)))} /></label><button type="button" className={primary} aria-describedby="product-selection-status" disabled={!productSelectionValid} onClick={() => addProduct()}>{productCtaLabel} · {money(product.price * productQuantity)}</button>{!focusedProduct && <button type="button" className={button} onClick={() => { setProductId(null); setProductPhotos([]); setEditingProduct(null); delete productDrafts.current[product.id]; }}>Anuluj wybór produktu</button>}</div>
             {!focusedProduct && productPhotos.length > 0 && <ol className="mb-5 flex flex-wrap gap-3" aria-label={product.maxPhotos === 1 ? 'Zdjęcie produktu' : 'Kolejność zdjęć produktu'}>{productPhotos.map((id, index) => <li key={id} className="flex flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 p-2">{photoById(id) && <img src={photoById(id)!.thumbnail_url || photoById(id)!.file_url} alt="" className="h-12 w-12 rounded-lg object-cover" loading="lazy" />}<span className="text-sm">{product.maxPhotos === 1 ? `Zdjęcie produktu: ${id}` : `${index + 1}. Zdjęcie ${id}${index === 0 ? ' · Zdjęcie główne' : ''}`}</span>{product.maxPhotos > 1 && <button className={button} disabled={index === 0} aria-label={`Przesuń zdjęcie ${id} wcześniej`} onClick={() => setProductPhotos(ids => { const next = [...ids]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; return next; })}>←</button>}<button className={button} aria-label={`Usuń zdjęcie ${id} z produktu`} onClick={() => togglePhoto(id, true)}>Usuń</button></li>)}</ol>}
             {!focusedProduct && renderPhotos(true)}
           </div>}

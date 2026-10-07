@@ -21,7 +21,7 @@ global.fetch=async url=>{requests.push(url);return url==='/api/shop/catalog'?rep
  assert.equal(publicShopCatalog(config,[{...product,maxPhotos:2}]).products[0].personalizationEligible,false);
  window.history.replaceState(null,'','/karta-podarunkowa');
  await mount(Storefront,{});
- const trigger=button('Własne zdjęcie');trigger.focus();
+ const trigger=button(/^Zobacz produkt/);trigger.focus();
  await click(trigger);
  const section=document.querySelector('[role="dialog"]');
  assert.ok(section,'Guest product modal stays in store');
@@ -31,9 +31,9 @@ global.fetch=async url=>{requests.push(url);return url==='/api/shop/catalog'?rep
  Object.defineProperty(input,'files',{value:[new File([new Uint8Array([137,80,78,71,13,10,26,10,0,0])],'small.png',{type:'image/png'})],configurable:true});
  await act(async()=>input.dispatchEvent(new Event('change',{bubbles:true})));await flush();
  assert.equal(requests.length,1,'Local photo causes no upload/session request');
- await click(button('Przejdź do zamówienia'));
+ await click(button(/^Dodaj do koszyka/));
  assert.equal(section.querySelector('h2').textContent,'Fine art');
- await click(section.querySelector('button.bg-stone-900'));
+ await flush();
  assert.equal(document.querySelector('a[href^="/logowanie?"]'),null);
  assert.ok(requests.some(url=>url.endsWith('/personalization/session')));
  assert.ok(document.querySelector('[role="alert"]'));

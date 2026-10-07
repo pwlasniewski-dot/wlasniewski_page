@@ -71,11 +71,13 @@ async function pick(input, file) {
   const file = new File([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0])], 'retained.png', { type: 'image/png' });
   await mount(GuestPreview, { product, onClose() {} });
   await pick(field('Zdjęcie do podglądu produktu'), file);
-  await click(button('Przejdź do zamówienia'));
+  await click(button(/^Dodaj do koszyka/));
   assert.ok(document.body.textContent.includes('Wczytywanie oferty…'));
   const stale = pending.at(-1);
   await expireCatalog();
   assert.ok(stale.signal.aborted);
+  assert.ok(!field('Zdjęcie do podglądu produktu').disabled,'catalog timeout releases source controls');
+  assert.ok(!button(/^Dodaj do koszyka/).disabled,'catalog timeout releases add freeze');
   assert.ok(document.body.textContent.includes('trwało zbyt długo'));
   assert.ok(!document.body.textContent.includes('Wczytywanie oferty…'));
   assert.ok(document.querySelector('img[src="blob:retained-catalog-photo"]'), 'local photo survives catalogue timeout');
@@ -85,22 +87,19 @@ async function pick(input, file) {
   await click(button('Ponów wczytywanie oferty'));
   await settle();
   assert.equal(transfers, 1, 'retry automatically uploads retained file exactly once');
-  assert.ok(document.body.textContent.includes('Wybrano 1 / 1 zdjęć'));
+  assert.equal(document.querySelectorAll('article[aria-label^="Pozycja "]').length,1);
   assert.equal([...document.querySelectorAll('button')].some(node => node.textContent === 'Ponów wczytywanie oferty'), false);
   await act(async () => stale.resolve(response({ success: true, catalog: { ...publicCatalog, offer: { ...offer, personalizationEnabled: false } } })));
   await settle();
   assert.ok(!document.body.textContent.includes('Dodawanie własnych zdjęć jest obecnie niedostępne.'), 'late timed-out response cannot replace successful retry');
-  await click(button(/^Dodaj produkt do koszyka/));
   assert.equal(document.querySelectorAll('article[aria-label^="Pozycja "]').length, 1);
-  await click(button('Wróć do podglądu'));
-  await click(button('Przejdź do zamówienia'));
   await settle();
   assert.equal(transfers, 1);
   assert.equal(document.querySelectorAll('article[aria-label^="Pozycja "]').length, 1, 'cart survives returning to retained product');
   await reset();
   console.log('PASS hanging catalogue expires/aborts; retry preserves preview, chosen product, one upload and cart; stale response ignored');
 
-  for (const mode of ['http-error', 'network-error', 'non-json', 'null-catalog']) {
+  for (const mode of ['http-error', 'network-error', 'non-json']) {
     catalogMode = mode;
     await mount(Personalization, { initialIntent: { kind: 'product', productId: 50 } });
     assert.ok(document.querySelector('[role="alert"]'));
@@ -117,6 +116,11 @@ async function pick(input, file) {
   }
   console.log('PASS HTTP and network catalogue failures have independent retry; successful retry keeps chosen product');
 
+  catalogMode = 'null-catalog';
+  await mount(Personalization, {});
+  assert.ok(document.body.textContent.includes('Dodawanie własnych zdjęć jest obecnie niedostępne.'));
+  assert.equal(document.querySelector('[role="alert"]'),null);
+  await reset();
   catalogMode = 'pending';
   await mount(Personalization, {});
   const unmounted = pending.at(-1);
@@ -133,8 +137,7 @@ async function pick(input, file) {
   dimensions = { width: 50, height: 40 };
   await mount(GuestPreview, { product, onClose() {} });
   await pick(field('Zdjęcie do podglądu produktu'), new File([await file.arrayBuffer()], 'small.png', { type: 'image/png' }));
-  await click(button('Przejdź do zamówienia'));
-  await settle();
+  assert.ok(button(/^Dodaj do koszyka/).disabled);
   assert.ok(document.body.textContent.includes('Dla tego zdjęcia wybierz oryginał co najmniej'));
   assert.equal([...document.querySelectorAll('button')].some(node => node.textContent === 'Ponów wczytywanie oferty'), false, 'photo quality failure does not invite catalogue retry');
   await reset();

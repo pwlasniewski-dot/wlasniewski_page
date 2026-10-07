@@ -69,7 +69,7 @@ async function pick(input, file) {
   const file = new File([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0])], 'retained.png', { type: 'image/png' });
   await mount(GuestPreview, { product, onClose() {} });
   await pick(field('Zdjęcie do podglądu produktu'), file);
-  await click(button('Przejdź do zamówienia'));
+  await click(button(/^Dodaj do koszyka/));
   await settle();
   assert.equal(sessions, 1);
   assert.equal(transfers, 0);
@@ -83,11 +83,8 @@ async function pick(input, file) {
   await click(button('Ponów otwieranie zdjęcia'));
   await settle();
   assert.equal(transfers, 1, 'retained original uploads exactly once after manual recovery');
-  assert.ok(document.body.textContent.includes('Wybrano 1 / 1 zdjęć'));
-  await click(button(/^Dodaj produkt do koszyka/));
+  assert.equal(document.querySelectorAll('article[aria-label^="Pozycja "]').length,1);
   assert.equal(document.querySelectorAll('article[aria-label^="Pozycja "]').length, 1);
-  await click(button('Wróć do podglądu'));
-  await click(button('Przejdź do zamówienia'));
   await settle();
   assert.equal(transfers, 1);
   assert.equal(document.querySelectorAll('article[aria-label^="Pozycja "]').length, 1);

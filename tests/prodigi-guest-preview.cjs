@@ -10,11 +10,10 @@ async function pick(value){const input=field('Zdjęcie do podglądu produktu');O
 (async()=>{
  window.history.replaceState(null,'','/karta-podarunkowa?shopProduct=50&shopPersonalize=1');
  await mount(UI,{product,onClose:()=>closed++});assert.equal(network.length,0);assert.ok(document.querySelector('[role="dialog"]'));assert.equal(document.body.style.overflow,'hidden');
- await pick(file);assert.equal(network.length,0);assert.equal(created.length,1);assert.ok(document.querySelector('img[src="blob:qa-0"]'));assert.equal(button('Przejdź do zamówienia').disabled,false);assert.ok(!document.querySelector('[role="alert"]'));
+ await pick(file);assert.equal(network.length,0);assert.equal(created.length,1);assert.ok(document.querySelector('img[src="blob:qa-0"]'));assert.equal(button(/^Dodaj do koszyka/).disabled,true);assert.ok(!document.querySelector('[role="alert"]'));
  await pick(file);assert.deepEqual(revoked,['blob:qa-0']);await pick(new File(['bad'],'bad.jpg'));assert.ok(document.querySelector('[role="alert"]'));assert.equal(network.length,0);assert.deepEqual(revoked,['blob:qa-0']);
- await click(button('Przejdź do zamówienia'));assert.ok(network.every(url=>url==='/api/shop/catalog'||url.endsWith('/personalization/session')));assert.equal(new URLSearchParams(window.location.search).get('shopProduct'),'50');assert.equal(new URLSearchParams(window.location.search).get('shopCheckout'),'1');assert.ok(document.body.textContent.includes('bez zakładania konta'));
- await click(button('Wróć do podglądu'));assert.ok(document.querySelector('img[src="blob:qa-1"]'));await reset();assert.deepEqual(revoked,['blob:qa-0','blob:qa-1']);assert.equal(document.body.style.overflow,'');
- console.log('PASS guest low-resolution local preview, zero auth/upload, replace/error blob cleanup, explicit order handoff + return');
+ assert.ok(button(/^Dodaj do koszyka/).disabled,'failed replacement cannot order prior good file');assert.equal(network.length,0);await reset();assert.deepEqual(revoked,['blob:qa-0','blob:qa-1']);assert.equal(document.body.style.overflow,'');
+ console.log('PASS guest local preview without network; low file and failed replacement cannot add old source; blob cleanup');
  let finish;global.createImageBitmap=()=>new Promise(resolve=>finish=()=>resolve({width:50,height:40,close(){}}));await mount(UI,{product,onClose:()=>closed++});const input=field('Zdjęcie do podglądu produktu');Object.defineProperty(input,'files',{value:[file],configurable:true});await act(async()=>input.dispatchEvent(new Event('change',{bubbles:true})));await flush();await reset();await act(async()=>finish());await flush();assert.equal(created.length,2);
  console.log('PASS async decoder completion after dialog close creates no leaked object URL');
 })().catch(error=>{console.error(error);process.exitCode=1});

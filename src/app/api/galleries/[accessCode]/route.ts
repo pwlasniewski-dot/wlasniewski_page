@@ -80,14 +80,20 @@ export async function GET(
                 select: {
                     id: true, file_url: true, thumbnail_url: true, is_standard: true,
                     file_size: true, width: true, height: true, order_index: true,
+                    download_source_width: true, download_source_height: true,
                 },
             }),
             prisma.galleryProduct.findMany({ where: { gallery_id: gallery.id, is_active: true } }),
         ]);
 
         // Separate standard and premium photos
-        const standard_photos = photos.filter(p => p.is_standard);
-        const premium_photos = photos.filter(p => !p.is_standard);
+        // Web previews retain their own dimensions. Print validation uses only
+        // the original's dimensions; never expose the protected original URL.
+        const publicPhotos = photos.map(({ download_source_width, download_source_height, ...photo }) => ({
+            ...photo, print_width: download_source_width, print_height: download_source_height,
+        }));
+        const standard_photos = publicPhotos.filter(p => p.is_standard);
+        const premium_photos = publicPhotos.filter(p => !p.is_standard);
 
         // Get paid premium photo IDs
         const paidOrders = await prisma.photoOrder.findMany({

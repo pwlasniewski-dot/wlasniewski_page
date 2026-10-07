@@ -7,6 +7,17 @@ import { isProductImageUrl } from './product-media';
 
 /** Presentation only. Product data and amounts always come from the shared shop. */
 export type PublicShopOffer = {
+    productOpenLabel?: string;
+    productPreviewTitle?: string;
+    productUploadLabel?: string;
+    productGalleryLabel?: string;
+    productAddToCartLabel?: string;
+    galleryUpsellEnabled?: boolean;
+    galleryUpsellTitle?: string;
+    galleryUpsellDescription?: string;
+    galleryUpsellButtonLabel?: string;
+    productReturnLabel?: string;
+    galleryPurchaseNotice?: string;
     personalizationSessionEnabled?: boolean;
     personalizationQualityMessage?: string;
     personalizationSessionTitle?: string;
@@ -37,6 +48,17 @@ export type PublicShopCatalog = {
 
 export function defaultPublicOffer(): PublicShopOffer {
     return {
+        productOpenLabel: 'Zobacz produkt',
+        productPreviewTitle: 'Dodaj zdjęcie, żeby zobaczyć swój produkt',
+        productUploadLabel: 'Dodaj własne zdjęcie',
+        productGalleryLabel: 'Wybierz ze swojej galerii',
+        productAddToCartLabel: 'Dodaj do koszyka',
+        galleryUpsellEnabled: true,
+        galleryUpsellTitle: 'Wybierz więcej zdjęć do swoich produktów',
+        galleryUpsellDescription: 'W swojej galerii możesz dokupić dodatkowe ujęcia i wykorzystać je na produktach.',
+        galleryUpsellButtonLabel: 'Zobacz zdjęcia w galerii',
+        productReturnLabel: 'Wróć do produktu',
+        galleryPurchaseNotice: 'Po opłaceniu dodatkowych zdjęć możesz użyć ich na tym produkcie. Zdjęcia cyfrowe i produkty mają osobne płatności.',
         personalizationSessionEnabled: true,
         personalizationQualityMessage: 'To zdjęcie może stracić ostrość w tym rozmiarze. Wybierz większy oryginał albo mniejszy format.',
         personalizationSessionTitle: 'A może nowe zdjęcie, specjalnie na Twoją ścianę?',
@@ -66,13 +88,17 @@ export function validatePublicOffer(value: unknown): PublicShopOffer {
     check(Array.isArray(p.productIds) && p.productIds.length <= 100 && p.productIds.every(id => Number.isSafeInteger(id) && id > 0) && new Set(p.productIds).size === p.productIds.length, 'Wybierz unikalne produkty do prezentacji.');
     check(Array.isArray(p.formatIds) && p.formatIds.length <= 100 && p.formatIds.every(id => typeof id === 'string' && /^[a-zA-Z0-9_-]{1,60}$/.test(id)) && new Set(p.formatIds).size === p.formatIds.length, 'Wybierz unikalne formaty do prezentacji.');
     check(p.personalizationEnabled === undefined || typeof p.personalizationEnabled === 'boolean', 'Sprawdź ustawienie własnych zdjęć.');
+    check(p.galleryUpsellEnabled === undefined || typeof p.galleryUpsellEnabled === 'boolean', 'Sprawdź widoczność propozycji zdjęć z galerii.');
+    const productCopyKeys = ['productOpenLabel', 'productPreviewTitle', 'productUploadLabel', 'productGalleryLabel', 'productAddToCartLabel', 'galleryUpsellTitle', 'galleryUpsellDescription', 'galleryUpsellButtonLabel', 'productReturnLabel', 'galleryPurchaseNotice'] as const;
+    for (const key of productCopyKeys) check(p[key] === undefined || (typeof p[key] === 'string' && p[key]!.trim().length > 0 && p[key]!.length <= (key === 'galleryUpsellDescription' ? 2000 : 200)), 'Sprawdź treści widoku produktu i galerii.');
     for (const key of ['personalizationTitle', 'personalizationIntroduction', 'personalizationButtonLabel'] as const) check(p[key] === undefined || (typeof p[key] === 'string' && p[key]!.trim().length > 0 && p[key]!.length <= (key === 'personalizationIntroduction' ? 2000 : 200)), 'Sprawdź treści personalizacji.');
     check(p.personalizationSessionEnabled === undefined || typeof p.personalizationSessionEnabled === 'boolean', 'Sprawdź widoczność propozycji sesji.');
     for (const key of ['personalizationQualityMessage', 'personalizationSessionTitle', 'personalizationSessionDescription', 'personalizationSessionButtonLabel'] as const) check(p[key] === undefined || (typeof p[key] === 'string' && p[key]!.trim().length > 0 && p[key]!.length <= (key === 'personalizationSessionDescription' || key === 'personalizationQualityMessage' ? 2000 : 200)), 'Sprawdź treści propozycji sesji.');
     check(p.personalizationSessionUrl === undefined || (typeof p.personalizationSessionUrl === 'string' && p.personalizationSessionUrl.length <= 2000 && /^\/(?!\/)[^\s\\]*$/.test(p.personalizationSessionUrl)), 'Link do sesji musi prowadzić do strony w tym serwisie.');
     // Explicit projection: unknown fields must never reach a public endpoint.
     const defaults = defaultPublicOffer();
-    return { personalizationSessionEnabled: p.personalizationSessionEnabled ?? defaults.personalizationSessionEnabled, personalizationQualityMessage: p.personalizationQualityMessage ?? defaults.personalizationQualityMessage, personalizationSessionTitle: p.personalizationSessionTitle ?? defaults.personalizationSessionTitle, personalizationSessionDescription: p.personalizationSessionDescription ?? defaults.personalizationSessionDescription, personalizationSessionButtonLabel: p.personalizationSessionButtonLabel ?? defaults.personalizationSessionButtonLabel, personalizationSessionUrl: p.personalizationSessionUrl ?? defaults.personalizationSessionUrl, personalizationEnabled: p.personalizationEnabled ?? false, personalizationTitle: p.personalizationTitle ?? defaultPublicOffer().personalizationTitle, personalizationIntroduction: p.personalizationIntroduction ?? defaultPublicOffer().personalizationIntroduction, personalizationButtonLabel: p.personalizationButtonLabel ?? defaultPublicOffer().personalizationButtonLabel, enabled: p.enabled, title: p.title, introduction: p.introduction, buttonLabel: p.buttonLabel, emptyMessage: p.emptyMessage,
+    const productCopy = Object.fromEntries(productCopyKeys.map(key => [key, p[key] ?? defaults[key]])) as Pick<PublicShopOffer, typeof productCopyKeys[number]>;
+    return { ...productCopy, galleryUpsellEnabled: p.galleryUpsellEnabled ?? defaults.galleryUpsellEnabled, personalizationSessionEnabled: p.personalizationSessionEnabled ?? defaults.personalizationSessionEnabled, personalizationQualityMessage: p.personalizationQualityMessage ?? defaults.personalizationQualityMessage, personalizationSessionTitle: p.personalizationSessionTitle ?? defaults.personalizationSessionTitle, personalizationSessionDescription: p.personalizationSessionDescription ?? defaults.personalizationSessionDescription, personalizationSessionButtonLabel: p.personalizationSessionButtonLabel ?? defaults.personalizationSessionButtonLabel, personalizationSessionUrl: p.personalizationSessionUrl ?? defaults.personalizationSessionUrl, personalizationEnabled: p.personalizationEnabled ?? false, personalizationTitle: p.personalizationTitle ?? defaultPublicOffer().personalizationTitle, personalizationIntroduction: p.personalizationIntroduction ?? defaultPublicOffer().personalizationIntroduction, personalizationButtonLabel: p.personalizationButtonLabel ?? defaultPublicOffer().personalizationButtonLabel, enabled: p.enabled, title: p.title, introduction: p.introduction, buttonLabel: p.buttonLabel, emptyMessage: p.emptyMessage,
         formatIds: [...p.formatIds], productIds: [...p.productIds], printImageUrl: p.printImageUrl, printImageAlt: p.printImageAlt, layout: p.layout };
 }
 
