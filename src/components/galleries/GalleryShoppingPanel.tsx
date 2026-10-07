@@ -13,7 +13,7 @@ import { type ShopIntent, parseShopIntent, replaceShopIntent, trackShopIntent } 
 import { availableShopDelivery } from '@/lib/galleries/shop-delivery';
 
 type Photo = { id: number; file_url: string; thumbnail_url?: string | null; width?: number | null; height?: number | null };
-type Props = { endpoint: string; headers?: Record<string, string>; photos: Photo[]; onAvailabilityChange?: (enabled: boolean) => void; initialIntent?: ShopIntent; inline?: boolean; preferredPhotoId?: number; focusedProduct?: boolean; addRequest?: number; requestedQuantity?: number; onAdded?: () => void; composedProduct?: boolean; initialTab?: 'cart' };
+type Props = { endpoint: string; headers?: Record<string, string>; photos: Photo[]; onAvailabilityChange?: (enabled: boolean) => void; initialIntent?: ShopIntent; inline?: boolean; preferredPhotoId?: number; focusedProduct?: boolean; addRequest?: number; requestedQuantity?: number; onAdded?: () => void; onAddError?: (message:string) => void; composedProduct?: boolean; initialTab?: 'cart' };
 type CartLine = ShopLine;
 const money = (value: number) => new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value / 100);
 const button = 'min-h-11 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-800 transition-colors hover:border-stone-500 hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-600 disabled:opacity-40 disabled:cursor-not-allowed';
@@ -26,8 +26,11 @@ const photoCountLabel = (count: number) => {
   return count === 1 ? 'zdjęcie' : last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? 'zdjęcia' : 'zdjęć';
 };
 
-export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, onAvailabilityChange, initialIntent, inline = false, preferredPhotoId, focusedProduct = false, addRequest = 0, requestedQuantity = 1, onAdded, composedProduct = false, initialTab }: Props) {
+export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, onAvailabilityChange, initialIntent, inline = false, preferredPhotoId, focusedProduct = false, addRequest = 0, requestedQuantity = 1, onAdded, onAddError, composedProduct = false, initialTab }: Props) {
   const addRequested = useRef(0);
+  const addFailure = useRef('');
+  const addIssue = useRef('');
+  const addErrorCallback = useRef(onAddError);addErrorCallback.current=onAddError;
   const addAction = useRef<((quantity?: number) => boolean) | null>(null);
   const [catalog, setCatalog] = useState<ShopCatalog | null>(null);
   const [catalogLoadedEndpoint, setCatalogLoadedEndpoint] = useState<string | null>(null);
@@ -172,20 +175,22 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
   }, [endpoint, hydratedEndpoint, productId, productPhotos, productQuantity, editingProduct, selected, delivery]);
 
   useEffect(() => {
-    let active = true;
-    setCatalogError('');
-    fetch(endpoint, { headers: JSON.parse(headersKey) }).then(async response => {
+    let active = true;const controller=new AbortController();
+    setCatalogError('');setCatalogLoadedEndpoint(null);
+    const timeout=setTimeout(()=>{if(!active)return;active=false;controller.abort();setCatalogError('Wczytywanie oferty trwało zbyt długo. Wybrany produkt i zdjęcie pozostają zachowane. Spróbuj ponownie.');onAvailabilityChange?.(false);},15000);
+    fetch(endpoint, { headers: JSON.parse(headersKey),signal:controller.signal,credentials:'include' }).then(async response => {
       const result = await response.json();
       if (!active) return;
       if (!response.ok || !result.success) throw new Error('Nie udało się odczytać oferty.');
       const value = result.catalog;
+      if(value && (!Array.isArray(value.products)||!Array.isArray(value.formats)||!value.delivery))throw new Error('Nie udało się odczytać oferty.');
       setCatalog(value);
       setCatalogLoadedEndpoint(endpoint);
       onAvailabilityChange?.(!!value?.enabled);
       if (value?.formats?.length) setFormat(value.formats[0].id);
       if (value?.delivery) setDelivery(previous => ({ ...previous, method: value.delivery[previous.method]?.enabled ? previous.method : value.delivery.locker.enabled ? 'locker' : value.delivery.courier.enabled ? 'courier' : 'pickup' }));
-    }).catch(() => { if (active) { onAvailabilityChange?.(false); if (parseShopIntent(window.location.search)) setCatalogError('Nie udało się odczytać oferty dla wybranego produktu. Twój wybór jest zachowany.'); } });
-    return () => { active = false; };
+    }).catch(() => { if (active) { onAvailabilityChange?.(false); setCatalogError('Nie udało się odczytać oferty dla wybranego produktu. Twój wybór jest zachowany. Spróbuj ponownie.'); } }).finally(()=>clearTimeout(timeout));
+    return () => { active = false;clearTimeout(timeout);controller.abort(); };
   }, [endpoint, headersKey, onAvailabilityChange, catalogAttempt]);
 
   useEffect(() => {
@@ -250,19 +255,41 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
     if (!preferredPhotoId || !photos.some(photo => photo.id === preferredPhotoId)) return;
     const item = catalog?.products.find(item => item.id === productId);
     const key = `${endpoint}:${productId}:${preferredPhotoId}`;
-    if (!item?.prodigi || item.maxPhotos !== 1 || preferredHandled.current === key) return;
+    if (!item || (!composedProduct && (!item.prodigi || item.maxPhotos !== 1)) || preferredHandled.current === key) return;
     preferredHandled.current = key;
     setProductPhotos([preferredPhotoId]);
   }, [preferredPhotoId, photos, productId, catalog, endpoint]);
 
-  useEffect(() => {if(initialTab==='cart' && catalogLoadedEndpoint===endpoint && hydratedEndpoint===endpoint){setOpen(true);setTab('cart');}},[initialTab,catalogLoadedEndpoint,hydratedEndpoint,endpoint]);
   useEffect(() => {
-    if (!addRequest || addRequest === addRequested.current || !catalog?.enabled || (preferredPhotoId && (productPhotos.length!==1 || productPhotos[0]!==preferredPhotoId))) return;
+    if(initialTab!=='cart' || catalogLoadedEndpoint!==endpoint || hydratedEndpoint!==endpoint)return;
+    setOpen(true);setTab('cart');
+    const frame=requestAnimationFrame(()=>dialogRef.current?.querySelector('[aria-label="Twój koszyk"]')?.scrollIntoView({block:'start',behavior:'smooth'}));
+    return()=>cancelAnimationFrame(frame);
+  },[initialTab,catalogLoadedEndpoint,hydratedEndpoint,endpoint]);
+  useEffect(() => {
+    if (!addRequest || addRequest === addRequested.current) return;
+    const fail=(message:string)=>{const key=`${addRequest}:${catalogAttempt}:${message}`;if(addFailure.current!==key){addFailure.current=key;addErrorCallback.current?.(message);}};
+    if(catalogError){fail(catalogError);return;}
+    if(catalogLoadedEndpoint!==endpoint || hydratedEndpoint!==endpoint)return;
+    if(!catalog?.enabled){fail('Ten produkt jest obecnie niedostępny. Wybierz inne zdjęcie lub produkt.');return;}
+    const intended=initialIntent?.kind==='product' ? catalog.products.find(item=>item.id===initialIntent.productId) : null;
+    if(initialIntent?.kind==='product' && !intended){fail('Wybrany produkt nie jest dostępny w tej galerii. Twój wybór zdjęcia jest zachowany.');return;}
+    // A new explicit request from the product view must never overwrite a cart
+    // line that was being edited, even if that line belongs to another product.
+    if(editingProduct || (intended && productId!==intended.id)){
+      setEditingProduct(null);if(intended)setProductId(intended.id);
+      setProductPhotos(preferredPhotoId ? [preferredPhotoId] : []);return;
+    }
+    if(preferredPhotoId && (productPhotos.length!==1 || productPhotos[0]!==preferredPhotoId)){
+      if(!photos.some(photo=>photo.id===preferredPhotoId))fail('Wybrane zdjęcie nie jest już dostępne. Wybierz inne zdjęcie.');
+      return;
+    }
     addInFlight.current = false;
-    if (addAction.current?.(requestedQuantity)) { addRequested.current = addRequest; onAdded?.(); }
-  }, [addRequest, requestedQuantity, catalog, productId, productPhotos, photos, preferredPhotoId, onAdded]);
+    if (addAction.current?.(requestedQuantity)) { addRequested.current = addRequest; addFailure.current='';onAdded?.(); }
+    else fail(addIssue.current || 'Nie udało się dodać produktu. Sprawdź wybrane zdjęcie i spróbuj ponownie.');
+  }, [addRequest, requestedQuantity, catalog, catalogError, catalogAttempt, catalogLoadedEndpoint, hydratedEndpoint, endpoint, productId, productPhotos, editingProduct, photos, preferredPhotoId, onAdded, initialIntent]);
   addAction.current = null;
-  if (!catalog?.enabled) return catalogError ? <div role="alert" className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900"><p>{catalogError}</p><button type="button" className={`${button} mt-3`} onClick={() => setCatalogAttempt(value => value + 1)}>Wczytaj ofertę ponownie</button></div> : notice ? <p role="status" className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900">{notice}</p> : null;
+  if (catalogError || !catalog?.enabled) return catalogError ? <div role="alert" className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900"><p>{catalogError}</p><button type="button" className={`${button} mt-3`} onClick={() => setCatalogAttempt(value => value + 1)}>Wczytaj ofertę ponownie</button></div> : notice ? <p role="status" className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900">{notice}</p> : null;
   const remaining = Math.max(0, 500 - lines.length);
   const currentFormat = catalog.formats.find(item => item.id === format);
   const product = catalog.products.find(item => item.id === productId);
@@ -336,6 +363,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
     navigate('cart'); setNotice('Produkt dodany do koszyka.');
     return true;
   };
+  addIssue.current = productSelectionMessage;
   addAction.current = addProduct;
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -427,7 +455,7 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
           {!photos.length && <p className="rounded-2xl border border-dashed border-stone-300 bg-white p-8 text-center text-stone-500">W tej galerii nie ma jeszcze zdjęć do zamówienia.</p>}
           {renderPhotos(false)}
         </section>}
-        {tab === 'products' && !composedProduct && <section aria-label="Produkty fotograficzne">
+        {tab === 'products' && (!composedProduct || editingProduct) && <section aria-label="Produkty fotograficzne">
           {!focusedProduct && <><div className="mb-4 flex flex-wrap justify-between gap-3"><h3 className="font-serif text-3xl font-medium tracking-tight sm:text-4xl">Produkty</h3><div className="flex gap-2 sm:hidden"><button className={button} aria-label="Poprzednie produkty" onClick={() => carouselRef.current?.scrollBy({ left: -340, behavior: 'smooth' })}>←</button><button className={button} aria-label="Następne produkty" onClick={() => carouselRef.current?.scrollBy({ left: 340, behavior: 'smooth' })}>→</button></div></div>
           <div ref={carouselRef} className="gallery-shop-invitation rounded-3xl mb-8 flex snap-x snap-proximity gap-4 overflow-x-auto pb-4 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-3">{catalog.products.map(item => <article key={item.id} className={`flex w-[85%] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border bg-white sm:w-auto ${productId === item.id ? "border-stone-700 ring-1 ring-stone-700" : "border-stone-200"}`}>
             {item.image_url ? <button type="button" aria-label={`Zobacz zdjęcia produktu: ${item.title}`} className="aspect-[4/3] bg-stone-100 p-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-700" onClick={() => setProductPreviewId(item.id)}><img src={item.image_url} alt={item.title} className="h-full w-full object-contain" loading="lazy" /></button> : <div className="flex aspect-[4/3] items-center justify-center bg-stone-100" aria-hidden="true"><svg width="76" height="76" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1" className="text-stone-400"><rect x="12" y="8" width="40" height="48" rx="3"/><path d="M19 8v48M26 22h18M26 28h13M26 42h18"/></svg></div>}<div className="flex flex-1 flex-col p-5"><h4 className="text-xl font-semibold">{item.title}</h4><p className="mb-5 mt-2 line-clamp-3 whitespace-pre-line text-sm leading-relaxed text-stone-600">{item.description}</p><p className="mb-4 mt-auto text-xl font-medium">{money(item.price)}</p><button type="button" className="mb-3 min-h-11 text-left text-sm font-medium text-stone-600 underline decoration-stone-300 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-stone-700" aria-label={`Zobacz szczegóły produktu: ${item.title}`} onClick={() => setProductPreviewId(item.id)}>Zobacz szczegóły</button><button className={button} onClick={() => chooseProduct(item.id)}>Wybierz produkt: {item.title}</button></div>
@@ -441,13 +469,14 @@ export default function GalleryShoppingPanel({ endpoint, headers = {}, photos, o
             <p id="product-selection-status" role="status" aria-live="polite" className={`mb-3 rounded-xl px-4 py-3 text-sm font-medium ${productSelectionValid && !productQualityWarning ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900'}`}>{productSelectionMessage}</p>
             <div className="mb-4 flex flex-wrap items-end gap-3"><label>Ilość produktów<input aria-label="Ilość produktów" className={input} type="number" inputMode="numeric" min="1" max="99" value={productQuantity} onChange={event => setProductQuantity(Math.max(1, Math.min(99, Math.floor(Number(event.target.value)) || 1)))} /></label><button type="button" className={primary} aria-describedby="product-selection-status" disabled={!productSelectionValid} onClick={() => addProduct()}>{productCtaLabel} · {money(product.price * productQuantity)}</button>{!focusedProduct && <button type="button" className={button} onClick={() => { setProductId(null); setProductPhotos([]); setEditingProduct(null); delete productDrafts.current[product.id]; }}>Anuluj wybór produktu</button>}</div>
             {!focusedProduct && productPhotos.length > 0 && <ol className="mb-5 flex flex-wrap gap-3" aria-label={product.maxPhotos === 1 ? 'Zdjęcie produktu' : 'Kolejność zdjęć produktu'}>{productPhotos.map((id, index) => <li key={id} className="flex flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 p-2">{photoById(id) && <img src={photoById(id)!.thumbnail_url || photoById(id)!.file_url} alt="" className="h-12 w-12 rounded-lg object-cover" loading="lazy" />}<span className="text-sm">{product.maxPhotos === 1 ? `Zdjęcie produktu: ${id}` : `${index + 1}. Zdjęcie ${id}${index === 0 ? ' · Zdjęcie główne' : ''}`}</span>{product.maxPhotos > 1 && <button className={button} disabled={index === 0} aria-label={`Przesuń zdjęcie ${id} wcześniej`} onClick={() => setProductPhotos(ids => { const next = [...ids]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; return next; })}>←</button>}<button className={button} aria-label={`Usuń zdjęcie ${id} z produktu`} onClick={() => togglePhoto(id, true)}>Usuń</button></li>)}</ol>}
-            {!focusedProduct && renderPhotos(true)}
+            {composedProduct && editingProduct && <button type="button" className={`${button} mb-4`} onClick={() => { setEditingProduct(null); navigate('cart'); }}>Wróć do koszyka</button>}
+            {(!focusedProduct || !!editingProduct) && renderPhotos(true)}
           </div>}
         </section>}
         {tab === 'cart' && lowResolutionLines && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">Zdjęcie w koszyku nie spełnia wymagań rozdzielczości. Zmień zdjęcie lub usuń ten produkt przed płatnością.</p>}
         {tab === 'cart' && <section aria-label="Twój koszyk">
           <h3 className="mb-4 font-serif text-3xl font-medium tracking-tight sm:text-4xl">Twój koszyk</h3>
-          <div className="mb-5 flex flex-wrap gap-3">{!focusedProduct && <button className={button} onClick={() => navigate('gallery')}>Dodaj odbitki z galerii</button>}<button className={button} onClick={() => navigate('products')}>{product ? 'Kontynuuj wybór produktu' : 'Dodaj produkt'}</button>{checkedLines.length > 0 && <button className={button} onClick={() => removeLines(checkedLines)}>Usuń zaznaczone ({checkedLines.length})</button>}{removed.length > 0 && <button className={button} disabled={lines.length + removed.length > 500} title={lines.length + removed.length > 500 ? 'Najpierw zwolnij miejsce w koszyku (limit 500 pozycji)' : undefined} onClick={() => { setLines(previous => [...previous, ...removed]); setRemoved([]); setNotice('Przywrócono usunięte pozycje.'); }}>Cofnij usunięcie</button>}</div>
+          <div className="mb-5 flex flex-wrap gap-3">{!focusedProduct && <button className={button} onClick={() => navigate('gallery')}>Dodaj odbitki z galerii</button>}<button className={button} onClick={() => { if (composedProduct) { setEditingProduct(null); dialogRef.current?.closest('[role="dialog"]')?.scrollTo?.({top:0,behavior:'smooth'}); } else navigate('products'); }}>{product ? 'Kontynuuj wybór produktu' : 'Dodaj produkt'}</button>{checkedLines.length > 0 && <button className={button} onClick={() => removeLines(checkedLines)}>Usuń zaznaczone ({checkedLines.length})</button>}{removed.length > 0 && <button className={button} disabled={lines.length + removed.length > 500} title={lines.length + removed.length > 500 ? 'Najpierw zwolnij miejsce w koszyku (limit 500 pozycji)' : undefined} onClick={() => { setLines(previous => [...previous, ...removed]); setRemoved([]); setNotice('Przywrócono usunięte pozycje.'); }}>Cofnij usunięcie</button>}</div>
           {!lines.length && <p className="rounded-3xl border border-dashed border-stone-300 bg-white px-6 py-16 text-center text-stone-500">Koszyk jest pusty. Wybierz zdjęcia lub produkt.</p>}
           <div className="space-y-4">{lines.map((line, index) => { const photo = photoById(line.kind === 'print' ? line.photoId : line.photoIds[0]); const item = line.kind === 'product' ? catalog.products.find(value => value.id === line.productId) : null; return <article key={line.id} aria-label={`Pozycja ${index + 1}`} className="flex flex-wrap items-center gap-3 rounded-2xl border border-stone-200 bg-white p-4 sm:gap-5 sm:p-5">
             <input type="checkbox" className="h-5 w-5 shrink-0 accent-stone-800" aria-label={`Zaznacz pozycję ${index + 1}`} checked={checkedLines.includes(line.id)} onChange={() => setCheckedLines(ids => ids.includes(line.id) ? ids.filter(id => id !== line.id) : [...ids, line.id])} />
