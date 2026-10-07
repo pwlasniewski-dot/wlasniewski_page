@@ -1,4 +1,4 @@
-import {hasProdigiPrintResolution} from '@/lib/fulfillment/prodigi-image-size';
+import {hasProdigiPrintResolution,prodigiMinimumResolutionRatio} from '@/lib/fulfillment/prodigi-image-size';
 import {isShopQa,shopDatabaseUrl} from '@/lib/shop-qa';
 import {readProdigiProduct,canDisplayProdigiProduct} from '@/lib/fulfillment/prodigi-catalog';
 import { orderClient } from './order-account';
@@ -108,7 +108,7 @@ export async function postShopOrder(request:NextRequest,scope:{accessCode:string
   for(const line of priced.lines){
    if(line.kind!=='product'||!line.product?.prodigi)continue;
    const photo=photos.find(value=>value.id===line.photoIds[0]);
-   if(!hasProdigiPrintResolution(photo?.download_source_width,photo?.download_source_height,line.product.prodigi.variant.printAreaSizes.default))throw new ShopValidationError('Zdjęcie ma za małą lub niepotwierdzoną rozdzielczość do wybranego produktu. Wybierz większy oryginał.',422);
+   if(!hasProdigiPrintResolution(photo?.download_source_width,photo?.download_source_height,line.product.prodigi.variant.printAreaSizes.default,prodigiMinimumResolutionRatio(line.product.prodigi.sku)))throw new ShopValidationError('Zdjęcie ma za małą lub niepotwierdzoną rozdzielczość do wybranego produktu. Wybierz większy oryginał.',422);
   }
   if(priced.total!==body.expectedTotal) return NextResponse.json({success:false,code:'PRICE_CHANGED',error:'Cennik się zmienił. Sprawdź aktualne podsumowanie przed płatnością.',catalog,total:priced.total},{status:409});
   if(priced.delivery.method==='locker') await verifyParcelPoint(priced.delivery.pointCode!);

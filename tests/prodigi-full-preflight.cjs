@@ -26,6 +26,12 @@ global.fetch=async()=>{fetches++;return new Response(body,{status:200});};
  await assert.rejects(prepareProdigiOrder(order,sandbox,photos),/produkcji/);
  console.log('PASS sandbox requires isolated QA + explicit test checkout; quote stays sandbox and assets use protected non-staging prefix');
  delete process.env.GALLERY_QA_DATABASE_URL;delete process.env.GALLERY_QA_CONTEXT;
+ const originalSpec=structuredClone(spec);
+ for(const [sku,rw,rh,w,h] of [['GLOBAL-FAP-16X24',4800,7200,5405,3603],['GLOBAL-FAP-11X14',3307,4192,3024,4032],['GLOBAL-FAP-16X24',4800,7200,8000,6000]]){
+  spec.sku=sku;spec.variant.printAreaSizes.default={horizontalResolution:rw,verticalResolution:rh};body=await sharp({create:{width:w,height:h,channels:3,background:'#445588'}}).jpeg().toBuffer();
+  await prepareProdigiOrder(order,metadata,photos);assert.deepEqual(uploads.at(-1).bytes,body,'preflight must preserve HQ source bytes without invented pixel upscaling');const out=await sharp(uploads.at(-1).bytes).metadata();assert.equal(out.width,w);assert.equal(out.height,h);
+ }
+ spec.sku='GLOBAL-FAP-16X24';spec.variant.printAreaSizes.default={horizontalResolution:4800,verticalResolution:7200};body=await sharp({create:{width:960,height:640,channels:3,background:'#445588'}}).jpeg().toBuffer();const beforeLow=uploads.length;await assert.rejects(prepareProdigiOrder(order,metadata,photos),/rozdzielczość/);assert.equal(uploads.length,beforeLow);Object.assign(spec,originalSpec);console.log('PASS user examples and48MP HQ preflight pass unchanged; genuinely low source blocks before upload');
  const before=uploads.length;body=await sharp({create:{width:10,height:10,channels:3,background:'#ffffff'}}).png().toBuffer();await assert.rejects(prepareProdigiOrder(order,metadata,photos),/rozdzielczość/);assert.equal(uploads.length,before);console.log('PASS insufficient original resolution rejected before storing production asset');
  await reset();
 })().catch(error=>{console.error(error);process.exitCode=1;});

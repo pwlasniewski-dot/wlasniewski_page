@@ -3,6 +3,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { prepareShopPhoto } from '@/lib/uploads/prepare-shop-photo';
 import type { PublicShopCatalog } from '@/lib/galleries/public-offer';
+import { prodigiPrintQuality } from '@/lib/fulfillment/prodigi-image-size';
 import PersonalizationShop from './PersonalizationShop';
 
 type Product = PublicShopCatalog['products'][number];
@@ -21,8 +22,9 @@ export default function GuestProductPreview({ product, onClose }: Props) {
  const [ordering,setOrdering]=useState(hasPaymentReturn);
  const [orderStarted,setOrderStarted]=useState(hasPaymentReturn);
  const shape=product.personalizationPreview;
- const physicalWidth=shape?.physicalWidthMm || shape?.width || 1;const physicalHeight=shape?.physicalHeightMm || shape?.height || 1;
- const depth=shape?.depthMm && shape.physicalWidthMm ? modelWidth*shape.depthMm/shape.physicalWidthMm : 0;
+ const quality=shape && photo ? prodigiPrintQuality(photo.width,photo.height,{horizontalResolution:shape.width,verticalResolution:shape.height},shape.minimumResolutionRatio) : null;
+ const physicalWidth=(quality?.rotated ? shape?.physicalHeightMm : shape?.physicalWidthMm) || shape?.width || 1;const physicalHeight=(quality?.rotated ? shape?.physicalWidthMm : shape?.physicalHeightMm) || shape?.height || 1;
+ const depth=shape?.depthMm && physicalWidth ? modelWidth*shape.depthMm/physicalWidth : 0;
  const edge=shape?.edgeColor==='black' ? '#181818' : '#f7f5f1';
  useEffect(()=>{if(!model.current || typeof ResizeObserver==='undefined')return;const observer=new ResizeObserver(entries=>{if(entries[0])setModelWidth(entries[0].contentRect.width);});observer.observe(model.current);return()=>observer.disconnect();},[photo,ordering]);
  const intent=useMemo(()=>({kind:'product' as const,productId:product.id}),[product.id]);
@@ -73,5 +75,5 @@ export default function GuestProductPreview({ product, onClose }: Props) {
     <button type="button" className={action} disabled={busy||!photo} onClick={order}>Przejdź do zamówienia</button>
    </div>
   </div>
-  <div hidden={!ordering} className="mt-6">{busy && <p role="status">{stage}</p>}{error && <p role="alert" className="mb-4 text-red-800">{error}</p>}<button type="button" className="mb-4 min-h-11 underline" onClick={back}>Wróć do podglądu</button><p className="mb-4 text-sm text-stone-600">Twoje zdjęcie jest zachowane. Sprawdzamy jakość do druku i przygotowujemy zamówienie bez zakładania konta.</p>{orderStarted && <PersonalizationShop embedded initialIntent={intent} initialFile={ordering ? photo?.file : null} onFileChange={choose} />}</div> </div></div>,document.body);
+  <div hidden={!ordering} className="mt-6">{photo && <p className="mb-3 text-sm text-stone-600">Orientacja produktu: {physicalWidth>physicalHeight ? 'pozioma' : physicalWidth<physicalHeight ? 'pionowa' : 'kwadratowa'}. Całe zdjęcie pozostaje widoczne.</p>}{busy && <p role="status">{stage}</p>}{error && <p role="alert" className="mb-4 text-red-800">{error}</p>}<button type="button" className="mb-4 min-h-11 underline" onClick={back}>Wróć do podglądu</button><p className="mb-4 text-sm text-stone-600">Twoje zdjęcie jest zachowane. Sprawdzamy jakość do druku i przygotowujemy zamówienie bez zakładania konta.</p>{orderStarted && <PersonalizationShop embedded initialIntent={intent} initialFile={ordering ? photo?.file : null} onFileChange={choose} />}</div> </div></div>,document.body);
 }

@@ -135,7 +135,7 @@ async function pick(input, file) {
   await pick(field('Zdjęcie do podglądu produktu'), new File([await file.arrayBuffer()], 'small.png', { type: 'image/png' }));
   await click(button('Przejdź do zamówienia'));
   await settle();
-  assert.ok(document.body.textContent.includes('Do tego formatu potrzeba co najmniej'));
+  assert.ok(document.body.textContent.includes('Dla tego zdjęcia wybierz oryginał co najmniej'));
   assert.equal([...document.querySelectorAll('button')].some(node => node.textContent === 'Ponów wczytywanie oferty'), false, 'photo quality failure does not invite catalogue retry');
   await reset();
   console.log('PASS photo quality errors retain their own action and never show catalogue retry');

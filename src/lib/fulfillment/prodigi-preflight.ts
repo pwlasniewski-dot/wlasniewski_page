@@ -1,4 +1,4 @@
-import {hasProdigiPrintResolution} from './prodigi-image-size';
+import {hasProdigiPrintResolution,prodigiMinimumResolutionRatio} from './prodigi-image-size';
 import {z} from 'zod';
 import {createHash} from 'node:crypto';
 import sharp from 'sharp';
@@ -34,7 +34,7 @@ export async function prepareProdigiOrder(order:{id:number;total_amount:number;g
   const info=await sharp(bytes,{limitInputPixels:120000000}).metadata();const required=config.variant.printAreaSizes.default;
   const width=info.autoOrient?.width || info.width || 0,height=info.autoOrient?.height || info.height || 0;
   if(!required||!width||!height||!['jpeg','png'].includes(info.format||''))throw new ProdigiOrderError('Plik produkcyjny musi być JPEG/PNG o poprawnych wymiarach.');
-  if(!hasProdigiPrintResolution(width,height,required))throw new ProdigiOrderError(`Zdjęcie #${photo.id} ma za małą rozdzielczość do produktu.`);
+  if(!hasProdigiPrintResolution(width,height,required,prodigiMinimumResolutionRatio(config.sku)))throw new ProdigiOrderError(`Zdjęcie #${photo.id} ma za małą rozdzielczość do produktu.`);
   const objectKey=`shop-personalization/production/${environment}/${order.gallery_id}/${order.id}/${sha256}.${info.format==='png'?'png':'jpg'}`;
   await uploadToS3(bytes,objectKey,info.format==='png'?'image/png':'image/jpeg',{access:'private'});
   sources[line.id]={photoId:photo.id,url:photo.download_source_url,sha256,md5:createHash('md5').update(bytes).digest('hex'),objectKey};
