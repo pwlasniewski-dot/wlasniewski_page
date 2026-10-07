@@ -21,9 +21,13 @@ const props={endpoint:'/api/test/shop',inline:true,initialIntent:{kind:'product'
  await click(button('Wyczyść wybór'));
  await mount(UI,{...props,photos:[{...photo}],preferredPhotoId:1});
  assert.equal(field('Zaznacz zdjęcie 1').checked,false);
- await mount(UI,{...props,photos:[photo,{...photo,id:2,width:960,height:640}],preferredPhotoId:2});
+ await mount(UI,{...props,photos:[photo,{...photo,id:2,width:666,height:444}],preferredPhotoId:2});
  assert.equal(field('Zaznacz zdjęcie 2').checked,true);
  assert.equal(button(/^Dodaj produkt do koszyka/).disabled,true);
+ await mount(UI,{...props,photos:[photo,{...photo,id:2,width:667,height:444}],preferredPhotoId:2});
+ assert.equal(field('Zaznacz zdjęcie 2').checked,true);
+ assert.equal(button(/^Dodaj produkt do koszyka/).disabled,false);
+ assert.ok(document.body.textContent.includes('poniżej zalecanej rozdzielczości drukarni'));
  await mount(UI,{...props,initialIntent:{kind:'product',productId:999},photos:[photo]});
  assert.ok(document.body.textContent.includes('Wybrany produkt nie jest dostępny'));
  await reset();
