@@ -13,16 +13,16 @@ export default function PersonalizationShop({ embedded = false, initialIntent, i
  const [catalog,setCatalog] = useState<PublicShopCatalog | null>(null); const [loaded,setLoaded] = useState(false);
  const [catalogError,setCatalogError]=useState('');const [catalogAttempt,setCatalogAttempt]=useState(0);
  const [session,setSession] = useState<Session | null>(null); const [busy,setBusy] = useState(false); const [progress,setProgress] = useState(0); const [error,setError] = useState(''); const [notice,setNotice] = useState('');
- const [stage,setStage]=useState('');
+ const [stage,setStage]=useState('');const [startError,setStartError]=useState('');
  const [qualityIssue,setQualityIssue]=useState<({width:number;height:number}&ProdigiPrintQuality)|null>(null);const [uploadBlocked,setUploadBlocked]=useState(false);
  const fileInput=useRef<HTMLInputElement>(null);
  const autoStarted=useRef(false);const autoUploaded=useRef<File|null>(null);
  const [selection,setSelection]=useState<ShopIntent | null>(initialIntent ?? null);
  const [preferredPhotoId,setPreferredPhotoId]=useState<number | undefined>();
  useEffect(()=>{setSelection(initialIntent ?? parseShopIntent(window.location.search));},[initialIntent]);
- const lock=useRef(false); const xhr=useRef<XMLHttpRequest|null>(null); const alive=useRef(true);
+ const lock=useRef(false); const xhr=useRef<XMLHttpRequest|null>(null); const alive=useRef(true);const requests=useRef(new Set<AbortController>());const requestGeneration=useRef(0);
  const auth = (): Record<string,string> => { const token=localStorage.getItem('client_token') || localStorage.getItem('user_token'); return token ? { Authorization: `Bearer ${token}` } : {}; };
- useEffect(()=>{alive.current=true;return()=>{alive.current=false;xhr.current?.abort();};},[]);
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;requestGeneration.current++;requests.current.forEach(controller=>controller.abort());xhr.current?.abort();};},[]);
  useEffect(()=>{
   const controller=new AbortController();let current=true;let timedOut=false;
   setLoaded(false);setCatalogError('');
@@ -45,8 +45,30 @@ export default function PersonalizationShop({ embedded = false, initialIntent, i
   })();
   return()=>{current=false;clearTimeout(timeout);controller.abort();};
  },[catalogAttempt]);
- async function request(path:string,body?:unknown) {const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),25000);try{const response=await fetch(`/api/shop/personalization/${path}`,{signal:controller.signal,method:'POST',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json',...auth()},...(body ? {body:JSON.stringify(body)} : {})});const data=await response.json();if(!response.ok || !data.success)throw Error(data.error || 'Nie potwierdzono operacji.');return data;}finally{clearTimeout(timeout);}}
- async function start() {if(lock.current)return;lock.current=true;setBusy(true);setError('');try{setSession(await request('session'));}catch(e){setError(e instanceof Error?e.message:'Nie udało się otworzyć zdjęć.');}finally{lock.current=false;setBusy(false);}}
+ async function request(path:string,body?:unknown) {
+  const controller=new AbortController();requests.current.add(controller);let timedOut=false;
+  let rejectAbort:(reason:unknown)=>void=()=>{};
+  const cancelled=new Promise<never>((_,reject)=>{rejectAbort=reject;});
+  const onAbort=()=>rejectAbort(new DOMException('Operacja anulowana.','AbortError'));
+  controller.signal.addEventListener('abort',onAbort,{once:true});
+  const timeout=setTimeout(()=>{timedOut=true;controller.abort();},25000);
+  try{
+   return await Promise.race([cancelled,(async()=>{
+    const response=await fetch(`/api/shop/personalization/${path}`,{signal:controller.signal,method:'POST',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json',...auth()},...(body ? {body:JSON.stringify(body)} : {})});
+    const data=await response.json();if(!response.ok || !data.success)throw Error(data.error || 'Nie potwierdzono operacji.');return data;
+   })()]);
+  }catch(failure){
+   if(timedOut)throw Object.assign(new Error('Serwer nie odpowiedział na czas. Spróbuj ponownie.'),{name:'ShopRequestTimeout'});throw failure;
+  }finally{clearTimeout(timeout);controller.signal.removeEventListener('abort',onAbort);requests.current.delete(controller);}
+ }
+ async function start() {
+  if(lock.current)return;lock.current=true;setBusy(true);setStartError('');
+  const generation=requestGeneration.current;
+  const current=()=>alive.current && generation===requestGeneration.current;
+  try{const opened=await request('session');if(current())setSession(opened);}
+  catch(failure){if(current())setStartError(failure instanceof TypeError ? 'Nie udało się połączyć ze sklepem. Sprawdź połączenie i ponów otwieranie zdjęcia. Wybrany produkt i zdjęcie pozostają zachowane.' : failure instanceof SyntaxError ? 'Nie udało się odczytać odpowiedzi sklepu. Ponów otwieranie zdjęcia.' : failure instanceof Error && failure.name==='AbortError' ? 'Otwieranie zdjęcia zostało przerwane. Spróbuj ponownie.' : failure instanceof Error ? failure.message : 'Nie udało się otworzyć zdjęcia. Spróbuj ponownie.');}
+  finally{if(current()){lock.current=false;setBusy(false);}}
+ }
  async function upload(file:File) {
   if(lock.current || !session)return;setError('');setNotice('');setQualityIssue(null);setUploadBlocked(true);
   if(!file.size || file.size>session.limits.fileBytes){setError(`Maksymalny rozmiar zdjęcia to ${Math.floor(session.limits.fileBytes/1024/1024)} MB.`);return;}
@@ -84,7 +106,8 @@ export default function PersonalizationShop({ embedded = false, initialIntent, i
   {offer?.personalizationEnabled && eligibleProducts.length>0 && <>{!(embedded && initialIntent) && <header><Heading className="text-2xl font-semibold sm:text-3xl">{chosenTitle || offer.personalizationTitle}</Heading>{selectedProduct?.image_url && !session && <img src={selectedProduct.image_url} alt={selectedProduct.title} className="mt-4 h-40 w-full object-contain" />}<p className="mt-4 max-w-3xl text-stone-600">{offer.personalizationIntroduction}</p></header>}{embedded && initialIntent && <p className="text-sm font-semibold">Zdjęcie do druku</p>}
    {!embedded && <label className="block font-medium">Wybierz produkt<select aria-label="Produkt do personalizacji" className="mt-2 block min-h-12 w-full rounded-xl border border-stone-300 bg-white p-3" value={selectedProduct?.id ?? ''} onChange={event=>{const next:ShopIntent={kind:'product',productId:Number(event.target.value)};setSelection(next);replaceShopIntent(next);}}><option value="" disabled>Wybierz produkt</option>{eligibleProducts.map(product=><option key={product.id} value={product.id}>{product.title}</option>)}</select></label>}
    {selection && !chosenTitle && <p role="status">Wybrany produkt nie jest już dostępny do personalizacji. Wybierz inny produkt w sklepie.</p>}
-   {!session && <button className={button} disabled={busy || !chosenTitle} onClick={()=>void start()}>{busy?'Wczytywanie…':offer.personalizationButtonLabel}</button>}
+   {startError && <div role="alert" className="space-y-3 rounded-xl bg-amber-50 p-4 text-amber-950"><p>{startError}</p><button type="button" className={button} disabled={busy || !chosenTitle} onClick={()=>void start()}>Ponów otwieranie zdjęcia</button></div>}
+   {!session && !startError && <button className={button} disabled={busy || !chosenTitle} onClick={()=>void start()}>{busy?'Wczytywanie…':offer.personalizationButtonLabel}</button>}
    {session && <section aria-label="Twoje zdjęcia do personalizacji" className="space-y-4 rounded-2xl border border-stone-200 bg-white p-5"><label className="block font-medium">{focused ? 'Zmień zdjęcie' : 'Dodaj zdjęcie JPEG, PNG lub HEIC/HEIF'}<input ref={fileInput} aria-label="Dodaj własne zdjęcie" className="mt-3 block w-full text-sm" type="file" accept="image/jpeg,image/png,image/heic,image/heif,.jpg,.jpeg,.png,.heic,.heif" disabled={busy} onChange={event=>{const file=event.target.files?.[0];event.target.value='';if(file){if(onFileChange){setUploadBlocked(true);void onFileChange(file);}else void upload(file);}}} /></label><p className="text-sm text-stone-600">Do {Math.floor(session.limits.fileBytes/1024/1024)} MB na plik. Zdjęcia HEIC/HEIF z iPhone’a zamieniamy automatycznie na JPG. Zdjęcia są przypisane do bieżącej sesji zamówienia. Dodawaj tylko zdjęcia, do których masz prawa.</p>{busy && <div role="status"><progress aria-label="Postęp przesyłania zdjęcia" value={progress} max="100" className="w-full" />{stage} {progress > 0 ? `${progress}%` : ''}</div>}{!focused && <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{session.photos.map(photo=><figure key={photo.id} className="rounded-xl bg-stone-100 p-2"><img src={photo.previewUrl} alt={`Twoje zdjęcie ${photo.id}`} className="aspect-square w-full object-contain" /><figcaption className="mt-2 text-xs">{photo.width} × {photo.height} px</figcaption></figure>)}</div>}</section>}
 
    {qualityIssue && <div role="status" className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950"><p>{copy.personalizationQualityMessage}</p><p className="text-sm">Twoje zdjęcie: {qualityIssue.width} × {qualityIssue.height} px. Zalecenie drukarni dla tego pola: {qualityIssue.recommendedWidth} × {qualityIssue.recommendedHeight} px. Dla tego zdjęcia wybierz oryginał co najmniej {qualityIssue.sourceMinimumWidth} × {qualityIssue.sourceMinimumHeight} px lub mniejszy format.</p><button type="button" className={button} disabled={busy} onClick={()=>fileInput.current?.click()}>Wybierz inne zdjęcie</button>{copy.personalizationSessionEnabled && <aside className="border-t border-amber-200 pt-3"><h3 className="font-semibold">{copy.personalizationSessionTitle}</h3><p className="mt-2 text-sm">{copy.personalizationSessionDescription}</p><a href={copy.personalizationSessionUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-11 items-center text-sm underline">{copy.personalizationSessionButtonLabel}</a></aside>}</div>}
