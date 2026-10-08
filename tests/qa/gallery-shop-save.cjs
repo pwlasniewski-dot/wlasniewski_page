@@ -87,7 +87,7 @@ const changed = (id, patch) => { const expected = clone(products.find(product =>
   });
   await check('hiding saves and disappears from the real client product selector after reload', async () => {
     await click(field('Produkt #1 widoczny')); await click(save()); await admin(); assert.equal(field('Produkt #1 widoczny').checked, false);
-    await reset(); sessionStorage.clear(); await mount(Client, { endpoint: '/api/galleries/12/shop', photos: [{ id: 1, file_url: '/one.jpg' }] });
+    await reset(); sessionStorage.clear(); localStorage.clear(); await mount(Client, { endpoint: '/api/galleries/12/shop', photos: [{ id: 1, file_url: '/one.jpg' }] });
     await click(button(config.buttonLabel)); await click(button('Produkty'));
     assert.ok(![...document.querySelectorAll('button')].some(button => button.textContent === 'Wybierz produkt: Album 30×30'));
     assert.ok(button('Wybierz produkt: Album PRO'));

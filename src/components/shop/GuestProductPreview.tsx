@@ -8,12 +8,14 @@ import ProductGalleryPicker, { type ProductGallerySource } from './ProductGaller
 import type { PublicShopCatalog } from '@/lib/galleries/public-offer';
 import { prodigiPrintQuality } from '@/lib/fulfillment/prodigi-image-size';
 import PersonalizationShop from './PersonalizationShop';
+import { useCart } from '@/context/CartContext';
 
 type Product = PublicShopCatalog['products'][number];
 type Props = { product: Product; onClose: () => void; offer?: PublicShopOffer; gallerySource?: ProductGallerySource };
 const action = 'min-h-12 rounded-xl bg-stone-900 px-5 py-3 font-medium text-white disabled:opacity-50';
 /** Photos stay in memory on this device until the customer explicitly enters ordering. */
 export default function GuestProductPreview({ product, onClose, offer, gallerySource }: Props) {
+ const cart=useCart();
  const copy={...defaultPublicOffer(),...offer};
  const [gallery,setGallery]=useState<ProductGallerySource|null>(gallerySource??null);const [picker,setPicker]=useState(()=>typeof window!=='undefined' && new URLSearchParams(window.location.search).get('shopSource')==='gallery');const [quantity,setQuantity]=useState(1);const [orderQuantity,setOrderQuantity]=useState(1);const [showCart,setShowCart]=useState(false);const [resumeCode,setResumeCode]=useState<string|null>(null);const commandSequence=useRef(0);const [addRequest,setAddRequest]=useState(0);const [orderFile,setOrderFile]=useState<File|null>(null);const [adding,setAdding]=useState(false);const [added,setAdded]=useState(false);
  const localInput=useRef<HTMLInputElement>(null);
@@ -27,11 +29,9 @@ export default function GuestProductPreview({ product, onClose, offer, gallerySo
  const hasPaymentReturn=()=>typeof window!=='undefined' && /^[1-9]\d*$/.test(new URLSearchParams(window.location.search).get('shopOrder') || '');
  const [,setOrdering]=useState(hasPaymentReturn);
  const [orderStarted,setOrderStarted]=useState(hasPaymentReturn);
- const savedSource=(()=>{try{const value=JSON.parse(sessionStorage.getItem(`product-cart-source:${product.id}`)||'null');return value?.kind==='guest' ? {kind:'guest' as const} : value?.kind==='gallery' && typeof value.code==='string' && /^[A-Za-z0-9_-]{1,200}$/.test(value.code) ? {kind:'gallery' as const,code:value.code} : null;}catch{return null;}})();
- const hasSavedCart=!!savedSource || !!gallery;
- function rememberCart(){try{const code=gallery?.endpoint.match(/^\/api\/galleries\/([^/]+)\/shop$/)?.[1];sessionStorage.setItem(`product-cart-source:${product.id}`,JSON.stringify(code ? {kind:'gallery',code:decodeURIComponent(code)} : {kind:'guest'}));}catch{/* Cart remains usable without storage. */}}
- function openCart(){setAddRequest(0);setOrderFile(null);if(gallery){setShowCart(true);setOrderStarted(true);}else if(savedSource?.kind==='gallery'){setResumeCode(savedSource.code);setPicker(true);}else if(savedSource?.kind==='guest'){setShowCart(true);setOrderStarted(true);}}
- useEffect(()=>{if(!added)return;const id=requestAnimationFrame(()=>document.querySelector('[aria-label="Twój koszyk"]')?.scrollIntoView({block:'start',behavior:'smooth'}));return()=>cancelAnimationFrame(id);},[added]);
+ const hasSavedCart=cart.items.length>0;
+ function openCart(){onClose();cart.setIsOpen(true);}
+ function addedToCart(){setError('');setAdding(false);setAdded(true);onClose();cart.setIsOpen(true);}
  const shape=product.personalizationPreview;
  const quality=shape && photo && photo.width>0 && photo.height>0 ? prodigiPrintQuality(photo.width,photo.height,{horizontalResolution:shape.width,verticalResolution:shape.height},shape.minimumResolutionRatio) : null;
  const physicalWidth=(quality?.rotated ? shape?.physicalHeightMm : shape?.physicalWidthMm) || shape?.width || 1;const physicalHeight=(quality?.rotated ? shape?.physicalWidthMm : shape?.physicalHeightMm) || shape?.height || 1;
@@ -96,5 +96,5 @@ export default function GuestProductPreview({ product, onClose, offer, gallerySo
     {added&&<p role="status">Produkt dodany do koszyka.</p>}
    </div>
   </div>
-  <div className="mt-6">{orderStarted && (gallery ? <GalleryShoppingPanel onAddError={message=>{setAdding(false);setError(message);}} initialTab={showCart?'cart':undefined} composedProduct key={gallery.endpoint} endpoint={gallery.endpoint} headers={gallery.headers} photos={gallery.photos} inline focusedProduct initialIntent={intent} preferredPhotoId={gallery.photo.id} addRequest={addRequest} requestedQuantity={orderQuantity} onAdded={()=>{rememberCart();setError('');setAdding(false);setAdded(true);setOrdering(true);}} /> : <PersonalizationShop onAddError={message=>{setAdding(false);setError(message);}} showCart={showCart} embedded directAdd initialIntent={intent} initialFile={orderFile} onFileChange={choose} addRequest={addRequest} requestedQuantity={orderQuantity} onAdded={()=>{rememberCart();setError('');setAdding(false);setAdded(true);setOrdering(true);}} onPreparationError={()=>setAdding(false)} />)}</div> </div></div>,document.body);
+  <div className="mt-6">{orderStarted && (gallery ? <GalleryShoppingPanel onAddError={message=>{setAdding(false);setError(message);}} initialTab={showCart?'cart':undefined} composedProduct key={gallery.endpoint} endpoint={gallery.endpoint} headers={gallery.headers} photos={gallery.photos} inline focusedProduct initialIntent={intent} preferredPhotoId={gallery.photo.id} addRequest={addRequest} requestedQuantity={orderQuantity} onAdded={addedToCart} /> : <PersonalizationShop onAddError={message=>{setAdding(false);setError(message);}} showCart={showCart} embedded directAdd initialIntent={intent} initialFile={orderFile} onFileChange={choose} addRequest={addRequest} requestedQuantity={orderQuantity} onAdded={addedToCart} onPreparationError={()=>setAdding(false)} />)}</div> </div></div>,document.body);
 }

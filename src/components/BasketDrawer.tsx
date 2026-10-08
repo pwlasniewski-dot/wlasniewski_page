@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingBag, Trash2, ArrowRight } from 'lucide-react';
-import { useCart } from '@/context/CartContext';
+import { useCart, isPhotoCartItem } from '@/context/CartContext';
 import PromotionPriceBlock from '@/components/promotions/PromotionPriceBlock';
 
 export default function BasketDrawer() {
@@ -40,10 +40,11 @@ export default function BasketDrawer() {
                                 </div>
                                 <div>
                                     <h2 className="text-xl font-bold text-white">Twój Koszyk</h2>
-                                    <p className="text-xs text-zinc-500 uppercase tracking-widest">Jedna bezpieczna płatność</p>
+                                    <p className="text-xs text-zinc-500 uppercase tracking-widest">Wszystkie wybrane produkty</p>
                                 </div>
                             </div>
                             <button
+                                aria-label="Zamknij koszyk"
                                 onClick={() => setIsOpen(false)}
                                 className="p-2 hover:bg-zinc-800 rounded-full transition-colors group"
                             >
@@ -59,7 +60,7 @@ export default function BasketDrawer() {
                                         <ShoppingBag className="w-10 h-10 text-zinc-700" />
                                     </div>
                                     <h3 className="text-lg font-medium text-white mb-2">Koszyk jest pusty</h3>
-                                    <p className="text-zinc-500 text-sm max-w-[200px]">Dodaj wymarzoną sesję lub kartę podarunkową, aby kontynuować.</p>
+                                    <p className="text-zinc-500 text-sm max-w-[200px]">Dodaj sesję, kartę podarunkową lub produkt ze zdjęciem.</p>
                                 </div>
                             ) : (
                                 items.map((item) => (
@@ -74,12 +75,18 @@ export default function BasketDrawer() {
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <span className="text-[10px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded border border-amber-500/20 uppercase font-bold tracking-tighter">
-                                                        {item.type === 'booking' ? 'Rezerwacja' : 'Karta'}
+                                                        {item.type === 'booking' ? 'Rezerwacja' : item.type === 'gift_card' ? 'Karta' : item.type === 'photo_print' ? 'Odbitka' : 'Produkt ze zdjęciem'}
                                                     </span>
                                                 </div>
                                                 <h4 className="font-bold text-white text-lg leading-snug">{item.title}</h4>
                                                 {item.subtitle && <p className="text-sm text-zinc-500">{item.subtitle}</p>}
 
+                                                {isPhotoCartItem(item) && <div className="mt-3 flex items-center gap-3">
+                                                    <label className="text-sm text-zinc-400">Liczba sztuk
+                                                        <input aria-label={`Liczba sztuk: ${item.title}`} type="number" min={1} max={99} value={item.quantity} onChange={e => { const quantity = Number(e.target.value); if (Number.isInteger(quantity) && quantity >= 1 && quantity <= 99) updateItem(item.id, { quantity }); }} className="ml-3 w-20 rounded-lg border border-zinc-700 bg-zinc-900 p-2 text-white" />
+                                                    </label>
+                                                    <a href={`/checkout?shopEndpoint=${encodeURIComponent(item.metadata.endpoint)}`} onClick={() => setIsOpen(false)} className="text-sm text-amber-500 underline">Zmień produkt</a>
+                                                </div>}
                                                 {/* Gift Card Personalization Inputs */}
                                                 {item.type === 'gift_card' && (
                                                     <div className="mt-4 space-y-3 p-3 bg-black/20 rounded-xl border border-white/5">
@@ -116,9 +123,10 @@ export default function BasketDrawer() {
 
                                                 <div className="mt-4 flex items-center justify-between">
                                                     <span className="text-amber-500 font-extrabold text-xl">
-                                                        {(item.price / 100).toFixed(2)} zł
+                                                        {(item.price * item.quantity / 100).toFixed(2)} zł
                                                     </span>
                                                     <button
+                                                        aria-label={`Usuń z koszyka: ${item.title}`}
                                                         onClick={() => removeItem(item.id)}
                                                         className="p-2 hover:bg-red-500/10 rounded-lg text-zinc-600 hover:text-red-500 transition-all"
                                                     >
@@ -137,11 +145,11 @@ export default function BasketDrawer() {
                             <div className="p-8 bg-zinc-900/80 border-t border-zinc-800 backdrop-blur-xl">
                                 <div className="flex justify-between items-end mb-8">
                                     <div>
-                                        <p className="text-zinc-500 text-xs uppercase tracking-[0.2em] font-bold mb-1">Razem do zapłaty</p>
+                                        <p className="text-zinc-500 text-xs uppercase tracking-[0.2em] font-bold mb-1">Wartość produktów</p>
                                         <p className="text-amber-500 text-3xl font-black">{formattedTotal} zł</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-zinc-600 text-[10px] uppercase font-bold">Jedna pozycja</p>
+                                        <p className="text-zinc-600 text-[10px] uppercase font-bold">{items.length} pozycji</p>
                                     </div>
                                 </div>
 
@@ -150,12 +158,12 @@ export default function BasketDrawer() {
                                     className="w-full bg-amber-600 hover:bg-amber-500 text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-amber-900/20 transition-all flex items-center justify-center gap-3 overflow-hidden relative group"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
-                                    <span>Przejdź do Płatności</span>
+                                    <span>Przejdź do kasy</span>
                                     <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                                 </button>
 
                                 <p className="text-[10px] text-zinc-600 text-center mt-6 uppercase tracking-widest font-bold">
-                                    Bezpieczna płatność obsługiwana przez PayU
+                                    Ceny i dostawa zostaną potwierdzone w kasie
                                 </p>
                             </div>
                         )}

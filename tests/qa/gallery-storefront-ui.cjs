@@ -41,7 +41,7 @@ global.fetch = async (url, init = {}) => {
   throw new Error(`Unexpected request: ${url}`);
 };
 async function fresh(url = '/qa') {
-  await reset(); sessionStorage.clear(); window.history.replaceState(null, '', url);
+  await reset(); sessionStorage.clear(); localStorage.clear(); window.history.replaceState(null, '', url);
   requests = []; actions = []; failClient = false;
   publicCatalog = publicShopCatalog(config, products);
   clientCatalog = { ...clone(config), galleryId: 26, products: clone(products) };
@@ -169,7 +169,7 @@ async function clickLink(link) { link.addEventListener('click', event => event.p
     await mount(Client, { endpoint: '/api/galleries/26/shop', photos });
     assert.ok(document.body.textContent.includes('Album PRO — wybór zdjęć'));
     assert.ok(document.body.textContent.includes('Nic nie zostało jeszcze dodane do koszyka.'));
-    assert.equal(window.location.search, '?keep=1'); assert.deepEqual(JSON.parse(sessionStorage.getItem('gallery-shop:/api/galleries/26/shop')), []);
+    assert.equal(window.location.search, '?keep=1'); assert.deepEqual(require('../../src/context/CartContext.tsx').photoCartLines(JSON.parse(localStorage.getItem('shopping_cart') || '[]'), '/api/galleries/26/shop'), []);
     assert.ok(requests.every(request => request.method === 'GET'));
   });
   await check('Storefront: print intent uses current gallery price, no stale public amount', async () => {
@@ -177,12 +177,12 @@ async function clickLink(link) { link.addEventListener('click', event => event.p
     await mount(Client, { endpoint: '/api/galleries/26/shop', photos });
     assert.equal(field('Format dla zaznaczonych').value, 'nphoto-15x21-silk'); assert.ok(field('Format dla zaznaczonych').textContent.includes('4,25'));
     await click(field('Zaznacz zdjęcie 1')); await click(button('Dodaj zaznaczone do koszyka'));
-    assert.equal(JSON.parse(sessionStorage.getItem('gallery-shop:/api/galleries/26/shop'))[0].formatId, 'nphoto-15x21-silk');
+    assert.equal(require('../../src/context/CartContext.tsx').photoCartLines(JSON.parse(localStorage.getItem('shopping_cart') || '[]'), '/api/galleries/26/shop')[0].formatId, 'nphoto-15x21-silk');
   });
   await check('Storefront: missing or disabled gallery product is explained and never silently replaced', async () => {
     await fresh('/galeria/own-gallery-code?shopProduct=999'); await mount(Client, { endpoint: '/api/galleries/26/shop', photos });
     assert.ok(document.body.textContent.includes('Wybrany produkt nie jest dostępny w tej galerii.')); assert.equal(document.querySelector('[aria-label="Zakupy w galerii"] h4')?.textContent, 'Harmonijka');
-    assert.equal(window.location.search, ''); assert.deepEqual(JSON.parse(sessionStorage.getItem('gallery-shop:/api/galleries/26/shop')), []);
+    assert.equal(window.location.search, ''); assert.deepEqual(require('../../src/context/CartContext.tsx').photoCartLines(JSON.parse(localStorage.getItem('shopping_cart') || '[]'), '/api/galleries/26/shop'), []);
     await fresh('/galeria/own-gallery-code?shopProduct=12'); clientCatalog.enabled = false; await mount(Client, { endpoint: '/api/galleries/26/shop', photos });
     assert.ok(document.querySelector('[role="status"]').textContent.includes('Wybrany produkt nie jest dostępny')); assert.equal(document.querySelector('[role="dialog"]'), null);
   });
@@ -224,9 +224,9 @@ async function clickLink(link) { link.addEventListener('click', event => event.p
     await click(button('Zaznacz pierwsze 16 zdjęć'));
     cta = button(/Dodaj produkt do koszyka/); assert.equal(cta.disabled, false);
     assert.equal(document.querySelectorAll('input[aria-label^="Zaznacz zdjęcie"]:checked').length, 16);
-    assert.equal(JSON.parse(sessionStorage.getItem('gallery-shop:/api/galleries/26/shop')).length, 0);
+    assert.equal(require('../../src/context/CartContext.tsx').photoCartLines(JSON.parse(localStorage.getItem('shopping_cart') || '[]'), '/api/galleries/26/shop').length, 0);
     await click(cta);
-    const cart = JSON.parse(sessionStorage.getItem('gallery-shop:/api/galleries/26/shop'));
+    const cart = require('../../src/context/CartContext.tsx').photoCartLines(JSON.parse(localStorage.getItem('shopping_cart') || '[]'), '/api/galleries/26/shop');
     assert.equal(cart.length, 1); assert.equal(cart[0].photoIds.length, 16);
   });
   await check('Storefront: Wall Decor selects exactly one photo and offers courier or pickup with correct total', async () => {
@@ -235,7 +235,7 @@ async function clickLink(link) { link.addEventListener('click', event => event.p
     assert.equal(field('Zaznacz zdjęcie 1').checked, false); assert.equal(field('Zaznacz zdjęcie 2').checked, true);
     assert.ok(document.body.textContent.includes('Zdjęcie produktu: 2')); assert.ok(!document.body.textContent.includes('Okładka'));
     await click(button(/Dodaj produkt do koszyka/));
-    assert.deepEqual(JSON.parse(sessionStorage.getItem('gallery-shop:/api/galleries/26/shop'))[0].photoIds, [2]);
+    assert.deepEqual(require('../../src/context/CartContext.tsx').photoCartLines(JSON.parse(localStorage.getItem('shopping_cart') || '[]'), '/api/galleries/26/shop')[0].photoIds, [2]);
     await click(button('Dostawa i podsumowanie'));
     const methods = field('Sposób dostawy'); assert.deepEqual([...methods.options].map(o=>o.value), ['courier','pickup']); assert.equal(methods.value, 'courier');
     assert.ok(button('Zamawiam i płacę 209,00 zł')); assert.ok(methods.textContent.includes('Odbiór osobisty'));
@@ -264,7 +264,7 @@ async function clickLink(link) { link.addEventListener('click', event => event.p
       assert.equal(field('Format dla zaznaczonych').value, scenario.formatId);
       for (let id = 1; id <= scenario.count; id++) await click(field('Zaznacz zdjęcie ' + id));
       await click(button('Dodaj zaznaczone do koszyka'));
-      const cart = JSON.parse(sessionStorage.getItem('gallery-shop:/api/galleries/26/shop'));
+      const cart = require('../../src/context/CartContext.tsx').photoCartLines(JSON.parse(localStorage.getItem('shopping_cart') || '[]'), '/api/galleries/26/shop');
       assert.equal(cart.length, scenario.count);
       assert.ok(cart.every(line => line.formatId === scenario.formatId));
       await click(button('Dostawa i podsumowanie'));

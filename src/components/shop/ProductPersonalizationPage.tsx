@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { parseShopIntent } from '@/lib/galleries/shop-intent';
+import { parseShopIntent, replaceShopIntent } from '@/lib/galleries/shop-intent';
 import type { PublicShopCatalog } from '@/lib/galleries/public-offer';
 import GuestProductPreview from './GuestProductPreview';
 import PhotoProductStorefront from './PhotoProductStorefront';
@@ -37,7 +37,7 @@ export default function ProductPersonalizationPage() {
     <div className="mx-auto max-w-7xl"><a href="/karta-podarunkowa#produkty-fotograficzne" className="inline-flex min-h-11 items-center underline">Wróć do oferty produktów</a>
       {!loaded && <p role="status">Wczytywanie produktu…</p>}
       {error && <div role="alert" className="my-6 space-y-4"><p>{error}</p><button type="button" className="min-h-12 rounded-xl border border-stone-500 px-5" onClick={() => setAttempt(value => value + 1)}>Wczytaj produkt ponownie</button></div>}
-      {loaded && !error && product && <GuestProductPreview key={product.id} product={product} offer={catalog!.offer} onClose={() => window.location.assign('/karta-podarunkowa#produkty-fotograficzne')} />}
+      {loaded && !error && product && <GuestProductPreview key={product.id} product={product} offer={catalog!.offer} onClose={() => { setProductId(null); replaceShopIntent(null); }} />}
       {loaded && !error && !product && <>{!catalog?.offer.enabled ? <p role="status" className="my-6">Oferta produktów jest obecnie niedostępna.</p> : <>{productId && <p role="status" className="my-6">Ten produkt nie jest obecnie dostępny. Wybierz inny produkt z oferty.</p>}<PhotoProductStorefront /></>}</>}
     </div>
   </main>;

@@ -121,10 +121,9 @@ export async function postShopOrder(request:NextRequest,scope:{accessCode:string
   try {order=await prisma.photoOrder.create({data:{gallery_id:gallery.id,participant_id:participantId,photo_ids:'[]',photo_count:priced.lines.filter(l=>l.kind==='print').reduce((sum,l)=>sum+l.quantity,0),product_ids:JSON.stringify(metadata),total_amount:priced.total,payment_status:'initializing',idempotency_key:key,checkout_fingerprint:fingerprint}});}catch(error){if((error as {code?:string})?.code!=='P2002') throw error; const raced=await prisma.photoOrder.findUnique({where:{idempotency_key:key}});if(!raced) throw error;return existingResponse(raced);}
   try {
    const origin=orderOrigin(request.url);
-   const selectedProduct=priced.lines.find(line=>line.kind==='product');
-   const guestReturn=new URL('/karta-podarunkowa',origin);
-   guestReturn.searchParams.set('shopPersonalize','1');guestReturn.searchParams.set('shopCheckout','1');guestReturn.searchParams.set('shopOrder',String(order.id));
-   if(selectedProduct?.kind==='product')guestReturn.searchParams.set('shopProduct',String(selectedProduct.productId));
+   const guestReturn=new URL('/checkout',origin);
+   guestReturn.searchParams.set('shopOrder',String(order.id));
+   guestReturn.searchParams.set('shopEndpoint',`/api/galleries/${gallery.access_code}/shop`);
    const result=await createPayUOrder({description:`Zamówienie odbitek i produktów #${order.id}`,currencyCode:'PLN',totalAmount:priced.total,extOrderId:`GALLERY_${order.id}_${Date.now()}`,buyer:{email:priced.delivery.email,firstName:priced.delivery.recipientName.split(' ')[0],lastName:priced.delivery.recipientName.split(' ').slice(1).join(' ') || '-',language:'pl'},products:[...priced.lines.map(l=>({name:l.title,unitPrice:l.unitAmount,quantity:l.quantity})),...(priced.delivery.amount ? [{name:'Dostawa',unitPrice:priced.delivery.amount,quantity:1}]:[])],continueUrl:guest ? guestReturn.toString() : accountBuyer ? `${origin}${orderAccountPath(order.id)}` : participantId ? `${origin}/galeria/grupowa?shopOrder=${order.id}`:`${origin}/galeria/${gallery.access_code}?shopOrder=${order.id}`},extractClientIpv4(request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')));
    await prisma.photoOrder.updateMany({where:{id:order.id,payment_status:'initializing'},data:{payment_status:'pending',payment_id:result.orderId,payment_url:result.redirectUri}});
    return NextResponse.json({success:true,orderId:order.id,paymentUrl:result.redirectUri});
