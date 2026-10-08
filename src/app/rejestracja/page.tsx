@@ -11,7 +11,9 @@ export default function RegisterPage() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
-    const [passwordError, setPasswordError] = useState('');
+    const [acceptTerms, setAcceptTerms] = useState(false);
+    const [acceptPrivacy, setAcceptPrivacy] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
     const validatePassword = (pass: string) => {
         const hasUpper = /[A-Z]/.test(pass);
@@ -27,7 +29,12 @@ export default function RegisterPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (submitting) return;
         setError('');
+        if (!acceptTerms || !acceptPrivacy) {
+            setError('Zaakceptuj regulamin i potwierdź zapoznanie się z polityką prywatności.');
+            return;
+        }
 
         const passErr = validatePassword(password);
         if (passErr) {
@@ -40,11 +47,12 @@ export default function RegisterPage() {
             return;
         }
 
+        setSubmitting(true);
         try {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password })
+                body: JSON.stringify({ name, email, password, accept_terms: acceptTerms, accept_gdpr: acceptPrivacy, accept_marketing: false })
             });
             const data = await res.json();
 
@@ -56,6 +64,8 @@ export default function RegisterPage() {
             }
         } catch (err) {
             setError('Wystąpił błąd');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -65,12 +75,12 @@ export default function RegisterPage() {
                 <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-gold-600 to-gold-300"></div>
                 <h1 className="text-3xl font-bold text-gold-400 mb-6 text-center">Rejestracja</h1>
 
-                {error && <div className="bg-red-900/20 text-red-400 p-3 rounded mb-4 text-sm">{error}</div>}
+                {error && <div role="alert" className="bg-red-900/20 text-red-400 p-3 rounded mb-4 text-sm">{error}</div>}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm text-zinc-400 mb-1">Imię i Nazwisko</label>
-                        <input
+                        <label htmlFor="register-name" className="block text-sm text-zinc-400 mb-1">Imię i Nazwisko</label>
+                        <input id="register-name"
                             type="text"
                             required
                             value={name}
@@ -80,8 +90,8 @@ export default function RegisterPage() {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-zinc-400 mb-1">Email</label>
-                        <input
+                        <label htmlFor="register-email" className="block text-sm text-zinc-400 mb-1">Email</label>
+                        <input id="register-email"
                             type="email"
                             required
                             value={email}
@@ -91,8 +101,8 @@ export default function RegisterPage() {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-zinc-400 mb-1">Hasło</label>
-                        <input
+                        <label htmlFor="register-password" className="block text-sm text-zinc-400 mb-1">Hasło</label>
+                        <input id="register-password"
                             type="password"
                             required
                             value={password}
@@ -102,8 +112,8 @@ export default function RegisterPage() {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-zinc-400 mb-1">Powtórz hasło</label>
-                        <input
+                        <label htmlFor="register-confirm-password" className="block text-sm text-zinc-400 mb-1">Powtórz hasło</label>
+                        <input id="register-confirm-password"
                             type="password"
                             required
                             value={confirmPassword}
@@ -120,11 +130,23 @@ export default function RegisterPage() {
                         <p className={/[!@#$%^&*(),.?":{}|<>]/.test(password) ? 'text-green-500' : ''}>• Znak specjalny</p>
                     </div>
 
+                    <div className="space-y-3 text-sm text-zinc-300">
+                        <label className="flex min-h-11 items-start gap-3">
+                            <input type="checkbox" required checked={acceptTerms} onChange={e => setAcceptTerms(e.target.checked)} className="mt-1 h-5 w-5 shrink-0 accent-yellow-500" />
+                            <span>Akceptuję <Link href="/regulamin" target="_blank" rel="noopener noreferrer" className="text-gold-400 underline">regulamin</Link> (wymagane).</span>
+                        </label>
+                        <label className="flex min-h-11 items-start gap-3">
+                            <input type="checkbox" required checked={acceptPrivacy} onChange={e => setAcceptPrivacy(e.target.checked)} className="mt-1 h-5 w-5 shrink-0 accent-yellow-500" />
+                            <span>Zapoznałem/am się z <Link href="/polityka-prywatnosci" target="_blank" rel="noopener noreferrer" className="text-gold-400 underline">polityką prywatności</Link> (wymagane).</span>
+                        </label>
+                    </div>
+
                     <button
                         type="submit"
+                        disabled={submitting}
                         className="w-full bg-gold-500 text-black font-bold py-3 rounded hover:bg-gold-400 transition-colors mt-4"
                     >
-                        Załóż konto
+                        {submitting ? 'Tworzenie konta…' : 'Załóż konto'}
                     </button>
                 </form>
 

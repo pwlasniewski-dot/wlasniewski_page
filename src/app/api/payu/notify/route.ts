@@ -1,3 +1,4 @@
+import {handleMerchandiseRefund} from '@/lib/galleries/merchandise-refund';
 import {handleMerchandisePayment} from '@/lib/galleries/merchandise-payment';
 import {ShopValidationError} from '@/lib/galleries/merchandise';
 import { NextRequest, NextResponse } from "next/server";
@@ -44,6 +45,15 @@ export async function POST(request: NextRequest) {
             body = JSON.parse(bodyText);
         } catch {
             return NextResponse.json({ error: "Invalid notification" }, { status: 400 });
+        }
+
+        if (body.refund) {
+            try {
+                if (await handleMerchandiseRefund({...body, orderId:body.orderId ?? body.order?.orderId, extOrderId:body.extOrderId ?? body.order?.extOrderId})) return NextResponse.json({success:true});
+            } catch (error) {
+                if (error instanceof ShopValidationError) return NextResponse.json({error:error.message},{status:error.status});
+                throw error;
+            }
         }
 
         // PayU sends: { order: { orderId, extOrderId, orderCreateDate, notifyUrl, customerIp, merchantPosId, description, currencyCode, totalAmount, buyer, products, status, payMethod } }

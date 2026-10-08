@@ -2,7 +2,7 @@ import prisma from '@/lib/db/prisma';
 import { headers } from "next/headers";
 import { PAYU_ORDER_VALIDITY_SECONDS } from '@/lib/paymentPolicy';
 import { resolvePayUNotifyUrl } from '@/lib/payments/payuNotification';
-import { isShopQa } from '@/lib/shop-qa';
+import { isShopQa, shopDatabaseUrl } from '@/lib/shop-qa';
 
 interface PayUSettings {
     merchantPosId: string;
@@ -11,6 +11,7 @@ interface PayUSettings {
     md5Key: string;
     notifyUrl: string;
     environment: 'sandbox' | 'secure';
+    environmentExplicit: boolean;
 }
 
 async function getPayUSettings(): Promise<PayUSettings | null> {
@@ -24,6 +25,7 @@ async function getPayUSettings(): Promise<PayUSettings | null> {
         clientSecret: settings.payu_client_secret,
         md5Key: settings.payu_md5_key || '',
         notifyUrl: resolvePayUNotifyUrl(settings.payu_notify_url, process.env.NEXT_PUBLIC_APP_URL),
+        environmentExplicit: settings.payu_environment === 'sandbox' || settings.payu_environment === 'secure',
         environment: (settings.payu_environment as 'sandbox' | 'secure') || 'sandbox',
     };
 }
@@ -106,10 +108,25 @@ export interface OrderRequest {
     continueUrl: string; // where to redirect user after payment
 }
 
+/** QA must prove database isolation and route sandbox callbacks back to that same preview. */
+function validateQaPayment(settings: PayUSettings, origin: string) {
+    if (!isShopQa()) throw new Error('Sandbox shop checkout requires isolated QA.');
+    shopDatabaseUrl();
+    if (!settings.environmentExplicit || settings.environment !== 'sandbox') throw new Error('Review checkout requires PayU sandbox.');
+    const target = new URL(origin);
+    const notify = new URL(settings.notifyUrl);
+    if (target.protocol !== 'https:' || notify.origin !== target.origin || notify.pathname !== '/api/payu/notify') throw new Error('Review payments require the same QA callback origin.');
+}
+export async function assertShopQaPayment(origin: string) {
+    const settings = await getPayUSettings();
+    if (!settings) throw new Error('PayU settings not configured');
+    validateQaPayment(settings, origin);
+}
+
 export async function createPayUOrder(orderData: OrderRequest, clientIp: string) {
     const settings = await getPayUSettings();
     if (!settings) throw new Error("PayU settings not configured");
-    if (isShopQa() && settings.environment !== 'sandbox') throw new Error('Review checkout requires PayU sandbox.');
+    if (isShopQa()) validateQaPayment(settings, new URL(orderData.continueUrl).origin);
 
     const token = await getAccessToken(settings);
 

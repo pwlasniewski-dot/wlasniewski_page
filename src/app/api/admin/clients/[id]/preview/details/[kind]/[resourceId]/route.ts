@@ -6,7 +6,7 @@ import {isClientRecordOwner,isContractRecordOwner} from '@/lib/auth/document-acc
 import {isClientVisibleOfferStatus} from '@/lib/offers/status';
 import {isClientVisibleContractStatus} from '@/lib/contracts/status';
 import {ownsAccountOrder} from '@/lib/galleries/order-account';
-import {readShopMetadata} from '@/lib/galleries/merchandise';
+import {readShopMetadata,customerShopMetadata} from '@/lib/galleries/merchandise';
 import {orderPhotoIds,safeOrderImage} from '@/lib/galleries/order-presentation';
 import {orderProductImages} from '@/lib/galleries/order-product-images';
 
@@ -47,7 +47,7 @@ export async function GET(request:NextRequest,{params}:{params:Promise<{id:strin
   const metadata=order ? readShopMetadata(order.product_ids) : null;
   if(!order||!metadata||!isClientRecordOwner(order.gallery,client)||!ownsAccountOrder(metadata,client)) return response({error:'Zamówienie nie jest dostępne na tym koncie.'},404);
   const photos=await prisma.galleryPhoto.findMany({where:{gallery_id:order.gallery_id,id:{in:orderPhotoIds(metadata)}},select:{id:true,thumbnail_url:true}});
-  return response({kind,order:{id:order.id,createdAt:order.created_at,paymentStatus:order.payment_status,total:order.total_amount,metadata:await orderProductImages(metadata,order.gallery_id),photos:photos.map(photo=>({id:photo.id,url:safeOrderImage(photo.thumbnail_url)})),gallery:{id:order.gallery.id,client_name:order.gallery.client_name,gallery_mode:order.gallery.gallery_mode}}});
+  return response({kind,order:{id:order.id,createdAt:order.created_at,paymentStatus:order.payment_status,total:order.total_amount,metadata:customerShopMetadata(await orderProductImages(metadata,order.gallery_id)),photos:photos.map(photo=>({id:photo.id,url:safeOrderImage(photo.thumbnail_url)})),gallery:{id:order.gallery.id,client_name:order.gallery.client_name,gallery_mode:order.gallery.gallery_mode}}});
  }
  const card=await prisma.giftCard.findUnique({where:{id:resourceId},include:{orders:{where:{payment_status:'completed'},orderBy:{created_at:'desc'},take:1,select:{id:true,order_number:true,customer_name:true,customer_email:true,recipient_name:true,sender_name:true,message:true,amount_paid:true,currency:true,created_at:true,paid_at:true}}}});
  if(!card||card.owner_id!==client.id) return response({error:'Voucher nie jest dostępny na tym koncie.'},404);

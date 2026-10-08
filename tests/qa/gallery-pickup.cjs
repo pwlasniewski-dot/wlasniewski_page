@@ -13,7 +13,7 @@ global.fetch=async(url,init={})=>{
  return reply({success:true,catalog:catalog()});
 };
 const props={endpoint:'/api/galleries/12/shop',photos:[{id:1,file_url:'/photo1.jpg',width:1500,height:1000}]};
-async function open(preserve=false){await reset();if(!preserve)sessionStorage.clear();await mount(Client,props);assert.ok(document.querySelector('.gallery-shop-invitation'));await click(button(new RegExp('^'+config.buttonLabel)));}
+async function open(preserve=false){await reset();if(!preserve){sessionStorage.clear();localStorage.clear();}await mount(Client,props);assert.ok(document.querySelector('.gallery-shop-invitation'));await click(button(new RegExp('^'+config.buttonLabel)));}
 (async()=>{
  await check('shop invitation has finite gentle animation only when reduced motion is not requested',async()=>{
   const css=require('postcss').parse(require('node:fs').readFileSync('src/app/globals.css','utf8'));

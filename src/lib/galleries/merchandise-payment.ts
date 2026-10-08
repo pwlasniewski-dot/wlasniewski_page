@@ -5,6 +5,7 @@ import { renderOrderEmail } from './order-email';
 import { orderAccountPath, orderPhotoIds, safeOrderImage } from './order-presentation';
 import { orderOrigin } from './order-origin';
 import { orderProductImages } from './order-product-images';
+import { guestOrderPath } from './guest-order-link';
 /** Called only after the existing PayU signature verification. Leaves legacy orders untouched. */
 export async function handleMerchandisePayment(event: {extOrderId:string;orderId:string;status:string;totalAmount:string|number;currencyCode:string}) {
  const match=/^GALLERY_(\d+)_\d+$/.exec(event.extOrderId || '');
@@ -15,7 +16,7 @@ export async function handleMerchandisePayment(event: {extOrderId:string;orderId
  if(event.currencyCode!=='PLN'||Number(event.totalAmount)!==order.total_amount||!event.orderId||(order.payment_id && order.payment_id!==event.orderId)) throw new ShopValidationError('Powiadomienie nie odpowiada zamówieniu.',400);
  if(event.status==='COMPLETED') {
   await prisma.paymentLedger.upsert({where:{provider_provider_payment_id:{provider:'PAYU',provider_payment_id:event.orderId}},create:{provider:'PAYU',provider_payment_id:event.orderId,external_order_id:event.extOrderId,resource_type:'GALLERY',resource_id:order.id,payment_kind:'FULL',amount:order.total_amount,currency:'PLN',status:'COMPLETED',paid_at:new Date(),metadata:{source:'gallery_merchandise'}},update:{status:'COMPLETED'}});
-  const updated=await prisma.photoOrder.updateMany({where:{id:order.id,payment_status:{not:'paid'}},data:{payment_status:'paid',paid_at:new Date(),payment_id:event.orderId}});
+  const updated=await prisma.photoOrder.updateMany({where:{id:order.id,payment_status:{in:['initializing','pending','failed_init','cancelled','rejected']}},data:{payment_status:'paid',paid_at:new Date(),payment_id:event.orderId}});
   if(updated.count===1) {
    // Image lookup is optional: it must not block the payment or confirmation.
    let photos: Array<{id:number;url:string|null}> = [];
@@ -24,7 +25,7 @@ export async function handleMerchandisePayment(event: {extOrderId:string;orderId
     photos = rows.map(p=>({id:p.id,url:safeOrderImage(p.thumbnail_url)}));
    } catch { console.error('Order preview lookup failed',order.id); }
    const origin=orderOrigin();
-   const customerUrl=order.participant_id ? `${origin}/galeria/grupowa?shopOrder=${order.id}` : `${origin}${orderAccountPath(order.id)}`;
+   const customerUrl=metadata.guestOwnerId ? `${origin}${guestOrderPath(order.id,metadata.guestOwnerId)}` : order.participant_id ? `${origin}/galeria/grupowa?shopOrder=${order.id}` : `${origin}${orderAccountPath(order.id)}`;
    const presentation = await orderProductImages(metadata,order.gallery_id);
    const customer = renderOrderEmail({id:order.id,total:order.total_amount,metadata:presentation,photos,url:customerUrl});
    const adminMessage = renderOrderEmail({id:order.id,total:order.total_amount,metadata:presentation,photos,admin:true,url:`${origin}/admin/bookings/orders?order=GL-${order.id}`});
