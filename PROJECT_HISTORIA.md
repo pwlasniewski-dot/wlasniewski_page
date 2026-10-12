@@ -629,6 +629,12 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### 2026-10-12 — dron: kompozycja z pojedynczych fotografii
+
+Po ocenie właściciela zastępujemy drobne plakaty/kolaże na stronie fotografiami komponowanymi responsywnie przez stronę. Hero eksponuje kolorowe jezioro, tytuł i aktualną cenę; zastosowania tworzą krótszy pas. Mozaika łączy szeroką architekturę, pionowy nocny kadr i pas zielonych pól. Osobna karuzela pokazuje trzy krajobrazy; panorama otrzymuje tytuł i opis na zdjęciu. Ujednolicono rytm i wygląd oferty, sprzętu oraz końcowego CTA. Wszystkie teksty i media nadal pochodzą z dotychczasowego CMS. Stare pliki pozostają w bibliotece i backupie JSON. Bez zmian cen, zakresów, rezerwacji, płatności lub schematu DB.
+
+Pięć testów rzeczywistego CMS/API/read/render PASS. Lokalny podgląd: desktop, mozaika 390 px, karuzela 1→2, lightbox i jego zamknięcie PASS; szerokość dokumentu 375 przy viewport 390, bez poziomego przepełnienia. Upload czterech zdjęć wykonano przez istniejącą bibliotekę, która optymalizuje je do WebP. Pełny build PASS (262/262); delta TS względem HEAD: 97→97, zero nowych diagnostyk. Zapis CMS potwierdzony odczytem publicznym: 10 modułów, bez zmiany packages/booking/areas/seo/theme. Publikacja kodu przez istniejące Git CD. [INCIDENT] Ponownie wystąpił Windows EPERM dla wygenerowanego .next; build z właściwym dostępem zakończył się sukcesem, bez zmiany zabezpieczeń.
+
 ### 2026-10-12 — karuzela i panorama na fotografia-z-drona
 
 Na polecenie właściciela rozbudowano istniejącą stronę oraz jej edytor o warianty portfolio: karuzelę, mozaikę i panoramę/parallax. Dodano podpisy, ALT, kadry komputer/telefon, pełny obraz/wypełnienie oraz wspólny podgląd zdjęć. Brak migracji, zmian pakietów i rezerwacji. Kopia aktualnego publicznego rekordu Page 49 znajduje się lokalnie poza repozytorium. Dane marketingowe są nadal ustawiane w CMS, bez zakodowania zdjęć w rendererze. 5 scenariuszy CMS/API/render i 14 unit PASS; lokalnie sprawdzono karuzelę i lightbox na komputerze oraz w widoku 390 px. Pełny build PASS (262/262 stron), publikacja do potwierdzenia. [INCIDENT] Pierwszy lokalny build zatrzymał Windows EPERM przy mkdir w .next; ponowienie z właściwym dostępem zakończyło się sukcesem. Nie zmieniano zabezpieczeń ani danych produkcji.

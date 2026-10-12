@@ -1,0 +1,91 @@
+.page { overflow: clip; }
+.page h1, .page h2, .page h3 { text-wrap: balance; }
+.hero { position: relative; min-height: min(960px, 90svh); display: flex; align-items: flex-end; overflow: hidden; color: #fff; background: #17211e; }
+.heroImage { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 48%; }
+.heroShade { position: absolute; inset: 0; background: linear-gradient(180deg, rgb(7 17 15 / 4%) 20%, rgb(7 17 15 / 26%) 42%, rgb(7 17 15 / 88%) 100%), linear-gradient(90deg, rgb(7 17 15 / 24%), transparent 75%); }
+.heroContent { position: relative; width: min(100%, 1680px); margin: 0 auto; padding: clamp(2rem, 5vw, 6rem) clamp(1.25rem, 5vw, 6rem) 1.75rem; }
+.heroGrid { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 4rem; }
+.heroEyebrow { font-size: .65rem; font-weight: 500; letter-spacing: .25em; text-transform: uppercase; color: #f2dfbb; margin-bottom: 1.6rem; }
+.heroTitle { font-size: clamp(4rem, 8.8vw, 9rem); font-weight: 400; line-height: .88; letter-spacing: -.045em; color: #fff; max-width: 1100px; }
+.heroTitle em { color: #edcf9e; font-weight: 400; }
+.heroDescription { max-width: 540px; color: rgb(255 255 255 / 82%); font-size: clamp(.9rem, 1vw, 1rem); line-height: 1.8; margin-top: 2rem; }
+.heroOffer { border-left: 1px solid rgb(255 255 255 / 35%); padding-left: 2rem; padding-bottom: .5rem; }
+.heroPriceLabel { text-transform: uppercase; font-size: .6rem; letter-spacing: .24em; color: #eadac3; }
+.heroPrice { font-size: clamp(3rem, 4vw, 4.5rem); line-height: 1.15; margin-top: .5rem; }
+.heroCta { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: 1rem 0; margin-top: .5rem; border-bottom: 1px solid #dfc398; color: #fff; font-size: .7rem; text-transform: uppercase; letter-spacing: .12em; }
+.heroCta svg { transition: transform .25s; }
+.heroCta:hover svg { transform: translateX(5px); }
+.heroBadges { display: flex; flex-wrap: wrap; gap: .75rem 2rem; margin-top: 3.5rem; padding-top: 1.4rem; border-top: 1px solid rgb(255 255 255 / 24%); color: rgb(255 255 255 / 68%); font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; }
+.heroBadges span { display: flex; align-items: center; gap: .6rem; }
+.heroBadges svg { color: #d9bd90; }
+.useCases { padding: 0 clamp(1.25rem, 5vw, 6rem); }
+.useCasesGrid { max-width: 1488px; margin: auto; display: grid; grid-template-columns: repeat(3, 1fr); }
+.useCase { display: flex; align-items: start; gap: 1.2rem; padding: 2rem 2.5rem; border-right: 1px solid rgb(255 255 255 / 15%); transition: background .25s; }
+.useCase:first-child { padding-left: 0; }
+.useCase:last-child { border: 0; padding-right: 0; }
+.useCase:hover { background: rgb(255 255 255 / 3%); }
+.useCaseNumber { font-size: .65rem; color: #c2a676; padding-top: .15rem; }
+.useCaseEyebrow { font-size: .55rem; text-transform: uppercase; letter-spacing: .16em; opacity: .6; }
+.useCase h2 { font-size: clamp(1.7rem, 2.5vw, 2.7rem); line-height: 1.1; margin-top: .6rem; }
+.useCaseDescription { font-size: .75rem; line-height: 1.65; opacity: .65; margin-top: .7rem; max-width: 310px; }
+.useCaseArrow { margin-left: auto; flex-shrink: 0; opacity: .55; }
+.portfolioSection { padding: clamp(3.5rem, 6vw, 6rem) clamp(1.25rem, 5vw, 6rem); }
+.portfolioInner { max-width: 1488px; margin: auto; }
+.portfolioHeading { display: grid; grid-template-columns: 1.6fr 1fr; align-items: end; gap: 4rem; }
+.portfolioTitle { margin-top: 1rem; font-size: clamp(2.8rem, 5.1vw, 5.7rem); font-weight: 400; letter-spacing: -.04em; line-height: .98; max-width: 860px; }
+.portfolioDescription { font-size: .85rem; line-height: 1.85; max-width: 350px; justify-self: end; padding-bottom: .35rem; }
+.portfolioSection[data-tone="dark"] { --drone-border: #ffffff30; --drone-accent: #d6b683; background: #151c1b; color: #f2eee7; }
+.panoramaSection { background: #151c1b; }
+.packages h2 { font-size: clamp(2.8rem, 4.5vw, 4.6rem); line-height: 1; }
+.packageCard { min-height: 540px; border-color: color-mix(in srgb, var(--drone-border) 65%, transparent); transition: transform .3s, box-shadow .3s; }
+.packageCard:hover { transform: translateY(-5px); box-shadow: 0 18px 40px rgb(40 34 28 / 8%); }
+.packageCard > span { position: static; align-self: start; margin-bottom: 1rem; }
+.packageCard a { margin-top: 2rem; }
+.wedding { --drone-accent: #d6b683; background: #19221f; }
+.wedding article { border-color: #d6b68355; }
+.equipment > div { border: none; gap: 2rem; background: transparent; }
+.equipment article { border-top: 1px solid var(--drone-border); padding: 2rem 0; background: transparent; color: var(--drone-ink); }
+.equipment article p { color: var(--drone-muted); }
+.equipment article p:first-of-type { color: var(--drone-accent); margin-top: 1.5rem; }
+.ctaSection { background: #17231f; --drone-accent: #c6a773; }
+.ctaSection h2 { font-size: clamp(3rem, 6vw, 6.4rem); }
+.ctaSection > div { max-width: 1000px; }
+.ctaSection svg:first-child { display: none; }
+@media (max-width: 900px) {
+  .hero { min-height: 800px; min-height: 88svh; }
+  .heroGrid { grid-template-columns: 1fr; gap: 2rem; }
+  .heroOffer { display: flex; align-items: center; gap: 1rem; border-left: 0; padding: 0; flex-wrap: wrap; }
+  .heroPrice { margin: 0; font-size: 2.3rem; }
+  .heroCta { margin: 0 0 0 auto; padding: .75rem 0; }
+  .heroBadges { margin-top: 2rem; }
+  .useCase { padding: 1.6rem 1rem; gap: .6rem; }
+  .useCaseArrow { display: none; }
+  .portfolioHeading { gap: 2rem; }
+}
+@media (max-width: 600px) {
+  .hero { min-height: 760px; min-height: 92svh; }
+  .heroContent { padding-top: 9rem; }
+  .heroImage { object-position: 61% center; }
+  .heroTitle { font-size: clamp(3.6rem, 15.3vw, 5.5rem); }
+  .heroDescription { font-size: .82rem; margin-top: 1.5rem; }
+  .heroEyebrow { font-size: .55rem; line-height: 1.6; letter-spacing: .18em; }
+  .heroOffer { gap: .65rem; }
+  .heroCta { font-size: .55rem; gap: .8rem; }
+  .heroPriceLabel { font-size: .5rem; letter-spacing: .1em; }
+  .heroBadges { gap: .65rem; font-size: .5rem; letter-spacing: .03em; }
+  .heroBadges span:last-child { flex-basis: 100%; }
+  .useCasesGrid { grid-template-columns: 1fr; }
+  .useCase, .useCase:first-child, .useCase:last-child { padding: 1.3rem 0; border-right: 0; border-bottom: 1px solid #ffffff20; gap: 1rem; }
+  .useCase:last-child { border-bottom: 0; }
+  .useCase h2 { font-size: 2rem; }
+  .useCaseDescription { max-width: none; }
+  .useCaseArrow { display: block; margin-top: 1rem; }
+  .portfolioHeading { grid-template-columns: 1fr; gap: 1.5rem; }
+  .portfolioDescription { justify-self: start; max-width: 330px; }
+  .portfolioTitle { font-size: 3rem; }
+  .packageCard { min-height: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .heroCta svg, .packageCard, .useCase { transition: none; }
+  .packageCard:hover, .heroCta:hover svg { transform: none; }
+}

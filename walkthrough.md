@@ -1,5 +1,7 @@
 ## 2026-10-12 — interaktywna galeria dronowa
 
+Druga iteracja po uwagach właściciela: zamiana plakatów na responsywną kompozycję pojedynczych fotografii. Pięć testów CMS PASS, wizualny desktop i 390 px PASS, pełny nocny kadr w lightboxie i jego zamknięcie PASS, karuzela przechodzi do 2/3. Hero, mozaika, panorama oraz oferta korzystają ze wspólnego szablonu i z danych CMS. Tymczasowy preview usunięty przed buildem. Pełny build PASS, 262/262 stron; formalna delta TS 97→97, bez nowych diagnostyk. Zapis w istniejącym adminie potwierdzony publicznym GET: 10 modułów, 3 zdjęcia mozaiki, 3 karuzeli i 1 panoramy. Packages, booking, areas, seo i theme identyczne z backupem. Produkcyjny odbiór kodu po nowym deployu pozostaje do wykonania.
+
 Wykonano 5 scenariuszy rzeczywistego edytora → Pages API → odczytu CMS → renderera oraz 14 istniejących unit drona. Potwierdzono zapis, zachowanie starych danych, odrzucenie nieautoryzowanych/nieprawidłowych danych i sterowanie karuzelą. W przeglądarce lokalnej sprawdzono strzałki 1→2→3, pełny podgląd kolażu i panoramy, zamknięcie oraz szerokość 390 px bez poziomego przepełnienia. Przed lokalnym buildem usuwany jest tymczasowy podgląd. Pełny npm run build: PASS, 262/262 stron. Typecheck zgłasza 98 diagnostyk poza zmienionymi plikami; nie jest globalnie czysty. Wdrożenie i konfiguracja produkcyjnego CMS pozostają do potwierdzenia.
 
 ## Odczyt naprawy galerii — 2026-09-14

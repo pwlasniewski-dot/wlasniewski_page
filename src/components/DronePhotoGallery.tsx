@@ -11,7 +11,7 @@ const PhotoLightbox = dynamic(() => import('@/components/PhotoLightbox'), { ssr:
 export type DroneGalleryPhoto = Omit<DroneImageItem, 'id' | 'url'> & { src: string };
 
 /** Native scroll-snap keeps the photographs visible before hydration and supports touch. */
-export default function DronePhotoGallery({ photos, module }: { photos: DroneGalleryPhoto[]; module: DronePortfolioModule }) {
+export default function DronePhotoGallery({ photos, module, headingClass = 'font-display' }: { photos: DroneGalleryPhoto[]; module: DronePortfolioModule; headingClass?: string }) {
     const rail = useRef<HTMLDivElement>(null);
     const [active, setActive] = useState(0);
     const [viewer, setViewer] = useState<number | null>(null);
@@ -45,10 +45,15 @@ export default function DronePhotoGallery({ photos, module }: { photos: DroneGal
 
     if (layout === 'parallax') {
         return <div className={styles.panorama} data-drone-gallery="parallax" style={{ '--photo-position': photos[0].position || 'center', '--photo-mobile-position': photos[0].mobilePosition || photos[0].position || 'center' } as CSSProperties}>
-            <ParallaxSection image={photos[0].src} height="min-h-[50vh] md:min-h-[70vh]" overlayOpacity={0.05} floatingImage={module.motion === true} parallaxSpeed={0.35} imageOffset={photos[0].position === 'top' ? 0 : photos[0].position === 'bottom' ? 100 : 50}>
-                <button type="button" onClick={() => setViewer(0)} aria-label={openLabel(photos[0], 0)} className={styles.panoramaButton}>
-                    <Expand size={18} aria-hidden="true" /> Powiększ zdjęcie
-                </button>
+            <ParallaxSection image={photos[0].src} height="min-h-[75vh] md:min-h-[85vh]" overlayOpacity={0.12} floatingImage={module.motion === true} parallaxSpeed={0.65} imageOffset={photos[0].position === 'top' ? 0 : photos[0].position === 'bottom' ? 100 : 50}>
+                <div className={styles.panoramaContent}>
+                    <p className={styles.panoramaEyebrow}>{module.eyebrow}</p>
+                    <h2 id={`${module.id}-heading`} className={`${styles.panoramaTitle} ${headingClass}`}>{module.title}</h2>
+                    {module.description && <p className={styles.panoramaDescription}>{module.description}</p>}
+                    <button type="button" onClick={() => setViewer(0)} aria-label={openLabel(photos[0], 0)} className={styles.panoramaButton}>
+                        <Expand size={18} aria-hidden="true" /> Powiększ zdjęcie
+                    </button>
+                </div>
             </ParallaxSection>
             {photos[0].caption && <p className={styles.panoramaCaption}>{photos[0].caption}</p>}
             {lightbox}

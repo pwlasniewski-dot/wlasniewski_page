@@ -3,7 +3,9 @@
 - [x] Aktualny main 7a1dadd i kopia publicznej strony przed zmianami.
 - [x] Rozbudowa obecnego CMS: karuzela, mozaika, panorama, podpisy i kadry.
 - [x] Testy zapisu/odczytu i podgląd komputer/telefon.
-- [ ] Pełny build, publikacja i ponowny odczyt konfiguracji produkcyjnej.
+- [x] Korekta po ocenie właściciela: pojedyncze zdjęcia, pełny hero, mozaika, panorama i spójność całej strony dronowej; kontrola 390 px.
+- [x] Pełny build 262/262, delta TS 97→97 bez nowych diagnostyk; zapis i ponowny odczyt produkcyjnego CMS.
+- [ ] Potwierdzenie publikacji nowego kodu na Netlify i odbiór produkcyjny.
 
 ## 2026-10-02 — pilny UX promocji (draft)
 

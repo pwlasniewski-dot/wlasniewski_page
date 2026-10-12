@@ -1,13 +1,12 @@
 import type { CSSProperties, ReactNode } from 'react';
 import Link from 'next/link';
 import DronePhotoGallery from '@/components/DronePhotoGallery';
+import styles from './DronePhotographyLanding.module.css';
 import {
     ArrowRight,
-    Building2,
     Camera,
     Check,
     CloudSun,
-    Heart,
     MapPin,
     Play,
     ShieldCheck,
@@ -63,7 +62,7 @@ export default function DronePhotographyLanding({
     const entryPrice = standardPrices.length ? Math.min(...standardPrices) : allPrices.length ? Math.min(...allPrices) : 0;
 
     return (
-        <main style={style} className={`min-h-screen bg-[var(--drone-surface)] text-[var(--drone-ink)] selection:bg-[var(--drone-accent)] ${bodyClasses[config.theme.bodyFont] || bodyClasses.sans}`}>
+        <main style={style} className={`${styles.page} min-h-screen bg-[var(--drone-surface)] text-[var(--drone-ink)] selection:bg-[var(--drone-accent)] ${bodyClasses[config.theme.bodyFont] || bodyClasses.sans}`}>
             {config.modules.filter(module => module.enabled).map(module => renderModule(module, {
                 config,
                 activePackages,
@@ -96,30 +95,30 @@ function renderModule(module: DronePhotographyModule, context: RenderContext): R
     switch (module.type) {
         case 'hero':
             return (
-                <section key={module.id} className={`relative overflow-hidden border-b border-white/10 px-5 pb-16 pt-20 sm:px-8 md:pb-24 md:pt-28 ${toneClass}`}>
-                    {module.image ? <img src={module.image} alt={module.imageAlt || ''} className="absolute inset-0 h-full w-full object-cover opacity-25" /> : null}
-                    <div aria-hidden="true" className={`absolute inset-0 ${tone === 'dark' ? 'bg-[radial-gradient(circle_at_12%_18%,rgba(212,183,124,.28),transparent_30%),linear-gradient(90deg,rgba(0,0,0,.38),transparent)]' : 'bg-[radial-gradient(circle_at_12%_18%,rgba(148,115,61,.16),transparent_30%)]'}`} />
-                    <div className="relative mx-auto max-w-[1380px]">
-                        <div className="grid gap-10 lg:grid-cols-[1.1fr_.55fr] lg:items-end">
+                <section key={module.id} className={`${styles.hero} ${toneClass}`}>
+                    {module.image ? <img src={module.image} alt={module.imageAlt || ''} fetchPriority="high" className={styles.heroImage} /> : null}
+                    <div aria-hidden="true" className={styles.heroShade} />
+                    <div className={styles.heroContent}>
+                        <div className={styles.heroGrid}>
                             <div>
-                                <p className="mb-5 text-[10px] font-bold uppercase tracking-[.34em] text-[var(--drone-accent)] sm:text-xs">{module.eyebrow}</p>
-                                <h1 className={`max-w-5xl text-[clamp(3.6rem,8vw,8.5rem)] font-normal leading-[.82] tracking-[-.055em] ${headingClass}`}>
-                                    {module.title}<br /><em className="font-light text-[var(--drone-accent)]">{module.titleAccent}</em>
+                                <p className={styles.heroEyebrow}>{module.eyebrow}</p>
+                                <h1 className={`${styles.heroTitle} ${headingClass}`}>
+                                    {module.title}<br /><em>{module.titleAccent}</em>
                                 </h1>
-                                <p className={`mt-8 max-w-2xl text-base leading-8 md:text-lg ${mutedClass}`}>{module.description}</p>
+                                <p className={styles.heroDescription}>{module.description}</p>
                             </div>
-                            <div className={`border-l pl-6 lg:pb-3 ${tone === 'dark' ? 'border-white/20' : 'border-[var(--drone-border)]'}`}>
-                                <div className={`text-xs font-bold uppercase tracking-[.24em] ${mutedClass}`}>{module.priceLabel}</div>
-                                <div className={`mt-2 text-7xl text-[var(--drone-accent)] ${headingClass}`}>{new Intl.NumberFormat('pl-PL').format(entryPrice)} zł</div>
-                                <ActionLink href={module.ctaHref} className="mt-7 inline-flex items-center gap-2 rounded-full bg-[var(--drone-accent)] px-7 py-3.5 text-xs font-bold uppercase tracking-[.14em] text-white transition hover:brightness-110">
+                            <div className={styles.heroOffer}>
+                                <div className={styles.heroPriceLabel}>{module.priceLabel}</div>
+                                <div className={`${styles.heroPrice} ${headingClass}`}>{new Intl.NumberFormat('pl-PL').format(entryPrice)} zł</div>
+                                <ActionLink href={module.ctaHref} className={styles.heroCta}>
                                     {module.ctaLabel} <ArrowRight size={17} />
                                 </ActionLink>
                             </div>
                         </div>
-                        <div className={`mt-10 flex flex-wrap gap-x-8 gap-y-3 text-[10px] font-bold uppercase tracking-[.14em] ${mutedClass}`}>
+                        <div className={styles.heroBadges}>
                             {module.badges.map((badge, index) => {
                                 const Icon = index === 0 ? MapPin : index === 1 ? ShieldCheck : CloudSun;
-                                return <span key={`${module.id}-badge-${index}`} className="flex items-center gap-2"><Icon size={15} className="text-[var(--drone-accent)]" /> {badge}</span>;
+                                return <span key={`${module.id}-badge-${index}`}><Icon size={14} /> {badge}</span>;
                             })}
                         </div>
                     </div>
@@ -128,16 +127,16 @@ function renderModule(module: DronePhotographyModule, context: RenderContext): R
 
         case 'use_cases':
             return (
-                <section key={module.id} className={`px-5 py-8 sm:px-8 ${toneClass}`}>
-                    <div className="mx-auto grid max-w-[1380px] gap-px overflow-hidden border border-white/15 bg-white/15 md:grid-cols-3">
-                        {module.items.map(item => <UseCaseCard key={item.id} item={item} headingClass={headingClass} />)}
+                <section key={module.id} className={`${styles.useCases} ${toneClass}`}>
+                    <div className={styles.useCasesGrid}>
+                        {module.items.map((item, index) => <UseCaseCard key={item.id} item={item} index={index} headingClass={headingClass} />)}
                     </div>
                 </section>
             );
 
         case 'packages':
             return (
-                <section key={module.id} id="pakiety" className={`scroll-mt-24 px-5 py-20 sm:px-8 md:py-28 ${toneClass}`}>
+                <section key={module.id} id="pakiety" className={`${styles.packages} scroll-mt-24 px-5 py-20 sm:px-8 md:py-24 ${toneClass}`}>
                     <div className="mx-auto max-w-[1280px]">
                         <div className="grid items-end gap-8 lg:grid-cols-[1fr_.7fr]">
                             <div>
@@ -150,7 +149,7 @@ function renderModule(module: DronePhotographyModule, context: RenderContext): R
                         </div>
                         <div className="mt-12 grid gap-5 lg:grid-cols-3">
                             {activePackages.filter(item => item.audience !== 'slub').map(item => (
-                                <article id={item.audience === 'firma' ? 'firma' : undefined} key={item.slug} className={`relative flex min-h-[520px] scroll-mt-24 flex-col border p-7 sm:p-9 ${item.featured ? 'border-[var(--drone-accent)] bg-[var(--drone-raised)] shadow-[0_24px_70px_rgba(78,63,43,.12)]' : 'border-[var(--drone-border)] bg-[var(--drone-paper)]'}`}>
+                                <article id={item.audience === 'firma' ? 'firma' : undefined} key={item.slug} className={`${styles.packageCard} relative flex scroll-mt-24 flex-col border p-7 sm:p-9 ${item.featured ? 'border-[var(--drone-accent)] bg-[var(--drone-raised)]' : 'border-[var(--drone-border)] bg-[var(--drone-paper)]'}`}>
                                     {item.featured && <span className="absolute right-5 top-5 bg-[var(--drone-accent)] px-3 py-1 text-[9px] font-bold uppercase tracking-[.16em] text-white">{module.featuredLabel}</span>}
                                     <Eyebrow>{item.shortName}</Eyebrow>
                                     <h3 className={`mt-5 text-4xl font-normal leading-none ${headingClass}`}>{item.name}</h3>
@@ -174,7 +173,7 @@ function renderModule(module: DronePhotographyModule, context: RenderContext): R
             const weddingPackage = getDronePhotographyPackage(module.packageSlug, activePackages);
             if (!weddingPackage) return null;
             return (
-                <section key={module.id} id="slub" className={`scroll-mt-24 border-y border-white/10 px-5 py-20 sm:px-8 md:py-28 ${toneClass}`}>
+                <section key={module.id} id="slub" className={`${styles.wedding} scroll-mt-24 border-y border-white/10 px-5 py-20 sm:px-8 md:py-24 ${toneClass}`}>
                     <div className="mx-auto grid max-w-[1200px] gap-12 lg:grid-cols-[.85fr_1.15fr] lg:items-center">
                         <div>
                             <Eyebrow>{module.eyebrow}</Eyebrow>
@@ -206,12 +205,17 @@ function renderModule(module: DronePhotographyModule, context: RenderContext): R
                 ? module.images.filter(image => isDroneImageUrl(image.url)).slice(0, module.limit).map(image => ({ ...image, src: image.url }))
                 : (portfolioByCategory[module.categorySlug] || []).slice(0, module.limit);
             if (!photos.length) return null;
+            if (module.layout === 'parallax') return <section key={module.id} className={styles.panoramaSection} aria-labelledby={`${module.id}-heading`}>
+                <DronePhotoGallery photos={photos} module={module} headingClass={headingClass} />
+            </section>;
             return (
-                <section key={module.id} className={`px-5 py-20 sm:px-8 md:py-28 ${toneClass}`} aria-labelledby={`${module.id}-heading`}>
-                    <div className="mx-auto max-w-[1280px]">
-                        <Eyebrow>{module.eyebrow}</Eyebrow>
-                        <h2 id={`${module.id}-heading`} className={`mt-4 text-5xl font-normal md:text-7xl ${headingClass}`}>{module.title}</h2>
-                        {module.description && <p className={`mt-6 max-w-2xl text-base leading-8 ${mutedClass}`}>{module.description}</p>}
+                <section key={module.id} className={`${styles.portfolioSection} ${toneClass}`} data-tone={tone} aria-labelledby={`${module.id}-heading`}>
+                    <div className={styles.portfolioInner}>
+                        <div className={styles.portfolioHeading}>
+                            <div><Eyebrow>{module.eyebrow}</Eyebrow>
+                            <h2 id={`${module.id}-heading`} className={`${styles.portfolioTitle} ${headingClass}`}>{module.title}</h2></div>
+                            {module.description && <p className={`${styles.portfolioDescription} ${mutedClass}`}>{module.description}</p>}
+                        </div>
                         <DronePhotoGallery photos={photos} module={module} />
                     </div>
                 </section>
@@ -220,7 +224,7 @@ function renderModule(module: DronePhotographyModule, context: RenderContext): R
 
         case 'equipment':
             return (
-                <section key={module.id} className={`border-y border-[var(--drone-border)] px-5 py-20 sm:px-8 md:py-28 ${toneClass}`}>
+                <section key={module.id} className={`${styles.equipment} border-y border-[var(--drone-border)] px-5 py-14 sm:px-8 md:py-20 ${toneClass}`}>
                     <div className="mx-auto grid max-w-[1200px] gap-px overflow-hidden border border-[var(--drone-border)] bg-[var(--drone-border)] lg:grid-cols-2">
                         {module.cards.map((card, index) => {
                             const Icon = card.icon === 'thermal' ? ThermometerSun : Camera;
@@ -253,7 +257,7 @@ function renderModule(module: DronePhotographyModule, context: RenderContext): R
 
         case 'cta':
             return (
-                <section key={module.id} className={`px-5 py-24 text-center sm:px-8 md:py-32 ${toneClass}`}>
+                <section key={module.id} className={`${styles.ctaSection} px-5 py-20 text-center sm:px-8 md:py-28 ${toneClass}`}>
                     <div className="mx-auto max-w-3xl">
                         <Play className="mx-auto text-[var(--drone-accent)]" size={36} strokeWidth={1.4} />
                         {module.eyebrow ? <Eyebrow className="mt-6">{module.eyebrow}</Eyebrow> : null}
@@ -266,13 +270,13 @@ function renderModule(module: DronePhotographyModule, context: RenderContext): R
     }
 }
 
-function UseCaseCard({ item, headingClass }: { item: DroneUseCase; headingClass: string }) {
-    const Icon = item.icon === 'building' ? Building2 : item.icon === 'heart' ? Heart : Camera;
-    return <ActionLink href={item.href} className="group bg-[var(--drone-dark)] p-7 text-white transition hover:brightness-110 md:p-8">
-        <div className="flex items-start justify-between gap-4"><Icon className="text-[var(--drone-accent)]" size={28} strokeWidth={1.5} /><ArrowRight className="text-white/40 transition group-hover:translate-x-1 group-hover:text-[var(--drone-accent)]" size={20} /></div>
-        <p className="mt-8 text-[10px] font-bold uppercase tracking-[.24em] text-[var(--drone-accent)]">{item.eyebrow}</p>
-        <h2 className={`mt-2 text-4xl font-normal ${headingClass}`}>{item.title}</h2>
-        <p className="mt-3 text-sm leading-6 text-white/60">{item.description}</p>
+function UseCaseCard({ item, index, headingClass }: { item: DroneUseCase; index: number; headingClass: string }) {
+    return <ActionLink href={item.href} className={styles.useCase}>
+        <span className={styles.useCaseNumber}>{String(index + 1).padStart(2, '0')}</span>
+        <div><p className={styles.useCaseEyebrow}>{item.eyebrow}</p>
+        <h2 className={headingClass}>{item.title}</h2>
+        <p className={styles.useCaseDescription}>{item.description}</p></div>
+        <ArrowRight size={20} className={styles.useCaseArrow} />
     </ActionLink>;
 }
 

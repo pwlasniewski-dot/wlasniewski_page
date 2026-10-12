@@ -1,8 +1,16 @@
 .gallery { margin-top: 2.5rem; min-width: 0; }
 .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
-.mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
-.mosaic .card:first-child { grid-column: span 2; }
-.mosaic .card:first-child .imageButton { aspect-ratio: 4 / 3; }
+.mosaic { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1.2rem; align-items: stretch; }
+.mosaic .card { grid-column: span 6; }
+.mosaic .card:nth-child(3n + 1) { grid-column: span 8; }
+.mosaic .card:nth-child(3n + 2) { grid-column: span 4; }
+.mosaic .card:nth-child(3n + 3) { grid-column: span 12; }
+.mosaic .card { position: relative; }
+.mosaic .imageButton { aspect-ratio: 16 / 10; height: 100%; min-height: 280px; }
+.mosaic .card:nth-child(3n + 2) .imageButton { aspect-ratio: auto; }
+.mosaic .card:nth-child(3n + 3) .imageButton { aspect-ratio: 4 / 1; }
+.mosaic .caption { position: absolute; left: 0; bottom: 0; right: 0; pointer-events: none; color: white; background: linear-gradient(transparent, #0009); padding: 3rem 1.5rem 1.4rem; align-items: baseline; font-size: .9rem; }
+.mosaic .number { color: #ecd8b2; }
 .card { margin: 0; min-width: 0; }
 .imageButton { width: 100%; display: block; position: relative; overflow: hidden; aspect-ratio: 4 / 3; background: var(--drone-dark); cursor: zoom-in; }
 .photo { width: 100%; height: 100%; display: block; object-position: var(--photo-position); transition: transform 700ms ease; }
@@ -12,10 +20,10 @@
 .number { color: var(--drone-accent); font-variant-numeric: tabular-nums; font-size: .65rem; padding-top: .15rem; }
 .rail { display: flex; gap: 1.5rem; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; position: relative; padding-bottom: .5rem; }
 .rail::-webkit-scrollbar { display: none; }
-.rail .card { flex: 0 0 86%; scroll-snap-align: start; }
+.rail .card { flex: 0 0 82%; scroll-snap-align: start; }
 .rail .card:last-child { flex-basis: 100%; }
 .rail .imageButton { aspect-ratio: 16 / 9; }
-.rail .card:last-child .imageButton { width: 86%; }
+.rail .card:last-child .imageButton { width: 82%; }
 .controls { display: flex; gap: .75rem; align-items: center; padding-top: 1.25rem; border-top: 1px solid var(--drone-border); }
 .progress { font-size: .8rem; font-variant-numeric: tabular-nums; letter-spacing: .12em; white-space: nowrap; }
 .progress > span { opacity: .5; }
@@ -25,15 +33,27 @@
 .arrow:hover:not(:disabled) { background: var(--drone-accent); color: white; }
 .arrow:disabled { opacity: .25; cursor: default; }
 .imageButton:focus-visible, .arrow:focus-visible, .rail:focus-visible, .panoramaButton:focus-visible { outline: 3px solid var(--drone-accent); outline-offset: -3px; }
-.panorama { margin-top: 2.5rem; }
+.panorama { position: relative; margin-top: 0; color: white; }
 .panorama img { object-position: var(--photo-position) !important; }
-.panoramaButton { display: inline-flex; align-items: center; gap: .7rem; border: 1px solid rgb(255 255 255 / 60%); border-radius: 99px; padding: 1rem 1.5rem; color: white; background: rgb(0 0 0 / 30%); backdrop-filter: blur(8px); font-size: .75rem; text-transform: uppercase; letter-spacing: .16em; }
-.panoramaCaption { padding-top: 1rem; text-align: right; font-size: .8rem; }
+.panoramaContent { width: 100%; text-align: left; padding: 5rem 1rem; text-shadow: 0 2px 30px #0009; }
+.panoramaEyebrow { font-size: .65rem; letter-spacing: .25em; text-transform: uppercase; color: #ecdbbd; }
+.panoramaTitle { font-size: clamp(3.6rem, 7.6vw, 8rem); font-weight: 400; line-height: .96; letter-spacing: -.04em; max-width: 850px; margin-top: 1.4rem; text-wrap: balance; }
+.panoramaDescription { font-size: .95rem; max-width: 390px; line-height: 1.85; margin-top: 1.8rem; color: #fffe; }
+.panoramaButton { display: inline-flex; align-items: center; gap: .7rem; border-bottom: 1px solid rgb(255 255 255 / 60%); padding: 1rem 0; margin-top: 1.5rem; color: white; font-size: .65rem; text-transform: uppercase; letter-spacing: .16em; }
+.panoramaCaption { position: absolute; right: 3rem; bottom: 2rem; font-size: .6rem; text-transform: uppercase; letter-spacing: .15em; color: #fffb; }
 @media (max-width: 767px) {
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .mosaic { grid-template-columns: 1fr; }
-  .mosaic .card:first-child { grid-column: auto; }
+  .mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+  .mosaic .card:nth-child(n) { grid-column: auto; grid-row: auto; }
+  .mosaic .card:first-child { grid-column: span 2; }
+  .mosaic .imageButton { aspect-ratio: 4 / 5; min-height: 0; }
   .mosaic .card:first-child .imageButton { aspect-ratio: 4 / 3; }
+  .mosaic .card:nth-child(3n + 2) .imageButton { aspect-ratio: 4 / 5; }
+  .mosaic .card:nth-child(3n + 3) .imageButton { aspect-ratio: 4 / 5; }
+  .mosaic .caption { font-size: .65rem; padding: 2rem .75rem .8rem; gap: .5rem; }
+  .mosaic .expand { top: .5rem; bottom: auto; }
+  .panoramaContent { padding: 5rem 0; }
+  .panoramaCaption { right: 1.5rem; bottom: 1rem; }
   .photo { object-position: var(--photo-mobile-position); }
   .panorama img { object-position: var(--photo-mobile-position) !important; }
   .rail { gap: .75rem; }

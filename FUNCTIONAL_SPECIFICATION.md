@@ -1,5 +1,7 @@
 ## 2026-10-12 — galerie strony dronowej
 
+Prezentacja portfolio opiera się na pojedynczych zdjęciach bez wbudowanych napisów. Desktop łączy duże kadry w mozaikę, karuzelę i pełną panoramę z tekstem. Na telefonie zdjęcia zmieniają proporcje, zachowują podpisy i otwierają pełny podgląd. Kolejność, treści oraz kadrowanie pozostają edytowalne w tym samym panelu. Utworzone wcześniej kolaże pozostają jako pliki biblioteki. Szablon całości ma wspólną typografię, krótszy pas zastosowań i spójne sekcje oferty; ceny nie są przepisywane do elementów dekoracyjnych.
+
 Dotychczasowy edytor fotografia-z-drona obsługuje siatkę, karuzelę, mozaikę i panoramę z parallax. Administrator wybiera zdjęcia, podpisy, ALT, kadr komputer/telefon, pełny obraz lub wypełnienie, ruch, widoczność i kolejność. Karuzela używa gestu przewijania, strzałek i klawiatury bez automatycznego odtwarzania. Zdjęcia otwierają wspólny pełnoekranowy podgląd. Panorama używa pierwszego zdjęcia; na telefonie i przy ograniczeniu ruchu jest nieruchoma. Dotychczasowe treści, ceny i rezerwacje pozostają z obecnego CMS.
 
 ## 2026-10-02 — cena po obniżce i odwrócenie pomyłki
