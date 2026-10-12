@@ -5,7 +5,7 @@
 - [x] Testy zapisu/odczytu i podgląd komputer/telefon.
 - [x] Korekta po ocenie właściciela: pojedyncze zdjęcia, pełny hero, mozaika, panorama i spójność całej strony dronowej; kontrola 390 px.
 - [x] Pełny build 262/262, delta TS 97→97 bez nowych diagnostyk; zapis i ponowny odczyt produkcyjnego CMS.
-- [ ] Potwierdzenie publikacji nowego kodu na Netlify i odbiór produkcyjny.
+- [x] Kod 8763bfe opublikowany: Netlify 6acd4758518f20fb1398fafc, Site is live; produkcyjne zdjęcia 8/8, karuzela 1→2/3, bez poziomego przepełnienia.
 
 ## 2026-10-02 — pilny UX promocji (draft)
 

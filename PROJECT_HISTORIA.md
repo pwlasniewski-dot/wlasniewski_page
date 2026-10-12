@@ -631,6 +631,8 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ### 2026-10-12 — dron: kompozycja z pojedynczych fotografii
 
+Publikacja 8763bfe potwierdzona na Netlify: 6acd4758518f20fb1398fafc, Site is live. Odbiór publiczny potwierdził nowe style, komplet załadowanych zdjęć, przejście karuzeli do 2/3 i brak poziomego przepełnienia. Zachowano zrzuty produkcji oraz pełny JSON przed i po zapisie CMS.
+
 Po ocenie właściciela zastępujemy drobne plakaty/kolaże na stronie fotografiami komponowanymi responsywnie przez stronę. Hero eksponuje kolorowe jezioro, tytuł i aktualną cenę; zastosowania tworzą krótszy pas. Mozaika łączy szeroką architekturę, pionowy nocny kadr i pas zielonych pól. Osobna karuzela pokazuje trzy krajobrazy; panorama otrzymuje tytuł i opis na zdjęciu. Ujednolicono rytm i wygląd oferty, sprzętu oraz końcowego CTA. Wszystkie teksty i media nadal pochodzą z dotychczasowego CMS. Stare pliki pozostają w bibliotece i backupie JSON. Bez zmian cen, zakresów, rezerwacji, płatności lub schematu DB.
 
 Pięć testów rzeczywistego CMS/API/read/render PASS. Lokalny podgląd: desktop, mozaika 390 px, karuzela 1→2, lightbox i jego zamknięcie PASS; szerokość dokumentu 375 przy viewport 390, bez poziomego przepełnienia. Upload czterech zdjęć wykonano przez istniejącą bibliotekę, która optymalizuje je do WebP. Pełny build PASS (262/262); delta TS względem HEAD: 97→97, zero nowych diagnostyk. Zapis CMS potwierdzony odczytem publicznym: 10 modułów, bez zmiany packages/booking/areas/seo/theme. Publikacja kodu przez istniejące Git CD. [INCIDENT] Ponownie wystąpił Windows EPERM dla wygenerowanego .next; build z właściwym dostępem zakończył się sukcesem, bez zmiany zabezpieczeń.
