@@ -1,3 +1,10 @@
+## 2026-10-12 — strona dronowa
+
+- [x] Aktualny main 7a1dadd i kopia publicznej strony przed zmianami.
+- [x] Rozbudowa obecnego CMS: karuzela, mozaika, panorama, podpisy i kadry.
+- [x] Testy zapisu/odczytu i podgląd komputer/telefon.
+- [ ] Pełny build, publikacja i ponowny odczyt konfiguracji produkcyjnej.
+
 ## 2026-10-02 — pilny UX promocji (draft)
 
 - [x] Potwierdzić istniejące end/cancel/edit i zachować omyłkowe 155 zł w historii; zero produkcyjnych zapisów.

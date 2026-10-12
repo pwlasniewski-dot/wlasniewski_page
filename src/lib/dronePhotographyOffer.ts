@@ -26,7 +26,12 @@ export type DroneTheme = {
 };
 
 export type DroneFaqItem = { id: string; question: string; answer: string };
-export type DroneImageItem = { id: string; url: string; alt: string };
+export type DroneImageItem = {
+    id: string; url: string; alt: string;
+    caption?: string;
+    position?: 'center' | 'top' | 'bottom' | 'left' | 'right';
+    mobilePosition?: 'center' | 'top' | 'bottom' | 'left' | 'right';
+};
 export type DroneUseCase = {
     id: string;
     icon: 'building' | 'camera' | 'heart';
@@ -90,6 +95,10 @@ export type DronePortfolioModule = DroneModuleBase & {
     categorySlug: string;
     limit: number;
     images: DroneImageItem[];
+    layout?: 'grid' | 'carousel' | 'mosaic' | 'parallax';
+    description?: string;
+    imageFit?: 'cover' | 'contain';
+    motion?: boolean;
 };
 
 export type DroneEquipmentModule = DroneModuleBase & {
@@ -319,6 +328,24 @@ export function parseDronePhotographyConfig(value: unknown): DronePhotographyCon
         .filter(module => isObject(module) && typeof module.type === 'string' && allowedModuleTypes.has(module.type as DronePhotographyModule['type']))
         .map(module => {
             const template = defaults.modules.find(item => item.type === module.type);
+            if (module.type === 'portfolio') {
+                const positions = ['center', 'top', 'bottom', 'left', 'right'];
+                return {
+                    ...template, ...module,
+                    layout: ['grid', 'carousel', 'mosaic', 'parallax'].includes(String(module.layout)) ? module.layout : 'grid',
+                    imageFit: module.imageFit === 'contain' ? 'contain' : 'cover',
+                    motion: module.motion === true,
+                    description: typeof module.description === 'string' ? module.description : '',
+                    limit: Math.min(30, Math.max(1, Math.floor(Number(module.limit) || 6))),
+                    images: Array.isArray(module.images) ? module.images.filter(isObject).map(image => ({
+                        id: String(image.id || ''), url: typeof image.url === 'string' ? image.url : '',
+                        alt: typeof image.alt === 'string' ? image.alt : '',
+                        caption: typeof image.caption === 'string' ? image.caption : '',
+                        position: positions.includes(String(image.position)) ? image.position : 'center',
+                        mobilePosition: positions.includes(String(image.mobilePosition)) ? image.mobilePosition : 'center',
+                    })) : [],
+                } as DronePortfolioModule;
+            }
             return { ...template, ...module } as DronePhotographyModule;
         });
 
@@ -349,6 +376,22 @@ export function validateDronePhotographyConfig(value: unknown): { valid: true } 
         if (!isObject(module) || typeof module.id !== 'string' || !module.id || typeof module.type !== 'string') return { valid: false, error: 'Każdy moduł musi mieć typ i identyfikator.' };
         if (moduleIds.has(module.id)) return { valid: false, error: `Identyfikator modułu „${module.id}” występuje więcej niż raz.` };
         moduleIds.add(module.id);
+        if (module.type === 'portfolio') {
+            if (module.layout !== undefined && !['grid', 'carousel', 'mosaic', 'parallax'].includes(String(module.layout))) return { valid: false, error: 'Wybierz obsługiwany układ galerii.' };
+            if (module.imageFit !== undefined && !['cover', 'contain'].includes(String(module.imageFit))) return { valid: false, error: 'Wybierz poprawny sposób kadrowania zdjęć.' };
+            if (module.motion !== undefined && typeof module.motion !== 'boolean') return { valid: false, error: 'Ustawienie ruchu musi być włączone albo wyłączone.' };
+            if (module.description !== undefined && (typeof module.description !== 'string' || module.description.length > 2000)) return { valid: false, error: 'Opis galerii może mieć do 2000 znaków.' };
+            if (!Number.isInteger(module.limit) || Number(module.limit) < 1 || Number(module.limit) > 30) return { valid: false, error: 'Galeria może pokazywać od 1 do 30 zdjęć.' };
+            if (!Array.isArray(module.images) || module.images.length > 100) return { valid: false, error: 'Nieprawidłowa lista zdjęć galerii.' };
+            for (const image of module.images) {
+                if (!isObject(image) || typeof image.url !== 'string' || typeof image.alt !== 'string') return { valid: false, error: 'Zdjęcie wymaga adresu i tekstu alternatywnego.' };
+                if (image.url && !isDroneImageUrl(image.url)) return { valid: false, error: 'Zdjęcia wymagają adresu HTTPS lub lokalnej ścieżki.' };
+                if (image.caption !== undefined && (typeof image.caption !== 'string' || image.caption.length > 500)) return { valid: false, error: 'Podpis zdjęcia może mieć do 500 znaków.' };
+                for (const position of [image.position, image.mobilePosition]) {
+                    if (position !== undefined && !['center', 'top', 'bottom', 'left', 'right'].includes(String(position))) return { valid: false, error: 'Wybierz poprawny kadr zdjęcia.' };
+                }
+            }
+        }
     }
     let activeCount = 0;
     for (const item of parsed.packages) {
@@ -396,4 +439,9 @@ export function safeDroneHref(value: string | undefined, fallback = '#') {
     } catch {
         return fallback;
     }
+}
+
+export function isDroneImageUrl(value: string): boolean {
+    if (value.startsWith('/') && !value.startsWith('//') && !value.includes('\\')) return true;
+    try { return new URL(value).protocol === 'https:'; } catch { return false; }
 }

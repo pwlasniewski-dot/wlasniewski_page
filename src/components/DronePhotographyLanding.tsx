@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import Link from 'next/link';
+import DronePhotoGallery from '@/components/DronePhotoGallery';
 import {
     ArrowRight,
     Building2,
@@ -17,6 +18,7 @@ import {
     formatDronePrice,
     getDronePhotographyPackage,
     safeDroneHref,
+    isDroneImageUrl,
     type DronePhotographyConfig,
     type DronePhotographyModule,
     type DroneUseCase,
@@ -201,7 +203,7 @@ function renderModule(module: DronePhotographyModule, context: RenderContext): R
 
         case 'portfolio': {
             const photos = module.source === 'manual'
-                ? module.images.filter(image => image.url).slice(0, module.limit).map(image => ({ src: image.url, alt: image.alt }))
+                ? module.images.filter(image => isDroneImageUrl(image.url)).slice(0, module.limit).map(image => ({ ...image, src: image.url }))
                 : (portfolioByCategory[module.categorySlug] || []).slice(0, module.limit);
             if (!photos.length) return null;
             return (
@@ -209,9 +211,8 @@ function renderModule(module: DronePhotographyModule, context: RenderContext): R
                     <div className="mx-auto max-w-[1280px]">
                         <Eyebrow>{module.eyebrow}</Eyebrow>
                         <h2 id={`${module.id}-heading`} className={`mt-4 text-5xl font-normal md:text-7xl ${headingClass}`}>{module.title}</h2>
-                        <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                            {photos.map((photo, index) => <figure key={`${photo.src}-${index}`} className="relative aspect-[4/3] overflow-hidden bg-[var(--drone-dark)]"><img src={photo.src} alt={photo.alt || 'Zdjęcie wykonane z drona'} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-700 hover:scale-[1.025]" /></figure>)}
-                        </div>
+                        {module.description && <p className={`mt-6 max-w-2xl text-base leading-8 ${mutedClass}`}>{module.description}</p>}
+                        <DronePhotoGallery photos={photos} module={module} />
                     </div>
                 </section>
             );

@@ -1,3 +1,7 @@
+## 2026-10-12 — galerie strony dronowej
+
+Dotychczasowy edytor fotografia-z-drona obsługuje siatkę, karuzelę, mozaikę i panoramę z parallax. Administrator wybiera zdjęcia, podpisy, ALT, kadr komputer/telefon, pełny obraz lub wypełnienie, ruch, widoczność i kolejność. Karuzela używa gestu przewijania, strzałek i klawiatury bez automatycznego odtwarzania. Zdjęcia otwierają wspólny pełnoekranowy podgląd. Panorama używa pierwszego zdjęcia; na telefonie i przy ograniczeniu ruchu jest nieruchoma. Dotychczasowe treści, ceny i rezerwacje pozostają z obecnego CMS.
+
 ## 2026-10-02 — cena po obniżce i odwrócenie pomyłki
 
 Admin `/admin/promocje` rozróżnia cenę końcową, kwotę rabatu i procent; cena końcowa jest domyślnym pustym polem, bez automatycznego ustawiania nowego rabatu. Przed zapisem widoczna jest kwota klienta oraz wyliczenie. Walidacja właściwej ceny referencyjnej pozostaje obowiązkowa; blokada ma wyjaśnienie przy podglądzie. Edycja ceny/okresu dotyczy wyłącznie nieopublikowanej lub przyszłej promocji. Rozpoczętą można zakończyć, przyszłą anulować; zapisane ceny i rzeczywiste okresy pozostają w historii, także po ponowieniu żądania.

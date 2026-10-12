@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
                 if (!validation.valid) return NextResponse.json({ error: validation.error }, { status: 400 });
             }
 
-            if (slug === 'fotografia-z-drona') {
+            if (slug === 'fotografia-z-drona' || existingTarget?.slug === 'fotografia-z-drona') {
                 const validation = validateDronePhotographyConfig(sections);
                 if (!validation.valid) return NextResponse.json({ error: validation.error }, { status: 400 });
             }

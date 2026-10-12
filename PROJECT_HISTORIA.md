@@ -629,6 +629,11 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### 2026-10-12 — karuzela i panorama na fotografia-z-drona
+
+Na polecenie właściciela rozbudowano istniejącą stronę oraz jej edytor o warianty portfolio: karuzelę, mozaikę i panoramę/parallax. Dodano podpisy, ALT, kadry komputer/telefon, pełny obraz/wypełnienie oraz wspólny podgląd zdjęć. Brak migracji, zmian pakietów i rezerwacji. Kopia aktualnego publicznego rekordu Page 49 znajduje się lokalnie poza repozytorium. Dane marketingowe są nadal ustawiane w CMS, bez zakodowania zdjęć w rendererze. 5 scenariuszy CMS/API/render i 14 unit PASS; lokalnie sprawdzono karuzelę i lightbox na komputerze oraz w widoku 390 px. Pełny build PASS (262/262 stron), publikacja do potwierdzenia. [INCIDENT] Pierwszy lokalny build zatrzymał Windows EPERM przy mkdir w .next; ponowienie z właściwym dostępem zakończyło się sukcesem. Nie zmieniano zabezpieczeń ani danych produkcji.
+
+
 ### 2026-09-14 — hotfix po produkcyjnym odbiorze sklepu
 
 Zrzuty produkcji pokazały POST /api/user/events 403 oraz niedostępny wybór nphoto-15x21-silk w galerii 26. Odczyt bazy potwierdził lokalne identyfikatory formatu i stawki 15/20 zł przy wspólnej ofercie 17/25 zł. Przygotowano ograniczoną korektę formatów i dostawy tej galerii z kontrolą poprzedniej wartości; ceny odbitek 2,50/1,50 zł pozostają te same. Snapshot przed/po: docs/fixes/gallery-26-shop-2026-09-14.json. Historyczne zamówienia nie są modyfikowane.

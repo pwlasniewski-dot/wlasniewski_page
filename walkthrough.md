@@ -1,3 +1,7 @@
+## 2026-10-12 — interaktywna galeria dronowa
+
+Wykonano 5 scenariuszy rzeczywistego edytora → Pages API → odczytu CMS → renderera oraz 14 istniejących unit drona. Potwierdzono zapis, zachowanie starych danych, odrzucenie nieautoryzowanych/nieprawidłowych danych i sterowanie karuzelą. W przeglądarce lokalnej sprawdzono strzałki 1→2→3, pełny podgląd kolażu i panoramy, zamknięcie oraz szerokość 390 px bez poziomego przepełnienia. Przed lokalnym buildem usuwany jest tymczasowy podgląd. Pełny npm run build: PASS, 262/262 stron. Typecheck zgłasza 98 diagnostyk poza zmienionymi plikami; nie jest globalnie czysty. Wdrożenie i konfiguracja produkcyjnego CMS pozostają do potwierdzenia.
+
 ## Odczyt naprawy galerii — 2026-09-14
 
 Korekta produkcyjnego gallery_shop_26 wykonana z porównaniem poprzedniej wartości. Ponowny SELECT potwierdził formats_match=true, delivery_match=true, enabled=true. Nowy test rzeczywistego klienta odtwarza pierwotny brak formatu, a następnie wykonuje trzy ścieżki wyboru → koszyk → dostawa na zapisanym snapshocie: 15×21 za 19,50 zł z dostawą, 10×15 za 18,50 zł i dwie odbitki 15×21 za 22,00 zł. Nie klika płatności. Cały istniejący test storefront stanowi również etap builda.

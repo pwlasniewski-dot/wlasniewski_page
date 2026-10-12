@@ -1,3 +1,7 @@
+## 2026-10-12 — prezentacja zdjęć w DronePhotographyConfig
+
+Rozszerzono istniejący moduł portfolio w Page.sections JSON o layout/description/imageFit/motion i podpisy oraz pozycje obrazów. Bez migracji lub drugiego edytora. DronePhotoGallery zachowuje obrazy w SSR, używa natywnego scroll-snap i wspólnych PhotoLightbox/ParallaxSection. Walidacja Pages API obejmuje warianty, zakres limitu, bezpieczne adresy obrazów i pozycje; rozpoznaje dron także po istniejącym ID. Stare rekordy zachowują siatkę i swoje media. Lokalne QA używa pamięciowej bazy; podgląd lokalny ma wyłącznie niedostępny adres lokalny DB.
+
 ## 2026-10-02 — odwracalne czynności admina promocji
 
 `promotionEditor` zamienia jawny tryb ceny końcowej/rabatu/% na istniejący kontrakt API discountType/discountValue. Nie tworzy nowego modelu ceny. Admin używa wspólnego konserwatywnego calculateReferenceDiscountPercent, pokazuje wynik obliczeń także przy blokadzie prawnej oraz zachowuje serwerowe błędy inline.

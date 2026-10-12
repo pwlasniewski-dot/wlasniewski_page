@@ -49,11 +49,17 @@ export default function DronePhotographyPageEditor({
         patchConfig({ modules });
     }
 
-    function addModule(type: DronePhotographyModule['type']) {
+    function addModule(type: DronePhotographyModule['type'], layout?: 'carousel' | 'mosaic' | 'parallax') {
         const template = DEFAULT_DRONE_PHOTOGRAPHY_CONFIG.modules.find(module => module.type === type);
         if (!template) return;
         const module = JSON.parse(JSON.stringify(template)) as DronePhotographyModule;
         module.id = `${type}-${Date.now()}`;
+        if (module.type === 'portfolio' && layout) {
+            module.layout = layout;
+            module.motion = true;
+            module.source = 'manual';
+            module.images = [];
+        }
         patchConfig({ modules: [...value.modules, module] });
     }
 
@@ -170,6 +176,7 @@ export default function DronePhotographyPageEditor({
                     <div><h3 className="text-lg font-semibold text-white">Moduły strony</h3><p className="mt-1 text-sm text-zinc-400">Możesz ukrywać, kopiować, usuwać i zmieniać kolejność sekcji.</p></div>
                     <div className="flex flex-wrap gap-2">
                         {(['hero', 'use_cases', 'packages', 'wedding', 'portfolio', 'equipment', 'faq', 'cta'] as DronePhotographyModule['type'][]).map(type => <button key={type} type="button" onClick={() => addModule(type)} className="rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs font-semibold text-zinc-200 hover:border-gold-500"><Plus size={14} className="mr-1 inline" />{moduleLabel(type)}</button>)}
+                        {([['carousel', 'Karuzela zdjęć'], ['mosaic', 'Mozaika zdjęć'], ['parallax', 'Panorama / parallax']] as const).map(([layout, label]) => <button key={layout} type="button" onClick={() => addModule('portfolio', layout)} className="rounded border border-gold-500/50 bg-gold-500/10 px-3 py-2 text-xs font-semibold text-gold-500"><Plus size={14} className="mr-1 inline" />{label}</button>)}
                     </div>
                 </div>
                 <div className="mt-6 space-y-5">
@@ -258,7 +265,44 @@ function ModuleFields({ module, packages, patch, pickMedia }: { module: DronePho
 
     if (module.type === 'wedding') return <div className="grid gap-3 md:grid-cols-2"><Field label="Nadtytuł" value={module.eyebrow} onChange={eyebrow => patch({ eyebrow })} /><Field label="Tytuł" value={module.title} onChange={title => patch({ title })} /><Field label="Opis" value={module.description} onChange={description => patch({ description })} multiline /><Select label="Pakiet" value={module.packageSlug} onChange={packageSlug => patch({ packageSlug })} options={packages.map(item => [item.slug, item.name] as const)} /><Field label="Przycisk rezerwacji" value={module.bookingButtonLabel} onChange={bookingButtonLabel => patch({ bookingButtonLabel })} /><Field label="Drugi przycisk" value={module.secondaryButtonLabel} onChange={secondaryButtonLabel => patch({ secondaryButtonLabel })} /><Field label="Link drugiego przycisku" value={module.secondaryButtonHref} onChange={secondaryButtonHref => patch({ secondaryButtonHref })} /></div>;
 
-    if (module.type === 'portfolio') return <div className="space-y-4"><div className="grid gap-3 md:grid-cols-2"><Field label="Nadtytuł" value={module.eyebrow} onChange={eyebrow => patch({ eyebrow })} /><Field label="Tytuł" value={module.title} onChange={title => patch({ title })} /><Select label="Źródło" value={module.source} onChange={source => patch({ source })} options={[['portfolio', 'Kategoria portfolio'], ['manual', 'Zdjęcia ręczne']]} /><Field label="Kategoria portfolio" value={module.categorySlug} onChange={categorySlug => patch({ categorySlug: slugify(categorySlug) })} /><Field label="Limit zdjęć" value={String(module.limit)} type="number" onChange={limit => patch({ limit: Math.max(1, Number(limit) || 1) })} /></div>{module.source === 'manual' ? <div><button type="button" onClick={() => pickMedia('portfolio')} className="mb-3 inline-flex items-center gap-2 rounded bg-gold-500 px-3 py-2 text-sm font-semibold text-black"><Plus size={15} /> Dodaj zdjęcie</button><div className="space-y-2">{module.images.map((image, index) => <div key={image.id} className="grid gap-2 rounded border border-zinc-800 p-3 md:grid-cols-[100px_1fr_auto]"><img src={image.url} alt="" className="h-20 w-24 object-cover" /><div className="space-y-2"><input className={inputClass} value={image.url} onChange={event => patch({ images: module.images.map((item, itemIndex) => itemIndex === index ? { ...item, url: event.target.value } : item) })} /><input className={inputClass} value={image.alt} onChange={event => patch({ images: module.images.map((item, itemIndex) => itemIndex === index ? { ...item, alt: event.target.value } : item) })} placeholder="Opis zdjęcia dla Google" /></div><div className="flex gap-1"><IconButton label="Zmień" onClick={() => pickMedia('portfolio', index)}><ImageIcon size={15} /></IconButton><IconButton label="Usuń" danger onClick={() => patch({ images: module.images.filter((_, itemIndex) => itemIndex !== index) })}><Trash2 size={15} /></IconButton></div></div>)}</div></div> : null}</div>;
+    if (module.type === 'portfolio') return <div className="space-y-4" data-drone-portfolio-editor={module.id}>
+        <div className="grid gap-3 md:grid-cols-2">
+            <Field label="Nadtytuł" value={module.eyebrow} onChange={eyebrow => patch({ eyebrow })} />
+            <Field label="Tytuł" value={module.title} onChange={title => patch({ title })} />
+            <Field label="Opis galerii" value={module.description || ''} onChange={description => patch({ description })} multiline />
+            <Select label="Układ galerii" value={module.layout || 'grid'} onChange={layout => patch({ layout })} options={[["grid", "Siatka"], ["carousel", "Karuzela zdjęć"], ["mosaic", "Mozaika redakcyjna"], ["parallax", "Panorama / parallax"]]} />
+            <Select label="Kadrowanie" value={module.imageFit || 'cover'} onChange={imageFit => patch({ imageFit })} options={[["cover", "Wypełnij kadr"], ["contain", "Pokaż całe zdjęcie / kolaż"]]} />
+            <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" checked={module.motion === true} onChange={event => patch({ motion: event.target.checked })} /> Delikatny ruch zdjęć</label>
+            <Select label="Źródło" value={module.source} onChange={source => patch({ source })} options={[["portfolio", "Kategoria portfolio"], ["manual", "Zdjęcia ręczne"]]} />
+            <Field label="Kategoria portfolio" value={module.categorySlug} onChange={categorySlug => patch({ categorySlug: slugify(categorySlug) })} />
+            <Field label="Limit zdjęć" value={String(module.limit)} type="number" onChange={limit => patch({ limit: Math.min(30, Math.max(1, Math.floor(Number(limit) || 1))) })} />
+        </div>
+        {module.layout === 'parallax' && <p className="text-sm text-zinc-400">Panorama pokazuje pierwsze zdjęcie jako tło. Ruch działa na komputerze; telefon i preferencja ograniczonego ruchu zachowują nieruchomy obraz. Pełne zdjęcia są dostępne po kliknięciu.</p>}
+        {module.source === 'manual' && <div>
+            <button type="button" onClick={() => pickMedia('portfolio')} className="mb-3 inline-flex items-center gap-2 rounded bg-gold-500 px-3 py-2 text-sm font-semibold text-black"><Plus size={15} /> Dodaj zdjęcie</button>
+            <button type="button" onClick={() => patch({ images: [...module.images, { id: `image-${Date.now()}`, url: '', alt: '' }] })} className="mb-3 ml-3 rounded border border-zinc-700 px-3 py-2 text-sm text-zinc-200">Dodaj adres zdjęcia</button>
+            <div className="space-y-3">{module.images.map((image, index) => {
+                const update = (data: Partial<typeof image>) => patch({ images: module.images.map((item, i) => i === index ? { ...item, ...data } : item) });
+                const positions = [['center', 'Środek'], ['top', 'Góra'], ['bottom', 'Dół'], ['left', 'Lewa'], ['right', 'Prawa']] as const;
+                return <div key={image.id} className="grid gap-3 rounded border border-zinc-800 p-3 md:grid-cols-[100px_1fr_auto]">
+                    <img src={image.url} alt="" className="h-20 w-24 object-cover" />
+                    <div className="grid gap-3 md:grid-cols-2">
+                        <Field label={`Adres zdjęcia ${index + 1}`} value={image.url} onChange={url => update({ url })} />
+                        <Field label={`Alt zdjęcia ${index + 1}`} value={image.alt} onChange={alt => update({ alt })} />
+                        <Field label={`Podpis zdjęcia ${index + 1}`} value={image.caption || ''} onChange={caption => update({ caption })} />
+                        <Select label={`Kadr komputer ${index + 1}`} value={image.position || 'center'} onChange={position => update({ position: position as typeof image.position })} options={[...positions]} />
+                        <Select label={`Kadr telefon ${index + 1}`} value={image.mobilePosition || image.position || 'center'} onChange={mobilePosition => update({ mobilePosition: mobilePosition as typeof image.mobilePosition })} options={[...positions]} />
+                    </div>
+                    <div className="flex gap-1 self-start">
+                        <IconButton label="W górę" disabled={index === 0} onClick={() => patch({ images: swap(module.images, index, index - 1) })}><MoveUp size={15} /></IconButton>
+                        <IconButton label="W dół" disabled={index === module.images.length - 1} onClick={() => patch({ images: swap(module.images, index, index + 1) })}><MoveDown size={15} /></IconButton>
+                        <IconButton label="Zmień" onClick={() => pickMedia('portfolio', index)}><ImageIcon size={15} /></IconButton>
+                        <IconButton label="Usuń" danger onClick={() => patch({ images: module.images.filter((_, i) => i !== index) })}><Trash2 size={15} /></IconButton>
+                    </div>
+                </div>;
+            })}</div>
+        </div>}
+    </div>;
 
     if (module.type === 'equipment') return <Repeater items={module.cards} addLabel="Dodaj kartę" onChange={cards => patch({ cards })} create={() => ({ id: `equipment-${Date.now()}`, eyebrow: '', title: 'Nowa karta', description: '', icon: 'camera' as const })} render={(item, update) => <div className="grid gap-3 md:grid-cols-2"><Field label="Nadtytuł" value={item.eyebrow} onChange={eyebrow => update({ eyebrow })} /><Field label="Tytuł" value={item.title} onChange={title => update({ title })} /><Field label="Opis" value={item.description} onChange={description => update({ description })} multiline /><Select label="Ikona" value={item.icon} onChange={icon => update({ icon: icon as typeof item.icon })} options={[['camera', 'Aparat'], ['thermal', 'Termowizja']]} /><Field label="Tekst linku" value={item.linkLabel || ''} onChange={linkLabel => update({ linkLabel })} /><Field label="Adres linku" value={item.linkHref || ''} onChange={linkHref => update({ linkHref })} /></div>} />;
 
