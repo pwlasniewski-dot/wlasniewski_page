@@ -2,7 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useCart } from '@/context/CartContext';
+import { useCart, isPhotoCartItem, validPhotoEndpoint, type CartItem } from '@/context/CartContext';
+import PhotoCartCheckout from '@/components/shop/PhotoCartCheckout';
 import { ShoppingBag, Lock, ShieldCheck, CreditCard, Gift, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -13,8 +14,53 @@ import PackageScope from '@/components/booking/PackageScope';
 import { storedPackageScopeLines } from '@/lib/bookingPackageScope';
 
 export default function CheckoutPage() {
+    const { items, initialized, setIsOpen } = useCart();
+    const [selection, setSelection] = useState('');
+    const retainedPhotoGroup = useRef<{ id: string; items: CartItem[] } | null>(null);
+    useEffect(() => {
+        setIsOpen(false);
+        try {
+            const requested = new URLSearchParams(window.location.search).get('shopEndpoint');
+            setSelection(validPhotoEndpoint(requested) ? `photos:${requested}` : sessionStorage.getItem('shopping_cart_checkout_group') || '');
+        } catch {}
+    }, [setIsOpen]);
+    const groups = items.reduce<Array<{ id: string; items: CartItem[] }>>((result, item) => {
+        const id = isPhotoCartItem(item) ? `photos:${item.metadata.endpoint}` : item.id;
+        const group = result.find(g => g.id === id);
+        if (group) group.items.push(item); else result.push({ id, items: [item] });
+        return result;
+    }, []);
+    const requestedEndpoint = selection.startsWith('photos:') ? selection.slice(7) : '';
+    let pendingGroup = false;
+    if (initialized && validPhotoEndpoint(requestedEndpoint) && !groups.some(group => group.id === selection)) {
+        try { pendingGroup = !!JSON.parse(sessionStorage.getItem(`gallery-shop-pending:${requestedEndpoint}`) || 'null')?.id; } catch {}
+    }
+    const active = groups.find(group => group.id === selection)
+        || (retainedPhotoGroup.current?.id === selection ? retainedPhotoGroup.current : null)
+        || (pendingGroup ? { id: selection, items: [] } : null)
+        || groups[0]
+        || retainedPhotoGroup.current;
+    useEffect(() => {
+        if (active?.id.startsWith('photos:')) { retainedPhotoGroup.current = active; if (!selection) setSelection(active.id); }
+    }, [active, selection]);
+    const showGroups = groups.length > 1 || (groups.length > 0 && !groups.some(group => group.id === active?.id));
+    if (!initialized) return <main className="min-h-screen bg-zinc-950 text-white pt-40 px-6" aria-busy="true">Wczytywanie koszyka…</main>;
+    return <>
+        {showGroups && <section aria-label="Wybierz zamówienie do opłacenia" className="bg-zinc-950 text-white pt-36 px-6"><div className="max-w-6xl mx-auto">
+            <h1 className="text-2xl font-semibold">Jeden koszyk, oddzielne zamówienia</h1>
+            <p className="mt-2 text-zinc-300">Wybierz grupę do opłacenia. Każde zamówienie ma osobną płatność i dostawę; pozostałe pozycje zostają w koszyku.</p>
+            <div className="mt-4 flex flex-wrap gap-3">{groups.map((group, index) => <button key={group.id} aria-pressed={active?.id === group.id} onClick={() => { setSelection(group.id); try { sessionStorage.setItem('shopping_cart_checkout_group', group.id); } catch {} }} className={`rounded-xl border px-4 py-3 ${active?.id === group.id ? 'border-amber-500 bg-amber-500/10' : 'border-zinc-700'}`}>{index + 1}. {group.items[0].title}{group.items.length > 1 ? ` (+${group.items.length - 1})` : ''}</button>)}</div>
+        </div></section>}
+        {active?.id.startsWith('photos:')
+            ? <PhotoCartCheckout key={active.id} endpoint={active.id.slice(7)} items={active.items} compact={showGroups} />
+            : <BookingCheckout key={active?.id || 'empty'} items={active?.items || []} compact={showGroups} />}
+    </>;
+}
+
+function BookingCheckout({ items, compact }: { items: CartItem[]; compact: boolean }) {
     const { trackEvent } = useAnalytics();
-    const { items, totalAmount, clearCart } = useCart();
+    const { removeItems } = useCart();
+    const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const [submitting, setSubmitting] = useState(false);
 
     // Foto-Match referral voucher
@@ -244,11 +290,11 @@ export default function CheckoutPage() {
                     }, true);
                     void trackEvent('payu_redirect', { status: 'ok', area: 'payu' }, true);
                 }
-                clearCart();
+                removeItems(items.map(item => item.id));
                 window.location.href = data.redirectUrl;
             } else {
                 // Fallback for zero-amount or errors (though API should handle this)
-                clearCart();
+                removeItems(items.map(item => item.id));
                 window.location.href = '/rezerwacja/potwierdzenie';
             }
             // Fallback timeout removed as explicit redirect is better
@@ -263,7 +309,7 @@ export default function CheckoutPage() {
     };
 
     return (
-        <main className="min-h-screen bg-zinc-950 text-white pt-40 pb-20 px-6">
+        <main className={`min-h-screen bg-zinc-950 text-white ${compact ? 'pt-12' : 'pt-40'} pb-20 px-6`}>
             <div className="max-w-6xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                     {/* Form Section */}

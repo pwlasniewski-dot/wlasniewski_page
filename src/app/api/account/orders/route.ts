@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { clientOwnershipWhere } from '@/lib/auth/document-access';
 import { orderClient, ownsAccountOrder } from '@/lib/galleries/order-account';
-import { readShopMetadata } from '@/lib/galleries/merchandise';
+import { readShopMetadata, customerShopMetadata } from '@/lib/galleries/merchandise';
 import { orderPhotoIds, safeOrderImage } from '@/lib/galleries/order-presentation';
 import { orderProductImages } from '@/lib/galleries/order-product-images';
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       if (!metadata || !ownsAccountOrder(metadata, client)) return [];
       return [(async () => {
         const photos = await prisma.galleryPhoto.findMany({where:{gallery_id:order.gallery_id,id:{in:orderPhotoIds(metadata)}},select:{id:true,thumbnail_url:true}});
-        return {id:order.id,createdAt:order.created_at,paymentStatus:order.payment_status,total:order.total_amount,metadata:await orderProductImages(metadata,order.gallery_id),photos:photos.map(p=>({id:p.id,url:safeOrderImage(p.thumbnail_url)}))};
+        return {id:order.id,createdAt:order.created_at,paymentStatus:order.payment_status,total:order.total_amount,metadata:customerShopMetadata(await orderProductImages(metadata,order.gallery_id)),photos:photos.map(p=>({id:p.id,url:safeOrderImage(p.thumbnail_url)}))};
       })()];
     }));
     if (requested && !orders.length) return json({error:'Nie znaleziono zamówienia na tym koncie.'},404);

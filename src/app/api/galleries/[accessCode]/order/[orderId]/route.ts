@@ -15,7 +15,7 @@ export async function GET(
             where: { access_code: accessCode },
             select: {
                 id: true, is_active: true, expires_at: true, access_code: true,
-                gallery_mode: true, client_id: true, client_email: true, group_password: true,
+                gallery_mode: true, client_id: true, client_email: true, group_password: true, terms_source: true,
             }
         });
 

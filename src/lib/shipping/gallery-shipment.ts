@@ -8,6 +8,7 @@ export async function shipmentOrder(params: {id: string; orderId: string}) {
  if (!Number.isSafeInteger(galleryId) || galleryId < 1 || !Number.isSafeInteger(orderId) || orderId < 1) throw new ShopValidationError('Nieprawidłowe zamówienie.');
  const order = await prisma.photoOrder.findFirst({where: {id: orderId, gallery_id: galleryId}}); const metadata = readShopMetadata(order?.product_ids);
  if (!order || !metadata) throw new ShopValidationError('Nie znaleziono zamówienia.', 404);
+ if(metadata.lines.some(line=>Boolean(line.product?.prodigi)))throw new ShopValidationError('Wysyłkę produktów Prodigi obsługuje producent. Nie nadawaj dodatkowej przesyłki InPost.',409);
  if (order.payment_status !== 'paid') throw new ShopValidationError('Nadanie jest dostępne dla opłaconego zamówienia.', 409);
  if (metadata.delivery.method === 'pickup') throw new ShopValidationError('Odbiór osobisty nie wymaga przesyłki InPost.', 409);
  return {order, metadata};

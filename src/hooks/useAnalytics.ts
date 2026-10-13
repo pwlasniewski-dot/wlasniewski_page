@@ -142,21 +142,22 @@ function normalizeEventType(eventType: string) {
 async function postEvent(payload: Record<string, unknown>, beacon = false) {
   const body = JSON.stringify({ event: payload });
   if (beacon && typeof navigator !== 'undefined' && navigator.sendBeacon) {
-    navigator.sendBeacon('/api/analytics/v2/track', new Blob([body], { type: 'application/json' }));
-    return;
+    const accepted = navigator.sendBeacon('/api/analytics/v2/track', new Blob([body], { type: 'application/json' }));
+    if (accepted) return;
   }
 
   await fetch('/api/analytics/v2/track', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body,
-    keepalive: true,
+    // Only navigation/visibility events need to survive page teardown. Normal
+    // events must not consume the browser's shared 64 KiB keepalive budget.
+    keepalive: beacon,
   });
 }
 
 export function useAnalytics() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const trackEvent = useCallback(async (eventType: string, metadata: Record<string, unknown> = {}, beacon = false) => {
     if (typeof window === 'undefined') return;
@@ -208,7 +209,9 @@ export function useAnalytics() {
     } catch (error) {
       console.error('[Analytics V2] Failed to track event', error);
     }
-  }, [pathname, searchParams]);
+  // Campaign parameters are read when the session is created, not from this
+  // callback. Shop query changes must not restart buffered performance tracking.
+  }, [pathname]);
 
   const resetBookingFields = useCallback((fields: readonly BookingField[]) => {
     if (typeof window !== 'undefined') {

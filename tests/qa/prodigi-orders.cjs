@@ -1,0 +1,31 @@
+const fs=require('node:fs'),path=require('node:path'),Module=require('node:module'),ts=require('typescript'),assert=require('node:assert/strict');
+const resolve=Module._resolveFilename;Module._resolveFilename=function(r,p,...a){return resolve.call(this,r.startsWith('@/')?path.join(process.cwd(),'src',r.slice(2)):r,p,...a)};
+for(const ext of ['.ts','.tsx'])require.extensions[ext]=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.CommonJS,esModuleInterop:true}}).outputText,f);
+const {NextRequest,NextResponse}=require('next/server');let allowed=true,order=null,network=0;const settings=new Map();
+const load=Module._load;Module._load=function(name,...args){
+ if(name==='@/lib/auth/middleware')return{withAuth:async(req,fn)=>allowed?fn({user:{id:1}}):NextResponse.json({error:'Unauthorized'},{status:401})};
+ if(name==='@/lib/auth/admin-origin')return{isTrustedAdminOrigin:req=>req.headers.get('origin')==='http://localhost'};
+ if(name==='@/lib/rate-limit')return{getClientIp:()=>'',rateLimit:()=>({ok:true})};
+ if(name==='@/lib/db/prisma')return{__esModule:true,default:{photoOrder:{findFirst:async()=>order},setting:{findUnique:async({where})=>settings.get(where.setting_key)||null,create:async({data})=>{if(settings.has(data.setting_key))throw Error('duplicate');settings.set(data.setting_key,data)},update:async({where,data})=>settings.set(where.setting_key,{setting_key:where.setting_key,...data})}}};
+ if(name==='@/lib/fulfillment/prodigi-preflight')return{prepareProdigiOrder:async()=>{throw Error('must not prepare blocked order')}};
+ if(name==='@/lib/fulfillment/prodigi-sandbox'){const real=load.call(this,name,...args);return{...real,inspectSandbox:async()=>({action:'product',product:{sku:'GLOBAL-CAN-10X10',printAreas:{default:{required:true}},variants:[{shipsTo:['PL'],attributes:{wrap:'Black'}}]}})}};
+ return load.call(this,name,...args);
+};
+const customer=require('../../src/app/api/admin/galleries/[id]/shop/orders/[orderId]/prodigi/route.ts');const fixture=require('../../src/app/api/admin/gallery-shop/prodigi-test-orders/route.ts');
+const req=(body,origin='http://localhost')=>new NextRequest('http://localhost/api/test',{method:'POST',headers:{origin,'Content-Type':'application/json'},body:JSON.stringify(body)});const context={params:Promise.resolve({id:'1',orderId:'2'})};
+(async()=>{
+ process.env.PRODIGI_SANDBOX_API_KEY='qa';global.fetch=async()=>{network++;throw Error('network ambiguous')};
+ allowed=false;assert.equal((await fixture.POST(req({action:'create'}))).status,401);assert.equal((await customer.POST(req({action:'create'}),context)).status,401);allowed=true;
+ assert.equal((await fixture.POST(req({action:'create'},'https://evil.test'))).status,403);assert.equal(network,0);
+ assert.equal((await fixture.POST(req({action:'create',sku:'GLOBAL-CAN-10X10'}))).status,400);
+ const body={action:'create',sku:'GLOBAL-CAN-10X10',testId:'qa-fixed-uuid-0001'};
+ assert.equal((await fixture.POST(req(body))).status,502);assert.equal(network,1);assert.equal(JSON.parse(settings.get('prodigi_sandbox_test_v1_qa-fixed-uuid-0001').setting_value).state,'unknown');
+ assert.equal((await fixture.POST(req(body))).status,409);assert.equal(network,1);
+ assert.equal((await fixture.POST(req({action:'refresh',testId:body.testId}))).status,409);assert.equal(network,1);
+ process.env.PRODIGI_ORDER_ENV='live';process.env.PRODIGI_LIVE_ORDERS_ENABLED='true';process.env.PRODIGI_API_KEY='qa';
+ order={id:2,gallery_id:1,payment_status:'pending',product_ids:JSON.stringify({kind:'gallery_merchandise',version:1,lines:[]})};
+ assert.equal((await customer.POST(req({action:'create'}),context)).status,409);assert.equal(network,1);
+ order.payment_status='paid';order.paid_at=new Date();order.product_ids=JSON.stringify({kind:'gallery_merchandise',version:1,lines:[],providerFulfillment:{environment:'live',state:'unknown'}});
+ assert.equal((await customer.POST(req({action:'create'}),context)).status,409);assert.equal(network,1);
+ console.log('8 order route guard scenarios PASS; no external calls or database writes.');
+})().catch(e=>{console.error(e);process.exitCode=1});

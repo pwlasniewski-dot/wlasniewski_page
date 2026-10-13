@@ -28,8 +28,10 @@
     "test:gallery-shop": "node --import tsx --test tests/unit/gallery-shop-domain.test.ts && node tests/qa/gallery-shop-save.cjs && node tests/qa/gallery-shop-rounds.cjs && node tests/qa/gallery-shop-server.cjs && node tests/qa/gallery-shipment-server.cjs && node tests/qa/inpost-picker.cjs && node tests/qa/nphoto-offer-import.cjs && node tests/qa/nphoto-offer-ui.cjs && node tests/qa/nphoto-launch-catalog.cjs && node tests/qa/gallery-public-offer.cjs && node tests/qa/gallery-storefront-ui.cjs && node tests/qa/gallery-product-media.cjs && node tests/qa/unified-merchandise-orders.cjs && node tests/qa/unified-merchandise-ui.cjs && node tests/qa/shop-launch-readiness.cjs && node tests/qa/gallery-pickup.cjs",
     "test:admin": "node --import tsx --test tests/unit/admin-navigation.test.ts && node tests/qa/admin-session.cjs && node tests/qa/admin-accounts.cjs && node tests/qa/unified-merchandise-orders.cjs && node tests/qa/unified-merchandise-ui.cjs && node tests/qa/admin-orders-view.cjs && node tests/qa/gallery-operating-regressions.cjs && node tests/qa/admin-document-purchase.cjs",
     "test:portal-events": "node --import tsx --test tests/unit/client-portal-events-ingest.test.ts tests/unit/client-portal-events-client.test.ts tests/unit/client-portal-qa.test.ts && node tests/qa/portal-event-route.cjs",
-    "test:prodigi-foundation": "node --import tsx --test tests/unit/prodigi-sandbox.test.ts tests/unit/pod-simulator.test.ts tests/unit/finance-actuals*.test.ts && node tests/qa/prodigi-sandbox.cjs && node tests/qa/pod-simulator.cjs && node tests/qa/analytics-journey-ui.cjs && node tests/qa/admin-orders-finance-card.cjs",
-    "test:prodigi-release": "node --import tsx --test tests/unit/prodigi-release-gate*.test.ts"
+    "test:prodigi-foundation": "node --import tsx --test tests/unit/prodigi-sandbox.test.ts tests/unit/prodigi-fx.test.ts tests/unit/pod-simulator.test.ts tests/unit/finance-actuals*.test.ts && node tests/qa/prodigi-sandbox.cjs && node tests/qa/pod-simulator.cjs && node tests/qa/analytics-journey-ui.cjs && node tests/qa/admin-orders-finance-card.cjs",
+    "test:prodigi-release": "node --import tsx --test tests/unit/prodigi-release-gate*.test.ts",
+    "test:prodigi-shop": "node --import tsx --test tests/unit/prodigi-orders.test.ts tests/unit/prodigi-pricing.test.ts tests/unit/prodigi-live-catalog.test.ts tests/prodigi-full-*.test.ts && node tests/qa/prodigi-orders.cjs && node tests/qa/prodigi-refunds.cjs && node tests/prodigi-full-payment-replay.cjs && node tests/prodigi-full-visibility.cjs && node tests/prodigi-full-catalog-ui.cjs && node tests/prodigi-full-qualification-ui.cjs && node tests/prodigi-full-release.cjs && node tests/prodigi-full-preflight.cjs",
+    "test:prodigi-personalization": "node --import tsx --test tests/unit/shop-upload-image.test.ts tests/unit/shop-upload-s3-adapter.test.ts tests/unit/shop-upload-prepare.test.ts tests/unit/shop-upload-heic-decode.test.ts tests/unit/shop-upload-owner.test.ts tests/prodigi-full-capability.test.ts && node tests/prodigi-full-upload.cjs && node tests/prodigi-full-personalization-ui.cjs && node tests/prodigi-full-notification.cjs && node tests/prodigi-full-upload-http.cjs && node tests/prodigi-full-personalization-cms.cjs && node tests/prodigi-full-callback.cjs && node tests/prodigi-guest-retained-file.cjs && node tests/prodigi-full-global-cart.cjs && node tests/prodigi-full-guest-global-cart.cjs && node tests/prodigi-unified-checkout.cjs"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
@@ -67,6 +69,7 @@
     "dotenv": "^17.2.3",
     "framer-motion": "^12.23.22",
     "googleapis": "^170.1.0",
+    "heic-to": "1.6.5",
     "html2canvas": "^1.4.1",
     "jose": "^6.1.3",
     "jsonwebtoken": "^9.0.3",

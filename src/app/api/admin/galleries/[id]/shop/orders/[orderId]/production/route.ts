@@ -15,6 +15,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
  if(!Number.isSafeInteger(galleryId)||galleryId<1||!Number.isSafeInteger(orderId)||orderId<1)throw new ShopValidationError('Nieprawidłowe zamówienie.');
  const order=await prisma.photoOrder.findFirst({where:{id:orderId,gallery_id:galleryId,payment_status:'paid'}});
  const metadata=readShopMetadata(order?.product_ids);if(!order||!metadata)throw new ShopValidationError('Najpierw potwierdź opłacenie zamówienia.',409);
+ if(metadata.lines.some(line=>Boolean(line.product?.prodigi)))throw new ShopValidationError('Pliki Prodigi przygotuj w panelu produkcji Prodigi tego zamówienia.',409);
  const ids=[...new Set(metadata.lines.flatMap(l=>l.kind==='print'?[l.photoId]:l.photoIds))];
  const photos=await prisma.galleryPhoto.findMany({where:{gallery_id:galleryId,id:{in:ids}},select:{id:true,download_source_url:true,file_url:true}});
  if(photos.length!==ids.length)throw new ShopValidationError('Brakuje zdjęć z zamówienia. Uzupełnij galerię przed eksportem.',409);

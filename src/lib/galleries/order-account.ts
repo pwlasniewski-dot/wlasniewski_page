@@ -12,5 +12,7 @@ export async function orderClient(request: NextRequest, allowPreview = false) {
 // The account identity saved at checkout is authoritative. Legacy orders require
 // both gallery ownership (checked by the query) and matching recipient email.
 export function ownsAccountOrder(metadata: ShopMetadata, client: {id:number;email:string}) {
+  // A delivery address is not proof of account ownership. Guest orders stay capability-bound.
+  if (metadata.guestOwnerId !== undefined) return false;
   return metadata.customerId !== undefined ? metadata.customerId === client.id : metadata.delivery.email.trim().toLowerCase() === client.email.trim().toLowerCase();
 }

@@ -13,6 +13,7 @@ import PhotoLightbox from '@/components/PhotoLightbox';
 import { galleryLightboxSlides } from '@/lib/galleries/photo-lightbox-slides';
 import GalleryGridImage from '@/components/galleries/GalleryGridImage';
 import GalleryShoppingPanel from '@/components/galleries/GalleryShoppingPanel';
+import GalleryProductContinuation from '@/components/shop/GalleryProductContinuation';
 
 interface GalleryPhoto {
     id: number;
@@ -22,6 +23,8 @@ interface GalleryPhoto {
     file_size: number;
     width: number | null;
     height: number | null;
+    print_width: number | null;
+    print_height: number | null;
 }
 
 interface Gallery {
@@ -458,10 +461,13 @@ export default function ClientGalleryPage() {
                         </div>
                     )}
                 </section>
+                <GalleryProductContinuation accessCode={accessCode}
+                    headers={{ ...(typeof window !== 'undefined' && (localStorage.getItem('client_token') || localStorage.getItem('user_token')) ? { Authorization: `Bearer ${localStorage.getItem('client_token') || localStorage.getItem('user_token')}` } : {}), ...(sharePassword ? { 'x-gallery-password': sharePassword } : {}) }}
+                    photos={[...gallery.standard_photos, ...gallery.premium_photos.filter(photo => gallery.paid_photo_ids.includes(photo.id))].map(photo => ({ ...photo, width: photo.print_width, height: photo.print_height }))} />
                 <GalleryShoppingPanel
                     endpoint={`/api/galleries/${accessCode}/shop`}
                     headers={{ ...(typeof window !== 'undefined' && localStorage.getItem('user_token') ? { Authorization: `Bearer ${localStorage.getItem('user_token')}` } : {}), ...(sharePassword ? { 'x-gallery-password': sharePassword } : {}) }}
-                    photos={[...gallery.standard_photos, ...gallery.premium_photos.filter(photo => gallery.paid_photo_ids.includes(photo.id))]}
+                    photos={[...gallery.standard_photos, ...gallery.premium_photos.filter(photo => gallery.paid_photo_ids.includes(photo.id))].map(photo => ({ ...photo, width: photo.print_width, height: photo.print_height }))}
                     onAvailabilityChange={setShopEnabled}
                 />
                 {/* Standard Photos Section */}
@@ -592,7 +598,7 @@ export default function ClientGalleryPage() {
 
                 {/* Premium Photos Section */}
                 {gallery.premium_photos.length > 0 && (
-                    <div className="mb-24">
+                    <div id="dodatkowe-zdjecia" className="mb-24 scroll-mt-24">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-10 py-10 bg-gold-500/5 rounded-[3rem] border border-gold-500/10 mb-12">
                             <div>
                                 <h2 className="text-3xl font-black uppercase tracking-tight mb-2 text-gold-500">Dodatkowe Ujęcia</h2>

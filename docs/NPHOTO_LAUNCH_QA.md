@@ -1,3 +1,23 @@
+## 2026-10-04 — upload w QA i blokada konta klienta
+
+Użytkownik wkleił PhotoUploaderPolicy użytkownika photo-uploader: Allow s3:PutObject/GetObject/DeleteObject na arn:aws:s3:::wlasniewski-photo-storage/* oraz ListBucket na bucket. Wcześniej potwierdzono prywatność prefiksu, podpisany odczyt Netlify, CORS i aktywną regułę staging Day 1 na zrzucie AWS.
+
+Zapisano SHOP_UPLOADS_PRIVATE_STORAGE_CONFIRMED=true, zakres Builds/Functions, wyłącznie feat/prodigi-shop-fulfillment; ogólne konteksty puste. Wdrożenie 6ac2036a69bdacadcb9c9438 ready. W odizolowanym adminie zapisano sklep aktywny, publiczną ofertę i personalizację; wybrano istniejący produkt Alnum 30x30 do prezentacji QA. UI potwierdziło zapis i ponowny odczyt. Nie zmieniono produkcji.
+
+Strona personalizacji pokazuje tytuł i przycisk. Próba rozpoczęcia sesji bez klienta zwraca prośbę o logowanie. Bezpieczne logowanie użytkownika zostało wysłane przez browserAuth, ale strona zwróciła „Hasło wygasło”. Nie zmieniono hasła ani flag autoryzacji w bazie. Przygotowano formularz rejestracji odrębnego konta QA do ręcznej obsługi użytkownika. Plik syntetyczny 3200x2400 JPG jest przygotowany; NIE wykonano jeszcze PUT ani pełnego uploadu. Baza QA ma PayU secure, płatności blokuje guard; konfiguracja sandbox pozostaje potrzebna.
+
+Zaobserwowano dodatkowy błąd UX: przy pustym katalogu publicShopCatalog zwraca null, a strona personalizacji nie pokazuje komunikatu (sam link powrotny). Wybranie istniejącego produktu QA umożliwiło dalsze testowanie, ale błąd pustego katalogu wymaga poprawki kodu.
+
+## 2026-10-04 — zgoda i podłączenie QA dla PR #99
+
+Użytkownik jawnie zatwierdził przekazanie połączenia istniejącej bazy QA do Netlify jako sekret `GALLERY_QA_DATABASE_URL`, wyłącznie dla gałęzi PR #99. Ta zgoda zastępuje wcześniejszą odmowę tylko w tym konkretnym zakresie.
+
+Zapis w Netlify `helpful-axolotl-cc1cbb` potwierdzony w panelu: sekret, zakresy Builds i Functions, jedna wartość dla `feat/prodigi-shop-fulfillment`, wszystkie ogólne konteksty puste. Dodano też dla tej gałęzi `GALLERY_QA_CONTEXT=deploy-preview`. Baza: projekt `billowing-feather-25390927`, gałąź `br-autumn-thunder-aey4bqrx` (`dev-prodigi-paid-buffer-20260911`). Nie zmieniono produkcyjnego DATABASE_URL.
+
+Na tej bazie wykonano przez Neon SQL dokładną treść śledzonej migracji `20260914180000_gallery_product_archive/migration.sql`; ponowny odczyt potwierdził `gallery_products.archived_at` typu timestamp without time zone. Prisma CLI nie łączy się z wykonawcy przez TCP 5432; wpis historii Prisma nie został uzgodniony przez migrate resolve. Nie deklarujemy pełnego migrate deploy.
+
+Wdrożenie preview #99 `6ac20006869e0583e1998587` z commitu `ff936e4` osiągnęło ready. Po odświeżeniu zalogowany panel potwierdził odizolowane środowisko testowe i załadował ofertę QA. Odczyt S3 HEAD i podpisany GET pliku `shop-personalization/test.txt` potwierdzony w poprzednim deployu; sprawdzenie lifecycle zwróciło brak uprawnień. Zrzut konsoli AWS dostarczony przez użytkownika o 09:34 potwierdził zapisaną regułę shop-staging-cleanup: Enabled, Filtered, dokładny prefiks shop-personalization/staging/, current versions expire Day 1; brak dodatkowych filtrów rozmiaru/tagów i brak innych akcji. Odczyt konfiguracji przez klucz Netlify nadal nie jest dostępny; konfigurację potwierdzono na zrzucie operatora. Uprawnienia PutObject/DeleteObject w prywatnym prefiksie wymagają jeszcze potwierdzenia. Flaga prywatnego uploadu pozostaje wyłączona. Odczyt samego pola środowiska PayU w QA: secure, dane dostępowe obecne; płatności produkcyjne blokuje guard QA. Pełny upload, lifecycle i płatności sandbox nie są jeszcze zaliczone.
+
 ## Odczyt naprawy galerii — 2026-09-14
 
 Korekta produkcyjnego gallery_shop_26 wykonana z porównaniem poprzedniej wartości. Ponowny SELECT potwierdził formats_match=true, delivery_match=true, enabled=true. Nowy test rzeczywistego klienta odtwarza pierwotny brak formatu, a następnie wykonuje trzy ścieżki wyboru → koszyk → dostawa na zapisanym snapshocie: 15×21 za 19,50 zł z dostawą, 10×15 za 18,50 zł i dwie odbitki 15×21 za 22,00 zł. Nie klika płatności. Cały istniejący test storefront stanowi również etap builda.

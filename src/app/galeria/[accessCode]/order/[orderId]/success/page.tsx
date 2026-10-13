@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, ArrowLeft, ShoppingBag } from 'lucide-react';
+import { readGalleryProduct, shopGalleryOfferHref } from '@/lib/galleries/shop-intent';
 
 export default function OrderSuccessPage() {
     const params = useParams();
@@ -12,6 +13,12 @@ export default function OrderSuccessPage() {
     const orderId = params.orderId as string;
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [galleryHref, setGalleryHref] = useState(`/galeria/${accessCode}`);
+
+    useEffect(() => {
+        const intent = readGalleryProduct(accessCode);
+        if (intent) setGalleryHref(shopGalleryOfferHref(accessCode, intent));
+    }, [accessCode]);
 
     useEffect(() => {
         // Fetch order status
@@ -42,8 +49,7 @@ export default function OrderSuccessPage() {
                     Dziękujemy za zamówienie!
                 </h1>
                 <p className="text-zinc-400 mb-8 leading-relaxed">
-                    Twoje zamówienie zostało przyjęte i opłacone. <br />
-                    Fotograf wyślę Ci dostęp do zdjęć na podany adres e-mail.
+                    {loading ? 'Sprawdzamy płatność za Twoje zdjęcia.' : order?.payment_status === 'paid' ? 'Płatność potwierdzona. Kupione zdjęcia są dostępne w Twojej galerii i możesz wybrać je do produktów.' : 'Nie mamy jeszcze potwierdzenia płatności. Zdjęcia będą dostępne po jej zaksięgowaniu.'}
                 </p>
 
                 {!loading && order && (
@@ -67,7 +73,7 @@ export default function OrderSuccessPage() {
 
                 <div className="flex flex-col gap-3">
                     <Link
-                        href={`/galeria/${accessCode}`}
+                        href={galleryHref}
                         className="flex items-center justify-center gap-2 px-6 py-4 bg-zinc-900 border border-zinc-700 hover:border-gold-500 text-white rounded-2xl transition-all font-bold"
                     >
                         <ArrowLeft className="w-4 h-4" />
