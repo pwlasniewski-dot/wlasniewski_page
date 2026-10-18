@@ -1,0 +1,388 @@
+@keyframes lab-orbit { to { transform: rotate(360deg); } }
+@keyframes lab-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-11px); } }
+@keyframes lab-scan { 0% { transform: translateX(-120%); } 55%, 100% { transform: translateX(140%); } }
+@keyframes lab-pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 154, 87, 0.25); } 70% { box-shadow: 0 0 0 18px rgba(255, 154, 87, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 154, 87, 0); } }
+@keyframes lab-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lab-modal-in { from { opacity: 0; transform: translateY(15px) scale(0.985); } to { opacity: 1; transform: none; } }
+@keyframes lab-toast-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 1050px) {
+    .lab-hero {
+        grid-template-columns: 1fr;
+        gap: 45px;
+        padding-top: 65px;
+    }
+
+    .lab-hero-copy {
+        max-width: 900px;
+    }
+
+    .lab-hero-console {
+        width: min(620px, 100%);
+    }
+
+    .lab-method-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .lab-experiment-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .lab-stage-layout,
+    .lab-understand-stage {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        align-items: start;
+    }
+
+    .lab-stage-layout {
+        padding: 30px;
+    }
+
+    .lab-stage-visual {
+        order: -1;
+        width: min(700px, 100%);
+        margin: 0 auto;
+    }
+
+    .lab-stage-layout--prepare .lab-stage-visual {
+        order: 0;
+    }
+
+    .lab-experiment-stage {
+        grid-template-columns: 1fr;
+        align-items: start;
+    }
+
+    .lab-step-panel h3 {
+        margin-top: 35px;
+    }
+}
+
+@media (max-width: 760px) {
+    .lab-topbar,
+    .lab-hero,
+    .lab-method,
+    .lab-missions,
+    .lab-final-zone,
+    .lab-footer {
+        width: min(100% - 24px, 1240px);
+    }
+
+    .lab-topbar {
+        min-height: 70px;
+    }
+
+    .lab-topbar-button span {
+        display: none;
+    }
+
+    .lab-topbar-button {
+        width: 42px;
+        padding: 0;
+        justify-content: center;
+    }
+
+    .lab-hero {
+        min-height: auto;
+        padding: 50px 0 70px;
+    }
+
+    .lab-hero h1 {
+        font-size: clamp(2.85rem, 13vw, 4.8rem);
+    }
+
+    .lab-hero-actions > * {
+        width: 100%;
+    }
+
+    .lab-hero-proof {
+        display: grid;
+        gap: 11px;
+    }
+
+    .lab-method {
+        padding-top: 45px;
+    }
+
+    .lab-method-grid,
+    .lab-experiment-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .lab-method-grid article {
+        min-height: 210px;
+    }
+
+    .lab-section-heading--row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .lab-total-progress {
+        text-align: left;
+    }
+
+    .lab-module-header {
+        grid-template-columns: 48px 1fr;
+        align-items: start;
+        padding: 20px;
+    }
+
+    .lab-module-number {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+    }
+
+    .lab-module-progress {
+        grid-column: 1 / -1;
+        text-align: left;
+    }
+
+    .lab-final-zone {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 28px;
+    }
+
+    .lab-final-zone .lab-primary-button {
+        width: 100%;
+    }
+
+    .lab-footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .lab-footer p {
+        text-align: left;
+    }
+
+    .lab-modal-backdrop {
+        padding: 0;
+    }
+
+    .lab-runner,
+    .lab-final-test {
+        width: 100%;
+        max-height: 100svh;
+        min-height: 100svh;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .lab-runner-header,
+    .lab-final-header {
+        padding: 13px 14px;
+    }
+
+    .lab-runner-heading h2,
+    .lab-final-header h2 {
+        font-size: 1.08rem;
+    }
+
+    .lab-stage-nav {
+        overflow-x: auto;
+        grid-template-columns: repeat(7, minmax(70px, 1fr));
+        padding: 9px 8px;
+    }
+
+    .lab-stage-dot:not(:last-child)::after {
+        display: none;
+    }
+
+    .lab-stage-layout,
+    .lab-experiment-stage,
+    .lab-understand-stage {
+        min-height: auto;
+        padding: 22px 16px 30px;
+    }
+
+    .lab-stage-copy h3,
+    .lab-step-panel h3,
+    .lab-understand-copy h3,
+    .lab-result-stage h3,
+    .lab-test-intro h3,
+    .lab-test-result h3 {
+        font-size: clamp(1.65rem, 9vw, 2.5rem);
+    }
+
+    .lab-runner-footer {
+        padding: 10px 12px;
+    }
+
+    .lab-runner-footer .lab-primary-button,
+    .lab-runner-footer .lab-text-button {
+        min-height: 45px;
+        padding: 9px 12px;
+        font-size: 0.82rem;
+    }
+
+    .lab-ready-orbit {
+        width: 175px;
+    }
+
+    .lab-step-panel {
+        padding: 22px;
+    }
+
+    .lab-big-step-number {
+        font-size: 4rem;
+    }
+
+    .lab-quiz-stage,
+    .lab-result-stage,
+    .lab-test-intro,
+    .lab-test-result {
+        width: calc(100% - 28px);
+    }
+
+    .lab-result-actions {
+        width: 100%;
+        flex-direction: column-reverse;
+    }
+
+    .lab-result-actions > * {
+        width: 100%;
+    }
+
+    .lab-test-facts {
+        grid-template-columns: 1fr;
+    }
+
+    .lab-test-workspace {
+        display: flex;
+        min-height: 0;
+        overflow-y: auto;
+        flex-direction: column;
+    }
+
+    .lab-question-map {
+        border-right: 0;
+        border-bottom: 1px solid var(--lab-line);
+        padding: 13px 15px;
+    }
+
+    .lab-question-map-header,
+    .lab-question-map > p {
+        display: none;
+    }
+
+    .lab-question-map .lab-test-progress {
+        margin-top: 0;
+    }
+
+    .lab-question-grid {
+        display: flex;
+        overflow-x: auto;
+        gap: 6px;
+        margin-top: 10px;
+        padding-bottom: 3px;
+    }
+
+    .lab-question-grid button {
+        width: 36px;
+        height: 36px;
+        flex: 0 0 auto;
+    }
+
+    .lab-test-question {
+        min-height: 0;
+        flex: 1;
+        padding: 22px 16px 18px;
+    }
+
+    .lab-test-question h3 {
+        margin: 18px 0 20px;
+        font-size: 1.5rem;
+    }
+
+    .lab-test-options button {
+        padding: 12px;
+    }
+
+    .lab-test-navigation {
+        padding-top: 22px;
+    }
+
+    .lab-test-navigation .lab-primary-button,
+    .lab-test-navigation .lab-secondary-button {
+        padding: 9px 12px;
+        font-size: 0.82rem;
+    }
+
+    .lab-test-result {
+        max-height: calc(100svh - 75px);
+    }
+
+    .lab-entry-page {
+        padding: 12px;
+    }
+
+    .lab-entry-portals {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 420px) {
+    .lab-brand strong {
+        font-size: 0.98rem;
+    }
+
+    .lab-hero h1 {
+        font-size: 2.75rem;
+    }
+
+    .lab-hero-console {
+        padding: 18px;
+        border-radius: 25px;
+    }
+
+    .lab-progress-orbit {
+        width: 220px;
+    }
+
+    .lab-progress-orbit strong {
+        font-size: 3rem;
+    }
+
+    .lab-experiment-grid {
+        padding: 9px;
+    }
+
+    .lab-experiment-card {
+        min-height: 275px;
+    }
+
+    .lab-stage-nav {
+        grid-template-columns: repeat(7, 62px);
+    }
+
+    .lab-stage-dot small {
+        font-size: 0.55rem;
+    }
+
+    .lab-runner-footer .lab-text-button {
+        width: 44px;
+        overflow: hidden;
+        gap: 30px;
+        white-space: nowrap;
+    }
+
+    .lab-runner-footer .lab-primary-button {
+        flex: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .physics-lab *,
+    .physics-lab *::before,
+    .physics-lab *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+    }
+}

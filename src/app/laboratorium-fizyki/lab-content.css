@@ -1,0 +1,488 @@
+.lab-method {
+    padding: 72px 0 100px;
+}
+
+.lab-section-heading {
+    max-width: 760px;
+    margin-bottom: 35px;
+}
+
+.lab-section-heading--row {
+    display: flex;
+    max-width: none;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.lab-section-heading h2 {
+    margin: 11px 0 0;
+    font-size: clamp(2.15rem, 4vw, 3.65rem);
+    font-weight: 950;
+    line-height: 1.03;
+    letter-spacing: -0.055em;
+}
+
+.lab-method-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 13px;
+}
+
+.lab-method-grid article {
+    position: relative;
+    min-height: 250px;
+    overflow: hidden;
+    border: 1px solid var(--lab-line);
+    border-radius: 24px;
+    padding: 26px;
+    background: linear-gradient(145deg, rgba(14, 32, 53, 0.8), rgba(6, 14, 25, 0.8));
+    transition: transform 220ms ease, border-color 220ms ease, background 220ms ease;
+}
+
+.lab-method-grid article:hover {
+    border-color: rgba(84, 244, 255, 0.34);
+    background: linear-gradient(145deg, rgba(18, 43, 68, 0.92), rgba(7, 16, 29, 0.9));
+    transform: translateY(-5px);
+}
+
+.lab-method-grid article > span {
+    position: absolute;
+    top: 15px;
+    right: 18px;
+    color: rgba(255, 255, 255, 0.08);
+    font-size: 3.4rem;
+    font-weight: 950;
+    line-height: 1;
+}
+
+.lab-method-grid article > svg {
+    width: 33px;
+    height: 33px;
+    margin-bottom: 35px;
+    color: var(--lab-cyan);
+}
+
+.lab-method-grid article:nth-child(2) > svg { color: var(--lab-violet); }
+.lab-method-grid article:nth-child(3) > svg { color: var(--lab-orange); }
+.lab-method-grid article:nth-child(4) > svg { color: var(--lab-lime); }
+
+.lab-method-grid h3 {
+    margin-bottom: 10px;
+    font-size: 1.25rem;
+}
+
+.lab-method-grid p {
+    margin-bottom: 0;
+    color: var(--lab-muted);
+    font-size: 0.92rem;
+    line-height: 1.65;
+}
+
+.lab-missions {
+    padding: 65px 0 90px;
+}
+
+.lab-total-progress {
+    text-align: right;
+}
+
+.lab-total-progress span,
+.lab-total-progress strong {
+    display: block;
+}
+
+.lab-total-progress span {
+    color: var(--lab-muted);
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.lab-total-progress strong {
+    color: var(--lab-cyan);
+    font-size: 2.4rem;
+    line-height: 1.05;
+}
+
+.lab-module {
+    --module-accent: var(--lab-cyan);
+    --module-soft: var(--lab-cyan-soft);
+    overflow: hidden;
+    margin-top: 24px;
+    border: 1px solid var(--lab-line);
+    border-radius: 30px;
+    background: rgba(6, 15, 27, 0.76);
+    box-shadow: 0 26px 80px rgba(0, 0, 0, 0.18);
+}
+
+.lab-module--violet { --module-accent: var(--lab-violet); --module-soft: var(--lab-violet-soft); }
+.lab-module--orange { --module-accent: var(--lab-orange); --module-soft: var(--lab-orange-soft); }
+.lab-module--lime { --module-accent: var(--lab-lime); --module-soft: var(--lab-lime-soft); }
+
+.lab-module-header {
+    display: grid;
+    grid-template-columns: 60px minmax(0, 1fr) 150px;
+    align-items: center;
+    gap: 22px;
+    border-bottom: 1px solid var(--lab-line);
+    padding: 24px 27px;
+    background: linear-gradient(90deg, var(--module-soft), transparent 58%);
+}
+
+.lab-module-number {
+    display: grid;
+    width: 56px;
+    height: 56px;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--module-accent) 38%, transparent);
+    border-radius: 18px;
+    background: var(--module-soft);
+    color: var(--module-accent);
+    font-size: 1.45rem;
+    font-weight: 950;
+}
+
+.lab-module-header > div:nth-child(2) > span {
+    color: var(--module-accent);
+    font-size: 0.72rem;
+    font-weight: 850;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+}
+
+.lab-module-header h3 {
+    margin: 3px 0 4px;
+    font-size: 1.55rem;
+    line-height: 1.15;
+}
+
+.lab-module-header p {
+    max-width: 720px;
+    margin: 0;
+    color: var(--lab-muted);
+    font-size: 0.9rem;
+}
+
+.lab-module-progress {
+    text-align: right;
+}
+
+.lab-module-progress strong {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--module-accent);
+    font-size: 1.25rem;
+}
+
+.lab-module-progress > span {
+    display: block;
+    height: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.lab-module-progress i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--module-accent);
+    box-shadow: 0 0 15px var(--module-accent);
+}
+
+.lab-experiment-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    padding: 15px;
+}
+
+.lab-experiment-card {
+    position: relative;
+    display: flex;
+    min-height: 300px;
+    overflow: hidden;
+    flex-direction: column;
+    border: 1px solid var(--lab-line);
+    border-radius: 22px;
+    padding: 20px;
+    background: linear-gradient(150deg, rgba(14, 32, 52, 0.92), rgba(6, 14, 25, 0.94));
+    transition: border-color 220ms ease, transform 220ms ease, box-shadow 220ms ease;
+}
+
+.lab-experiment-card::after {
+    position: absolute;
+    right: -42px;
+    bottom: -48px;
+    width: 150px;
+    height: 150px;
+    border-radius: 999px;
+    background: var(--module-accent);
+    content: "";
+    filter: blur(70px);
+    opacity: 0.08;
+}
+
+.lab-experiment-card:hover {
+    border-color: color-mix(in srgb, var(--module-accent) 45%, transparent);
+    box-shadow: 0 20px 55px rgba(0, 0, 0, 0.25);
+    transform: translateY(-4px);
+}
+
+.lab-experiment-card.is-complete {
+    background: linear-gradient(150deg, rgba(18, 42, 44, 0.88), rgba(7, 18, 25, 0.94));
+}
+
+.lab-card-topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.lab-task-chip,
+.lab-complete-chip,
+.lab-new-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 999px;
+    padding: 5px 8px;
+    font-size: 0.65rem;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.lab-task-chip {
+    background: var(--module-soft);
+    color: var(--module-accent);
+}
+
+.lab-complete-chip {
+    background: var(--lab-lime-soft);
+    color: var(--lab-lime);
+}
+
+.lab-complete-chip svg {
+    width: 13px;
+    height: 13px;
+}
+
+.lab-new-chip {
+    border: 1px solid var(--lab-line);
+    color: var(--lab-muted);
+}
+
+.lab-card-symbol {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    margin: 29px 0 17px;
+    border-radius: 14px;
+    background: var(--module-soft);
+    color: var(--module-accent);
+}
+
+.lab-card-symbol svg {
+    width: 25px;
+}
+
+.lab-experiment-card h4 {
+    margin-bottom: 9px;
+    font-size: 1.2rem;
+    line-height: 1.2;
+}
+
+.lab-experiment-card > p {
+    margin-bottom: 20px;
+    color: var(--lab-muted);
+    font-size: 0.88rem;
+    line-height: 1.55;
+}
+
+.lab-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px 12px;
+    margin-top: auto;
+    color: var(--lab-muted);
+    font-size: 0.73rem;
+}
+
+.lab-card-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.lab-card-meta svg {
+    width: 14px;
+    height: 14px;
+    color: var(--module-accent);
+}
+
+.lab-experiment-card > button {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 18px;
+    border: 0;
+    border-top: 1px solid var(--lab-line);
+    padding: 15px 0 0;
+    background: transparent;
+    color: var(--lab-text);
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.lab-experiment-card > button svg {
+    width: 18px;
+    color: var(--module-accent);
+    transition: transform 180ms ease;
+}
+
+.lab-experiment-card > button:hover svg {
+    transform: translateX(4px);
+}
+
+.lab-empty-state {
+    display: grid;
+    min-height: 280px;
+    place-items: center;
+    border: 1px dashed rgba(158, 179, 199, 0.25);
+    border-radius: 30px;
+    padding: 40px;
+    text-align: center;
+}
+
+.lab-empty-state svg {
+    width: 45px;
+    height: 45px;
+    color: var(--lab-muted);
+}
+
+.lab-empty-state h3 {
+    margin: 16px 0 7px;
+}
+
+.lab-empty-state p {
+    margin: 0;
+    color: var(--lab-muted);
+}
+
+.lab-final-zone {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+    margin-top: 30px;
+    margin-bottom: 80px;
+    border: 1px solid var(--lab-line);
+    border-radius: 31px;
+    padding: 37px 40px;
+    background: linear-gradient(120deg, rgba(18, 39, 63, 0.9), rgba(7, 15, 27, 0.94));
+}
+
+.lab-final-zone.is-unlocked {
+    border-color: rgba(184, 255, 106, 0.28);
+    background: linear-gradient(120deg, rgba(33, 59, 42, 0.68), rgba(7, 16, 27, 0.94));
+    box-shadow: inset 0 0 70px rgba(184, 255, 106, 0.03);
+}
+
+.lab-final-zone-copy {
+    max-width: 760px;
+}
+
+.lab-final-zone h2 {
+    margin: 10px 0 8px;
+    font-size: clamp(1.8rem, 3.4vw, 3rem);
+    line-height: 1.06;
+    letter-spacing: -0.04em;
+}
+
+.lab-final-zone p {
+    margin-bottom: 0;
+    color: var(--lab-muted);
+    line-height: 1.65;
+}
+
+.lab-best-score {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    border-radius: 12px;
+    padding: 8px 12px;
+    background: var(--lab-lime-soft);
+    color: var(--lab-lime);
+    font-size: 0.86rem;
+}
+
+.lab-best-score svg {
+    width: 17px;
+}
+
+.lab-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    border-top: 1px solid var(--lab-line);
+    padding: 28px 0 35px;
+    color: var(--lab-muted);
+    font-size: 0.8rem;
+}
+
+.lab-footer p {
+    max-width: 630px;
+    margin: 0;
+    text-align: center;
+}
+
+.lab-footer > button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: 0;
+    background: transparent;
+    color: var(--lab-muted);
+    cursor: pointer;
+}
+
+.lab-footer > button:hover {
+    color: var(--lab-text);
+}
+
+.lab-footer > button svg {
+    width: 16px;
+}
+
+.lab-toast {
+    position: fixed;
+    z-index: 1000;
+    right: 24px;
+    bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100% - 48px);
+    border: 1px solid rgba(184, 255, 106, 0.35);
+    border-radius: 15px;
+    padding: 13px 17px;
+    background: rgba(10, 29, 25, 0.96);
+    color: #eaffd9;
+    font-size: 0.9rem;
+    font-weight: 750;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    animation: lab-toast-in 240ms ease-out;
+}
+
+.lab-toast svg {
+    width: 18px;
+    color: var(--lab-lime);
+}
+

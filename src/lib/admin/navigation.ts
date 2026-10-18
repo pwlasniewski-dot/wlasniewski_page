@@ -29,7 +29,8 @@ import {
     MapPin,
     Mail,
     BookOpen,
-    AlertTriangle
+    AlertTriangle,
+    FlaskConical
 } from 'lucide-react';
 
 export const navigation = [
@@ -59,6 +60,7 @@ export const navigation = [
     { name: 'Kostka 3D', href: '/admin/photo-cube', icon: Box },
     { name: 'Menu', href: '/admin/menu', icon: Menu },
     { name: 'Foto Wyzwania', href: '/admin/challenges', icon: Trophy },
+    { name: 'Laboratorium fizyki', href: '/admin/fizyka', icon: FlaskConical },
     { name: 'Blog', href: '/admin/blog', icon: FileText },
     { name: 'Kody rabatowe', href: '/admin/socio', icon: Megaphone },
     { name: 'Kody promocyjne', href: '/admin/promo-codes', icon: Sparkles },

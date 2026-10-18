@@ -18,6 +18,7 @@ import AeroFooter from '@/components/aero/AeroFooter';
 export default function AppShell({ children, isB2B: serverIsB2B }: { children: React.ReactNode; isB2B?: boolean }) {
     const pathname = usePathname();
     const isAdmin = pathname?.startsWith('/admin');
+    const isPhysicsLab = pathname?.startsWith('/laboratorium-fizyki');
     const clientIsB2B = isB2BContext({
         pathname,
         hostname: typeof window !== 'undefined' ? window.location.hostname : undefined,
@@ -25,6 +26,12 @@ export default function AppShell({ children, isB2B: serverIsB2B }: { children: R
     });
     const isB2B = serverIsB2B || clientIsB2B;
     const isHome = pathname === '/';
+
+    // Laboratorium jest osobną aplikacją edukacyjną. Nie montuje nawigacji,
+    // promocji, koszyka ani stopki serwisu fotograficznego.
+    if (isPhysicsLab) {
+        return <>{children}</>;
+    }
 
     // Public Aero Analiza deliberately does not mount the photography account,
     // basket, promotions or customer-zone providers.
