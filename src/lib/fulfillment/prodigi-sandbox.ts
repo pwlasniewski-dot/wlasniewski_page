@@ -16,14 +16,14 @@ export const sandboxRequest = z.discriminatedUnion('action', [
 const dimensions = z.record(z.string(), z.object({
   horizontalResolution: z.number().int().positive(), verticalResolution: z.number().int().positive(),
 }));
-const productSchema = z.object({
+export const productSchema = z.object({
   sku: z.string(), description: z.string(),
   attributes: z.record(z.string(), z.array(z.string())),
   printAreas: z.record(z.string(), z.object({ required: z.boolean() })),
   variants: z.array(z.object({ attributes, shipsTo: z.array(z.string()), printAreaSizes: dimensions })),
 });
 const cost = z.object({ amount: z.string().regex(/^\d{1,12}(\.\d{1,6})?$/), currency: z.enum(['USD', 'GBP', 'EUR']) });
-const quoteSchema = z.object({
+export const quoteSchema = z.object({
   shipmentMethod: z.string().min(1), costSummary: z.object({
     items: cost.refine(value => Number(value.amount) > 0), shipping: cost,
     branding: cost.optional(), totalCost: cost.optional(), totalTax: cost.optional(),
@@ -72,13 +72,13 @@ export async function boundedJson(body: ReadableStream<Uint8Array> | null, maxBy
   } finally { reader.releaseLock(); }
 }
 
-export async function inspectSandbox(input: unknown, transport: typeof fetch = fetch) {
+export async function inspectSandbox(input: unknown, transport: typeof fetch = fetch, allowValidatedCatalogQuote = false) {
   const parsed = sandboxRequest.safeParse(input);
   if (!parsed.success) throw new SandboxError('INVALID_INPUT', 'Sprawdź SKU, ilości, opcje i pola druku.', 400);
   const key = process.env.PRODIGI_SANDBOX_API_KEY?.trim();
   if (!key) throw new SandboxError('NOT_CONFIGURED', 'Brak klucza Prodigi Sandbox na serwerze.', 503);
   const request = parsed.data;
-  if (request.action === 'quote' && request.items.some(item => !isProdigiPilotSku(item.sku) || item.assets.length !== 1 || item.assets[0].printArea !== 'default')) {
+  if (!allowValidatedCatalogQuote && request.action === 'quote' && request.items.some(item => !isProdigiPilotSku(item.sku) || item.assets.length !== 1 || item.assets[0].printArea !== 'default')) {
     throw new SandboxError('NOT_IN_PILOT', 'Wycena pilota obejmuje tylko GLOBAL-CAN-10X10 i GLOBAL-FAP-10X10 z jednym polem default, bez dodatków.', 422);
   }
   const path = request.action === 'product' ? `/products/${encodeURIComponent(request.sku)}` : '/quotes';

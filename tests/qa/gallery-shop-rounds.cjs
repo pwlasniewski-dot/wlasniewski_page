@@ -25,7 +25,7 @@ if(url.includes('/admin/')){
 }throw Error(`Unhandled API ${method} ${url}`)};
 const props={endpoint:'/api/galleries/12/shop',photos:Array.from({length:6},(_,i)=>({id:i+1,file_url:`/photo${i+1}.jpg`,width:1500,height:1000}))};
 async function admin(){await reset();await mount(Admin,{galleryId:12})}
-async function client(preserve=false){await reset();if(!preserve)sessionStorage.clear();await mount(Client,props);await click(button(/^Zamów odbitki i produkty/))}
+async function client(preserve=false){await reset();if(!preserve){sessionStorage.clear();localStorage.clear();}await mount(Client,props);await click(button(/^Zamów odbitki i produkty/))}
 async function cart(){await click(button(/^Koszyk \(/))}
 const lines=()=>[...document.querySelectorAll('article[aria-label^="Pozycja "]')];
 async function select(ids){for(const id of ids)await click(field(`Zaznacz zdjęcie ${id}`))}

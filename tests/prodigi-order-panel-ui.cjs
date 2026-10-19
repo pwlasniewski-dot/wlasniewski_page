@@ -1,0 +1,23 @@
+const {assert,mount,reset,click,button}=require('./qa/gallery-shop-dom.cjs');
+const UI=require('../src/components/admin/ProdigiOrderPanel.tsx').default;
+let environment='sandbox',calls=[];
+global.fetch=async(url,init)=>{const action=JSON.parse(init.body).action;calls.push(action);return{ok:true,json:async()=>({prepared:{environment,input:{quote:{providerCostGrosze:1500}},...(action==='approve'?{approvedBy:7}:{})}})};};
+(async()=>{
+ await mount(UI,{galleryId:12,orderId:50});
+ assert.ok(document.body.textContent.includes('zostanie potwierdzone'));
+ assert.equal(button('Najpierw sprawdź i zatwierdź podgląd').disabled,true);
+ await click(button('Sprawdź pliki HQ i koszt'));
+ assert.ok(document.body.textContent.includes('Tryb sandbox'));
+ assert.equal(button('Wyślij test do Prodigi sandbox').disabled,true);
+ await click(document.querySelector('input[type="checkbox"]'));
+ assert.equal(button('Wyślij test do Prodigi sandbox').disabled,true);
+ await click(button('Zatwierdź podgląd'));
+ assert.equal(button('Wyślij test do Prodigi sandbox').disabled,false);
+ await click(button('Sprawdź pliki HQ i koszt'));
+ assert.equal(button('Wyślij test do Prodigi sandbox').disabled,true);
+ await reset();environment='live';await mount(UI,{galleryId:12,orderId:50});
+ await click(button('Sprawdź pliki HQ i koszt'));
+ assert.ok(document.body.textContent.includes('Tryb live'));
+ assert.equal(button('Zleć płatną produkcję Prodigi').disabled,true);
+ await reset();console.log('PASS operator environment from server, sandbox/live labels, explicit server approval before send, reprepare invalidates approval');
+})().catch(error=>{console.error(error);process.exitCode=1;});

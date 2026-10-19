@@ -19,12 +19,25 @@ export function shopIntentQuery(intent: ShopIntent): string {
   return params.toString();
 }
 
-export function shopAccountHref(intent: ShopIntent): string { return `/konto?${shopIntentQuery(intent)}`; }
+export function shopAccountHref(intent: ShopIntent, source?: 'gallery'): string { return `/konto?${shopIntentQuery(intent)}${source === 'gallery' ? '&shopSource=gallery' : ''}`; }
 
 /** Only a gallery returned by the authenticated client endpoint can be passed by the UI. */
 export function shopGalleryHref(accessCode: string, intent: ShopIntent): string {
   if (typeof accessCode !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(accessCode)) throw new Error('Nieprawidłowy adres galerii.');
   return `/galeria/${encodeURIComponent(accessCode)}?${shopIntentQuery(intent)}`;
+}
+
+/** Keep the product while browsing/buying digital extras without opening its cart. */
+export function shopGalleryOfferHref(accessCode: string, intent: ShopIntent): string {
+  return `${shopGalleryHref(accessCode, intent)}&shopGalleryOffer=1#dodatkowe-zdjecia`;
+}
+
+export function rememberGalleryProduct(accessCode: string, intent: ShopIntent): void {
+  try { sessionStorage.setItem(`gallery-product-intent:${accessCode}`, shopIntentQuery(intent)); } catch { /* Optional continuation. */ }
+}
+
+export function readGalleryProduct(accessCode: string): ShopIntent | null {
+  try { return parseShopIntent(sessionStorage.getItem(`gallery-product-intent:${accessCode}`) || ''); } catch { return null; }
 }
 
 export function replaceShopIntent(intent: ShopIntent | null): void {

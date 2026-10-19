@@ -1,0 +1,20 @@
+const {assert}=require('./qa/gallery-shop-dom.cjs');
+const Module=require('node:module');
+let order,reads=0;const owner='guest_'+'a'.repeat(64);
+const original=Module._load;Module._load=function(name,...args){if(name==='@/lib/db/prisma')return{__esModule:true,default:{photoOrder:{findUnique:async({where})=>{reads++;return order?.id===where.id?order:null;}}}};return original.call(this,name,...args);};
+process.env.JWT_SECRET='fixture-signing-key-with-at-least-32-characters';
+const {guestOrderPath}=require('../src/lib/galleries/guest-order-link.ts');
+const {GET}=require('../src/app/sklep/zamowienie/[token]/route.ts');
+const token=guestOrderPath(51,owner).split('/').pop();
+const request=t=>GET(new Request('https://shop.example.test/sklep/zamowienie/'+t),{params:Promise.resolve({token:t})});
+const metadata={kind:'gallery_merchandise',version:1,guestOwnerId:owner,lines:[{kind:'product',title:'<script>alert(1)</script>',quantity:1,unitAmount:9900,lineTotal:9900,photoIds:[999],product:{prodigi:{secret:'SUPPLIER_SECRET'},image_url:'https://private.example/HQ'}}],delivery:{method:'courier',amount:2000,recipientName:'<img src=x onerror=alert(1)>',email:'PRIVATE_EMAIL',phone:'PRIVATE_PHONE',address:{street:'Testowa 1',city:'Warszawa',postalCode:'00-001'}},fulfillment:{status:'shipped',trackingNumber:'<svg onload=alert(1)>'},providerFulfillment:{idempotencyKey:'PROVIDER_PRIVATE'}};
+order={id:51,payment_status:'paid',total_amount:11900,product_ids:JSON.stringify(metadata)};
+(async()=>{
+ let result=await request(token);assert.equal(result.status,200);const html=await result.text();assert.match(html,/Opłacone/);assert.match(html,/Wysłane/);assert.match(html,/&lt;script&gt;/);assert.match(html,/&lt;img/);assert.match(html,/&lt;svg/);assert.doesNotMatch(html,/<script|<img|<svg|SUPPLIER_SECRET|PROVIDER_PRIVATE|PRIVATE_EMAIL|PRIVATE_PHONE|private.example|photoIds/);
+ assert.match(result.headers.get('cache-control'),/private, no-store/);assert.equal(result.headers.get('referrer-policy'),'no-referrer');assert.match(result.headers.get('content-security-policy'),/default-src 'none'/);assert.match(result.headers.get('x-robots-tag'),/noindex/);
+ const before=reads;assert.equal((await request('invalid')).status,404);assert.equal(reads,before);
+ assert.equal((await request(token.replace(/^51\./,'52.'))).status,404);
+ order.product_ids=JSON.stringify({...metadata,guestOwnerId:'guest_'+'b'.repeat(64)});assert.equal((await request(token)).status,404);
+ order.product_ids=JSON.stringify({...metadata,guestOwnerId:undefined,customerId:7});assert.equal((await request(token)).status,404);
+ console.log('PASS guest receipt actual route: valid single-order read, invalid/cross-order/cross-owner/account denied, HTML escaped, private/no-referrer/CSP and no photos/provider data');
+})().catch(error=>{console.error(error);process.exitCode=1;});

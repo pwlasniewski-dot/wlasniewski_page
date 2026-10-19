@@ -79,7 +79,7 @@ export async function POST(
                 access_code: true,
                 gallery_mode: true,
                 client_id: true,
-                group_password: true,
+                group_password: true, terms_source: true,
             }
         });
 

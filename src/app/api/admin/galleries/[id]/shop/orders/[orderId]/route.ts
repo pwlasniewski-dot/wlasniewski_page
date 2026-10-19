@@ -9,6 +9,7 @@ export async function PATCH(request:NextRequest,{params}:{params:Promise<{id:str
  if(!Number.isSafeInteger(galleryId)||galleryId<1||!Number.isSafeInteger(orderId)||orderId<1||!body||!statuses.includes(body.status)||body.trackingNumber!=null&&(typeof body.trackingNumber!=='string'||body.trackingNumber.length>100)) throw new ShopValidationError('Nieprawidłowy etap realizacji.');
  const order=await prisma.photoOrder.findFirst({where:{id:orderId,gallery_id:galleryId}});const metadata=readShopMetadata(order?.product_ids);
  if(!order||!metadata) throw new ShopValidationError('Nie znaleziono zamówienia.',404);
+ if(metadata.lines.some(line=>Boolean(line.product?.prodigi)))throw new ShopValidationError('Stan produktów Prodigi aktualizuj przez panel producenta w szczegółach zamówienia.',409);
  if(order.payment_status!=='paid') throw new ShopValidationError('Realizację można zmieniać po potwierdzeniu płatności.',409);
  const pickup=metadata.delivery.method==='pickup';
  const stages=['new','ordered','received','packed',pickup?'collected':'shipped'];

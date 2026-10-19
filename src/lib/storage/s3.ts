@@ -1,4 +1,4 @@
-import { S3Client, DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, DeleteObjectCommand, GetObjectCommand, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Readable } from 'stream';
@@ -7,7 +7,7 @@ import type { Readable } from 'stream';
 const accessKeyId = (process.env.MY_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || '').trim();
 const secretAccessKey = (process.env.MY_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY || '').trim();
 
-const s3Client = new S3Client({
+export const s3Client = new S3Client({
     region: process.env.S3_REGION || 'eu-north-1',
     credentials: {
         accessKeyId,
@@ -271,4 +271,24 @@ export async function deleteFromS3(fileUrl: string): Promise<void> {
         console.error('S3 Delete Error:', error);
         throw new Error(`Failed to delete from S3: ${error.message}`);
     }
+}
+
+/** Only an exact account/guest owner and a canonical upload UUID may address staging. */
+function isPrivateShopStagingKey(key: string): boolean {
+    const match = /^shop-personalization\/staging\/([1-9]\d*|guest_[a-f0-9]{64})\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.exec(key);
+    return Boolean(match && match[0] === key && (match[1].startsWith('guest_') || Number.isSafeInteger(Number(match[1]))));
+}
+
+/** Private customer personalization staging. Callers only receive capabilities for server-generated keys. */
+export async function createPrivateShopUploadUrl(key: string, contentType: 'image/jpeg' | 'image/png', size: number, sha256: string) {
+    if (!isPrivateShopStagingKey(key) || !Number.isSafeInteger(size) || size < 1 || size > 20 * 1024 * 1024 || !/^[a-f0-9]{64}$/.test(sha256)) throw new Error('Invalid private upload capability');
+    const checksum = Buffer.from(sha256, 'hex').toString('base64');
+    const command = new PutObjectCommand({Bucket: process.env.S3_BUCKET || 'wlasniewski-photo-storage', Key: key, ContentType: contentType, ContentLength: size, ChecksumSHA256: checksum, IfNoneMatch: '*'});
+    const url = await getSignedUrl(s3Client, command, {expiresIn: 600, unhoistableHeaders: new Set(['x-amz-checksum-sha256'])});
+    return {url, headers: {'Content-Type': contentType, 'x-amz-checksum-sha256': checksum, 'If-None-Match': '*'}};
+}
+export async function headPrivateShopUpload(key: string) {
+    if (!isPrivateShopStagingKey(key)) throw new Error('Invalid private upload key');
+    const result = await s3Client.send(new HeadObjectCommand({Bucket: process.env.S3_BUCKET || 'wlasniewski-photo-storage', Key: key, ChecksumMode: 'ENABLED'}));
+    return {size: result.ContentLength, contentType: result.ContentType, checksum: result.ChecksumSHA256};
 }

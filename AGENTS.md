@@ -1,5 +1,7 @@
 # Standard pracy nad Wlasniewski.pl
 
+Przed rozpoczęciem każdego zadania zmieniającego kod przeczytaj aktualny `docs/SPECYFIKACJA_SPOJNOSCI_SERWISU.md` i właściwą specyfikację modułu. Ten obowiązek dotyczy również kontynuacji w nowej rozmowie; pamięć poprzednich rozmów nie zastępuje odczytu.
+
 ## Cel biznesowy
 
 Zmiany w serwisie mają prowadzić do większej liczby wartościowych wejść, zapytań, rezerwacji i przychodu. Nie rozbudowuj projektu dla samej liczby funkcji ani liczby podstron.
@@ -30,6 +32,17 @@ Każdą zmianę zaczynaj od sprawdzenia istniejącego procesu, ekranów, API i m
 - Przed usunięciem duplikatu sprawdź dane historyczne, linki i uprawnienia. Zachowaj przekierowania i nie usuwaj rekordów w ramach porządkowania menu.
 - Nie utożsamiaj odrębnych pojęć biznesowych tylko z powodu podobnej nazwy: rezerwacja sesji, zamówienie produktów, voucher ofertowy i karta podarunkowa mają różne reguły.
 - Testuj zapis, ponowny odczyt, widok klienta oraz kolejny etap realizacji. Sprawdzaj także odmowę dostępu, błąd sieci, nieopłacone zamówienie, ponowione żądanie i równoczesną zmianę danych. Sam wygląd ekranu nie potwierdza poprawności procesu.
+
+## Obowiązkowa kontrola istniejącego rozwiązania przed zmianą kodu
+
+Przed implementacją zapisz w opisie zadania lub PR krótką mapę: punkt wejścia klienta → istniejący komponent i stan → API → model danych → płatność/status → konto klienta → obsługa w adminie. Podaj konkretne ścieżki plików. Najpierw wyszukaj podobne funkcje, nie projektuj nowego rozwiązania na podstawie samego ekranu.
+
+- Koszyk strony ma jedno źródło pozycji, licznik i panel: `src/context/CartContext.tsx`, `src/components/BasketDrawer.tsx`, `src/app/checkout/page.tsx`. Konfiguratory produktu, galerie i personalizacja dodają pozycje do tego koszyka. Nie tworzą własnego niezależnego koszyka, licznika ani magazynu pozycji w localStorage/sessionStorage.
+- Odrębne reguły realizacji i płatności nie uzasadniają drugiego koszyka. Jeżeli różne typy wymagają osobnych zamówień, zachowaj wspólny koszyk, pokaż to jawnie przed płatnością i nie usuwaj pozostałych pozycji.
+- Dla cen, dostępności, zdjęć, zgód i statusów wskaż źródło nadrzędne. Kopia historyczna zamówienia jest uzasadniona; niezależna edytowalna kopia tej samej oferty nie jest.
+- Nowy komponent, endpoint lub tabela obsługująca istniejącą czynność wymaga pisemnego uzasadnienia, dlaczego nie można rozszerzyć obecnego rozwiązania. Zestaw duplikaty i plan ich integracji; nie usuwaj danych historycznych.
+- Odbiór obejmuje cały przepływ, nie tylko nowy ekran: dodanie z dwóch punktów wejścia, wspólny licznik i sumy, zmiana ilości, usuwanie, odświeżenie, powrót po anulowanej/opłaconej płatności oraz zgodny odczyt w koncie i adminie. Opłacenie części koszyka nie może usunąć innych zakupów.
+- Raport rozróżnia test kodu, test z symulowanymi usługami i test na wdrożonym środowisku. Nie oznaczaj całości jako gotowej na podstawie jednego z nich.
 
 ## Wspólne dane oferty
 
