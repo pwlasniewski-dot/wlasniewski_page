@@ -691,7 +691,7 @@ body {
 /* CMS document download module */
 .document-download-section{--ink:#f6f1e7;--muted:#c5d1c9;--accent:#d6aa62;background:#14271f;color:var(--ink);padding:70px 32px 80px}
 .document-download-paper{--ink:#14271f;--muted:#57675d;--accent:#8b6427;background:#f6f1e7}
-.document-download-grid{max-width:1180px;margin:auto;display:grid;grid-template-columns:1fr 0.92fr;gap:80px;align-items:center}
+.document-download-grid{max-width:1180px;margin:auto;display:grid;grid-template-columns:1fr 0.92fr;gap:80px;align-items:start}
 .document-download-copy{padding:20px 0}
 .document-download-eyebrow{color:var(--accent);font:600 12px/1.6 Arial,sans-serif;letter-spacing:.21em;text-transform:uppercase;margin:0 0 28px}
 .document-download-title{font:400 clamp(40px,4.8vw,67px)/1.05 Georgia,serif;letter-spacing:-.035em;margin:0;text-wrap:balance;white-space:pre-line}
