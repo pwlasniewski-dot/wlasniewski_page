@@ -23,7 +23,7 @@ export function googleEventBody(event:CalendarEvent) {
    note='Godzina zakończenia nieustalona. Jedna minuta w kalendarzu jest wyłącznie znacznikiem początku, nie czasem trwania sesji.';
   }
  }
- return {summary:`FotoDron — ${event.title}${event.client_name?` — ${event.client_name}`:''}`,description:[marker,url,note].filter(Boolean).join('\n'),location:event.venue||'',start,end,status:'confirmed',visibility:'private',extendedProperties:{private:{fotodron_owner:OWNER,fotodron_key:event.id}},source:{title:'Rezerwacja FotoDron',url}};
+ return {summary:`FotoDron — ${event.title}${event.client_name?` — ${event.client_name}`:''}`,description:[marker,url,note].filter(Boolean).join('\n'),location:event.venue||'',start,end,status:'confirmed',visibility:'private',colorId:'9',extendedProperties:{private:{fotodron_owner:OWNER,fotodron_key:event.id}},source:{title:'Rezerwacja FotoDron',url}};
 }
 export function ownsGoogleEvent(remote:any,key:string) { return remote?.extendedProperties?.private?.fotodron_owner===OWNER && remote?.extendedProperties?.private?.fotodron_key===key; }
 export function onlyOwnerAttendees(remote:any,email?:string|null) {

@@ -2,11 +2,15 @@ import { cleanupExpiredBookingPaymentHolds } from '../../src/lib/payments/bookin
 import { syncGoogleCalendar } from '../../src/lib/calendar/google-sync';
 
 export default async () => {
+    const now = new Date();
     try {
         const result = await cleanupExpiredBookingPaymentHolds();
-        // Reuse the existing wake-up; calendar errors must not undo payment cleanup.
+        // One daily slot on the existing quarter-hour schedule. Check the clock
+        // before calling the service, so other runs make no calendar DB reads.
         try {
-            await syncGoogleCalendar({ budgetMs: 8000 });
+            if (now.getUTCHours() === 6 && now.getUTCMinutes() >= 15 && now.getUTCMinutes() < 30) {
+                await syncGoogleCalendar({ budgetMs: 8000 });
+            }
         } catch {
             console.error('[google-calendar] scheduled_sync_failed');
         }

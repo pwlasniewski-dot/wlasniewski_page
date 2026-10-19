@@ -72,8 +72,8 @@ export default function GoogleCalendarSync({ revision = 0, tone = 'dark' }: { re
     useEffect(() => {
         if (previousRevision.current === revision) return;
         previousRevision.current = revision;
-        if (status?.connected) void sync();
-    }, [revision, status?.connected, sync]);
+        if (status?.connected) setMessage('Zmiany zostaną wysłane podczas codziennej synchronizacji. Możesz też użyć „Synchronizuj teraz”.');
+    }, [revision, status?.connected]);
 
     const connect = async () => {
         if (lock.current) return;
@@ -106,7 +106,7 @@ export default function GoogleCalendarSync({ revision = 0, tone = 'dark' }: { re
         {status && !status.configured && <p className="mt-2 text-sm">Integracja wymaga jednorazowej konfiguracji Google po stronie serwera.</p>}
         {status?.connected && <>
             <p className="mt-2 text-sm break-all">Połączono{status.email ? `: ${status.email}` : ' z Google Calendar'}.</p>
-            <p className="mt-1 text-sm">Nowe i zmienione terminy są synchronizowane automatycznie przez zadanie uruchamiane co 15 minut.</p>
+            <p className="mt-1 text-sm">Automatyczna synchronizacja raz dziennie: o 08:15 czasu letniego lub 07:15 czasu zimowego. W razie potrzeby użyj „Synchronizuj teraz”.</p>
             <p className="mt-1 text-sm">Ostatnia synchronizacja: {status.last_sync_at ? new Date(status.last_sync_at).toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' }) : 'jeszcze nie wykonano'}.</p>
             {!!status.pending && <p className="mt-1 text-sm">Zmiany oczekują na synchronizację.</p>}
             {!!status.last_error && <p className="mt-1 text-sm">Ostatnia próba synchronizacji nie powiodła się. Ponów synchronizację; jeśli problem wraca, połącz konto ponownie.</p>}

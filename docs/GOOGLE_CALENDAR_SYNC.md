@@ -20,9 +20,11 @@ magazynem sekretów; stare pola Google w Booking nie obejmują pozostałych źr�
 - Jednokierunkowo: strona → główny kalendarz połączonego konta Google.
 - Po połączeniu panel uruchamia pierwszą synchronizację wszystkich aktywnych
   przyszłych wpisów, bez ograniczenia roku. Wpisy bez ustalonej daty są pomijane.
-- Zapis terminu w kalendarzu uruchamia synchronizację; przycisk pozwala ponowić ją
-  ręcznie. Pozostałe zmiany wykrywa istniejące zadanie cleanup-booking-payment-holds
-  co 15 minut. Nie dodano nowego harmonogramu ani odpytywania z przeglądarki.
+- Zapis terminu oczekuje na codzienną synchronizację; przycisk pozwala wykonać ją
+  ręcznie. Istniejące zadanie cleanup-booking-payment-holds wywołuje integrację
+  tylko o 06:15 UTC (08:15 latem / 07:15 zimą w Polsce). Pozostałe wywołania
+  sprawdzają zegar przed wejściem do usługi, bez odczytów tabel kalendarza.
+  Nie zmieniono częstotliwości sprzątania płatności i nie dodano nowego harmonogramu.
 - Triggery źródeł zwiększają rewizję wyłącznie przy aktywnym połączeniu. Gdy brak
   zmian, zadanie nie wczytuje wszystkich terminów ani nie wywołuje Google.
 - Sesje synchronizacji mają blokadę i limit czasu/liczby zapisów; duża kolejka
