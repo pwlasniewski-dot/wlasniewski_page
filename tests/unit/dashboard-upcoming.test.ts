@@ -33,8 +33,13 @@ test('dashboard shows every upcoming source beyond selected year with one shared
         event(13, '2028-02-01', 'pending', 'booking', '09:00')].reverse();
     const requests: any[] = [];
     let fail = false;
+    let googleStatusReads = 0;
     win.localStorage.setItem('admin_token', 'admin-test');
     win.fetch = async (url: string, init: any) => {
+        if (url === '/api/admin/google-calendar') {
+            googleStatusReads++;
+            return { ok: true, json: async () => ({ configured: false, connected: false }) };
+        }
         requests.push({ url, ...init });
         return { ok: !fail, json: async () => ({ events }) };
     };
@@ -43,6 +48,7 @@ test('dashboard shows every upcoming source beyond selected year with one shared
     const list = () => win.document.querySelector('[aria-labelledby="upcoming-bookings-heading"]');
     try {
         await act(() => win.mount());
+        assert.equal(googleStatusReads, 1, 'integration status is read once without polling');
         assert.equal(requests.length, 1, 'calendar and upcoming list share a single request');
         assert.equal(new URL(requests[0].url, win.location.origin).searchParams.has('to'), false);
         assert.equal(requests[0].headers.Authorization, 'Bearer admin-test');
