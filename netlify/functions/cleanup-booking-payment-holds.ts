@@ -4,9 +4,13 @@ import { syncGoogleCalendar } from '../../src/lib/calendar/google-sync';
 export default async () => {
     try {
         const result = await cleanupExpiredBookingPaymentHolds();
-        // Reuse the existing wake-up; calendar errors must not undo payment cleanup.
+        // One daily slot on the existing quarter-hour schedule. Check the clock
+        // before calling the service, so other runs make no calendar DB reads.
         try {
-            await syncGoogleCalendar({ budgetMs: 8000 });
+            const now = new Date();
+            if (now.getUTCHours() === 6 && now.getUTCMinutes() === 15) {
+                await syncGoogleCalendar({ budgetMs: 8000 });
+            }
         } catch {
             console.error('[google-calendar] scheduled_sync_failed');
         }

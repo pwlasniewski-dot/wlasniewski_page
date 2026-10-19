@@ -37,7 +37,9 @@ test('Google sync: verified callback, auth, revision, failures, pending and disc
         assert.ok(requests.every(r => r.headers.Authorization === 'Bearer admin-test'));
         await act(() => win.mount()); assert.equal(syncCount(), 1);
         pending = true;
-        await act(() => win.mount(1)); assert.equal(syncCount(), 2);
+        await act(() => win.mount(1)); assert.equal(syncCount(), 1);
+        assert.match(win.document.body.textContent, /codziennej synchronizacji/);
+        await act(() => click('Synchronizuj teraz').click()); assert.equal(syncCount(), 2);
         assert.match(win.document.body.textContent, /oczekuje lub jest w toku/);
         assert.doesNotMatch(win.document.body.textContent, /Synchronizacja zakończona/);
         pending = false; skipped = 'disconnected';
