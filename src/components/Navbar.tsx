@@ -1,5 +1,7 @@
 'use client';
 
+import { fetchPublicSettings } from '@/lib/public-settings-client';
+
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -135,8 +137,8 @@ export default function Navbar({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
             // 2. Fetch Menu for this context
             try {
                 const type = isB2BContextActive ? 'b2b' : 'b2c';
-                // Add timestamp to prevent caching
-                const res = await fetch(`/api/menu?type=${type}&t=${Date.now()}`, {
+                // Server invalidates its short-lived menu cache after CMS edits.
+                const res = await fetch(`/api/menu?type=${type}`, {
                     cache: 'no-store',
                     headers: { 'Pragma': 'no-cache' }
                 });
@@ -213,7 +215,7 @@ export default function Navbar({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const res = await fetch('/api/settings/public', { cache: 'no-store' });
+                const res = await fetchPublicSettings();
                 const data = await res.json();
                 if (data.success && data.settings) {
                     setSettings(data.settings);

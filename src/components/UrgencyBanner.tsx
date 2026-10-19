@@ -1,5 +1,7 @@
 'use client';
 
+import { fetchPublicSettings } from '@/lib/public-settings-client';
+
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock } from 'lucide-react';
@@ -20,7 +22,7 @@ export default function UrgencyBanner() {
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const res = await fetch('/api/settings/public');
+                const res = await fetchPublicSettings();
                 const data = await res.json();
                 if (data.success && data.settings) {
                     const expiryDate = data.settings.promo_code_expiry;

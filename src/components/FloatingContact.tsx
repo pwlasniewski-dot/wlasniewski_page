@@ -1,5 +1,7 @@
 'use client';
 
+import { fetchPublicSettings } from '@/lib/public-settings-client';
+
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Phone, Mail, Facebook } from 'lucide-react';
@@ -22,7 +24,7 @@ export default function FloatingContact() {
 
     useEffect(() => {
         const controller = new AbortController();
-        fetch('/api/settings/public', { signal: controller.signal })
+        fetchPublicSettings({ signal: controller.signal })
             .then(response => response.ok ? response.json() : null)
             .then(data => {
                 if (data?.success && data.settings?.footer_config) {

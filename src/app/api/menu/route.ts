@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from '@/lib/db/prisma';
 import { requireAdminAuth } from '@/lib/auth/middleware';
 import { z } from 'zod';
+import { unstable_cache, revalidateTag } from 'next/cache';
 import { withDroneMenuFunnel } from '@/lib/droneMenuFunnel';
 
 export const dynamic = 'force-dynamic';
@@ -17,10 +18,9 @@ const menuUpdateSchema = z.object({
 
 // UPROSZCZONE MENU - tylko z tabeli pages (is_in_menu = true)
 // UPROSZCZONE MENU - tylko z tabeli pages (is_in_menu = true)
-export async function GET(request: Request) {
-    try {
-        const { searchParams } = new URL(request.url);
-        const type = searchParams.get("type") || "b2c"; // Default to b2c
+// Cache only public navigation; failures are caught outside so an outage cannot
+// replace a successful menu in the cache. CMS mutations invalidate this tag.
+const loadPublicMenu = unstable_cache(async (type: string) => {
         const guidePage = type === 'b2c' ? await prisma.page.findUnique({
             where: { slug: 'jak-sie-ubrac' },
             select: { id: true, page_type: true, is_published: true, is_in_menu: true, menu_title: true, menu_order: true },
@@ -84,7 +84,7 @@ export async function GET(request: Request) {
             });
 
             const publicMenu = withPublicGuide(menuItems.map(mapItem));
-            return NextResponse.json(type === 'b2c' ? withDroneMenuFunnel(publicMenu) : publicMenu);
+            return type === 'b2c' ? withDroneMenuFunnel(publicMenu) : publicMenu;
         }
 
         // 2. FALLBACK: If menu_items is empty AND type is b2c, fetch pages (Old Logic)
@@ -121,12 +121,19 @@ export async function GET(request: Request) {
                 }))
             }));
 
-            return NextResponse.json(withDroneMenuFunnel(withPublicGuide(menu)));
+            return withDroneMenuFunnel(withPublicGuide(menu));
         }
 
-        return NextResponse.json([]);
+        return [];
+}, ['public-navigation-v1'], { revalidate: 60, tags: ['public-menu'] });
+
+export async function GET(request: Request) {
+    const type = new URL(request.url).searchParams.get('type') || 'b2c';
+    if (type !== 'b2c' && type !== 'b2b') return NextResponse.json([]);
+    try {
+        return NextResponse.json(await loadPublicMenu(type));
     } catch (error) {
-        console.error("Error fetching menu:", error);
+        console.error('Error fetching menu:', error);
         return NextResponse.json([]);
     }
 }
@@ -159,6 +166,7 @@ export async function PUT(request: NextRequest) {
             )
         );
 
+        revalidateTag('public-menu');
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Error updating menu:", error);

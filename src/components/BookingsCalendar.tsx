@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Clock, User } from 'lucide-react';
 import { formatBookingTimeRange } from '@/lib/bookingSchedule';
 
 export type CalendarBooking = {
     id: number | string;
+    source_id?: number;
     service: string;
     package: string;
     date: string;
@@ -21,6 +22,8 @@ export type CalendarBooking = {
     deposit_amount?: number | null;
     deposit_status?: 'paid' | 'overdue' | 'due_soon' | 'pending' | null;
 };
+
+const DEPOSIT_LABEL = { paid: 'Zaliczka opłacona', pending: 'Zaliczka oczekuje', due_soon: 'Zaliczka — termin blisko', overdue: 'Zaliczka po terminie' };
 
 const DEPOSIT_DOT: Record<string, string> = {
     paid: 'bg-emerald-400 ring-emerald-200',
@@ -75,10 +78,12 @@ export default function BookingsCalendar({
     bookings,
     onSelectBooking,
     initialMonth,
+    onMonthChange,
 }: {
     bookings: CalendarBooking[];
     onSelectBooking?: (b: CalendarBooking) => void;
     initialMonth?: Date;
+    onMonthChange?: (month: Date) => void;
 }) {
     const [view, setView] = useState<'month' | 'list'>('month');
     const [cursor, setCursor] = useState<Date>(() => {
@@ -87,6 +92,7 @@ export default function BookingsCalendar({
         d.setHours(0, 0, 0, 0);
         return d;
     });
+    useEffect(() => { onMonthChange?.(cursor); }, [cursor, onMonthChange]);
     const [selectedDay, setSelectedDay] = useState<string | null>(ymd(new Date()));
 
     const byDay = useMemo(() => {
@@ -229,7 +235,7 @@ export default function BookingsCalendar({
                                                         {SOURCE_LABEL[b.source]}
                                                         {b.deposit_status && (
                                                             <span
-                                                                title={`Zaliczka: ${b.deposit_status}${b.deposit_amount ? ` (${b.deposit_amount.toLocaleString('pl-PL')} PLN)` : ''}`}
+                                                                title={`${DEPOSIT_LABEL[b.deposit_status]}${b.deposit_amount ? ` (${b.deposit_amount.toLocaleString('pl-PL')} PLN)` : ''}`}
                                                                 className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ring-1 ${DEPOSIT_DOT[b.deposit_status] || ''}`}
                                                             />
                                                         )}
@@ -309,6 +315,9 @@ function BookingRow({ b, showDate, onClick }: { b: CalendarBooking; showDate?: b
                     )}
                     <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${colors}`}>{label}</span>
                 </div>
+                {b.deposit_status && <div className={`mb-1 text-xs font-medium ${b.deposit_status === 'overdue' ? 'text-rose-700' : b.deposit_status === 'paid' ? 'text-emerald-700' : 'text-amber-700'}`}>
+                    {DEPOSIT_LABEL[b.deposit_status]}{b.deposit_amount != null ? ` · ${b.deposit_amount.toLocaleString('pl-PL')} zł` : ''}
+                </div>}
                 <div className="font-semibold text-zinc-900 truncate inline-flex items-center gap-1">
                     <User className="w-3.5 h-3.5 text-zinc-400" />{b.client_name}
                 </div>

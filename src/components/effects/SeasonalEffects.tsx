@@ -1,5 +1,7 @@
 'use client';
 
+import { fetchPublicSettings } from '@/lib/public-settings-client';
+
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
@@ -10,7 +12,7 @@ export default function SeasonalEffects() {
     useEffect(() => {
         // Fetch settings - ideally this should be passed from layout or context to avoid extra fetch
         // But for isolation we fetch here or read from a global stash if available
-        fetch('/api/settings/public')
+        fetchPublicSettings()
             .then(res => res.json())
             .then(data => {
                 if (data.success && data.settings?.seasonal_effect) {

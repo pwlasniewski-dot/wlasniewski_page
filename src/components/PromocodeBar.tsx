@@ -1,5 +1,7 @@
 'use client';
 
+import { fetchPublicSettings } from '@/lib/public-settings-client';
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Copy, Check, Tag } from 'lucide-react';
@@ -50,7 +52,7 @@ export default function PromocodeBar({
         // Otherwise fetch value from API (automatic mode)
         const fetchSettings = async () => {
             try {
-                const res = await fetch('/api/settings/public');
+                const res = await fetchPublicSettings();
                 const data = await res.json();
                 const settings = data?.settings;
 

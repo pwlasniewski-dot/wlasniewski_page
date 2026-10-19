@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { preserveFirstPublication, publicationRegistryIdentity } from '@/lib/analytics/pagePublicationRegistry';
 import { requireAuth, withAuth } from '@/lib/auth/middleware';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { validateDronePhotographyConfig } from '@/lib/dronePhotographyOffer';
 import { validateAeroPageSections } from '@/lib/aeroanaliza/page-validation';
 import { cityDefinition, validateCitySections } from '@/lib/cityLanding';
@@ -176,6 +176,7 @@ export async function POST(request: NextRequest) {
                 }
             }
 
+            revalidateTag('public-menu');
             await preservePagePublicationBestEffort(page);
 
             // ISR revalidation
@@ -216,6 +217,7 @@ export async function DELETE(request: NextRequest) {
                 where: { id: parseInt(id) },
             });
 
+            revalidateTag('public-menu');
             return NextResponse.json({ success: true });
         } catch (error) {
             console.error('Error deleting page:', error);

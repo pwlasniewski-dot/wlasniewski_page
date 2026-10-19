@@ -1,5 +1,7 @@
 'use client';
 
+import { fetchPublicSettings } from '@/lib/public-settings-client';
+
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { getApiUrl } from "@/lib/api-config";
@@ -146,7 +148,7 @@ export default function Footer({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
 
             try {
                 // Fetch footer settings
-                const res = await fetch('/api/settings/public');
+                const res = await fetchPublicSettings();
                 const data = await res.json();
                 const type = activeIsB2B ? 'b2b' : 'b2c';
                 let footerConfig = activeIsB2B ? defaultB2BSettings : defaultSettings;

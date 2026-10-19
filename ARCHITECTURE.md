@@ -1,3 +1,11 @@
+## 2026-10-19 — odczyty publiczne i wybudzanie Neon (draft)
+
+Publiczny GET menu ma cache danych Next 60 s, osobno dla B2C/B2B, tag `public-menu`. Zapis/usunięcie Page, edycja menu i zapis publicznego poradnika unieważniają tag. Błąd odczytu pozostaje poza cache. Pozostałe techniczne lub skryptowe zmiany bazy mogą być widoczne po TTL. Klient nie dodaje losowego timestampu do menu.
+
+`fetchPublicSettings` scala wyłącznie równoległe żądania siedmiu komponentów publicznych, zwraca osobne klony Response i usuwa promise po zakończeniu/błędzie; anulowanie jednego konsumenta nie przerywa pozostałych. Endpoint ustawień nadal czyta bieżące promocje i plan płatności. Odczytuje pięć kluczy jednym findMany, a dwa klucze wyzwania drugim: cztery wywołania ORM zamiast dziewięciu; rzeczywista liczba SQL zależy od Prisma.
+
+Cleanup diagnostyki uruchamia się o :15, wspólnie z istniejącym kwartalnym cleanupem blokad PayU. Częstotliwość i logika płatności pozostają bez zmian. Ukryte ekrany Incydenty i Foto-Match nie odpytują okresowo; powrót do widoczności odświeża dane.
+
 ## 2026-10-12 — prezentacja zdjęć w DronePhotographyConfig
 
 Korekta art direction: style DronePhotographyLanding.module.css obejmują wyłącznie szablon drona. Mozaika układa zdjęcia w proporcjach 8/4/12 i przechodzi na układ 2/1/1 na telefonie. Parallax renderuje CMS eyebrow/title/description bezpośrednio na fotografii, bez podwójnego H2; hero prioritizes its existing image. Dane, uprawnienia i zapis CMS pozostają bez zmiany.

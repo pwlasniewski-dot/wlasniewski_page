@@ -42,6 +42,7 @@ export default function DashboardPage() {
     return (
         <div>
             <h1 className="text-2xl font-display font-semibold text-white">Pulpit</h1>
+            <div className="mt-5 mb-8"><DashboardCalendarWidget /></div>
 
             <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 {/* Card 1 */}
@@ -110,10 +111,6 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            {/* Kalendarz - najblizsze sesje */}
-            <div className="mt-8">
-                <DashboardCalendarWidget />
-            </div>
 
             {/* Ostatnia Aktywność */}
             <div className="mt-8">

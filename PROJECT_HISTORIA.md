@@ -1,3 +1,9 @@
+## 2026-10-19 — ograniczenie odczytów Neon (draft)
+
+Odczyt kodu wykazał kwartalny cleanup blokad płatniczych, osobny cleanup diagnostyki o :17, dynamiczne ustawienia w wielu komponentach i menu z cache-busting. Zgrano diagnostykę na :15; cleanup płatności, timeout 70 minut i predykat blokowania pending pozostawiono bez zmian. Zmniejszono liczbę odczytów ORM ustawień, dodano współdzielenie równoległych fetch klientów i krótki invalidowany cache menu. Polling dwóch ekranów admina zatrzymuje się po ukryciu karty.
+
+`node tests/qa/neon-read-efficiency.cjs`: PASS rzeczywistych handlerów z podstawionym magazynem/cache, rozdzieleniem B2C/B2B, autoryzacją, zapisem/inwalidacją, awarią i ponowieniem, aktualnymi promocjami, deduplikacją klientów i anulowaniem. Osiem regresji `public-offer-consistency` oraz `drone-home-funnel` PASS. Bez połączenia z produkcją i zmian danych. Efekt CU-h wymaga pomiaru po wdrożeniu; test adaptera cache Netlify pozostaje bramką preview. Wskazany `docs/SPECYFIKACJA_SPOJNOSCI_SERWISU.md` nie istnieje w sprawdzonym main; użyto AGENTS oraz FUNCTIONAL_SPECIFICATION.
+
 ## 2026-10-02 — czytelne zarządzanie promocją i pełniejsze karty (draft)
 
 Po omyłkowym opublikowaniu 155 zł właściciel zakończył tę akcję samodzielnie. Nie zmieniono tej ceny, jej okresu, aktualnych akcji Komfort/urodziny ani produkcyjnej bazy. Istniejący admin promocji pozwala teraz wpisywać domyślnie cenę końcową po obniżce; alternatywy jednoznacznie nazywają kwotę rabatu i procent. Podgląd pokazuje cenę klienta, kwotę odejmowaną od zwykłej oraz właściwą referencję. Wyższa cena niż historyczne 155 nie jest przepuszczana jako nowa promocja; matematyczne wyliczenie pozostaje widoczne wraz z wyjaśnieniem blokady.
