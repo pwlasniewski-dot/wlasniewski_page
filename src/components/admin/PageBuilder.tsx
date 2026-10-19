@@ -13,8 +13,9 @@ import {
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 import CityCmsSectionEditor from './CityCmsSectionEditor';
+import PhotographerKitEditor from './PhotographerKitEditor';
 
-export type SectionType = 'document_download' | 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'stories_grid' | 'chronological_gallery' | 'floating_button' | 'pointcloud_hero' | 'pointcloud_viewer' | 'pointcloud_services' | 'pointcloud_showcase' | 'pointcloud_tech' | 'photo_cube_3d' | 'nphoto_albums_showcase' | 'active_promotions' | 'faq' | 'public_packages' | 'city_seo' | 'city_inquiry';
+export type SectionType = 'photographer_kit' | 'document_download' | 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'stories_grid' | 'chronological_gallery' | 'floating_button' | 'pointcloud_hero' | 'pointcloud_viewer' | 'pointcloud_services' | 'pointcloud_showcase' | 'pointcloud_tech' | 'photo_cube_3d' | 'nphoto_albums_showcase' | 'active_promotions' | 'faq' | 'public_packages' | 'city_seo' | 'city_inquiry';
 
 export interface SliderSlide {
     id: string;
@@ -193,7 +194,17 @@ export interface FeatureItem {
     buttonLink?: string;
 }
 
+export interface EquipmentGroup {
+    id: string;
+    kind: 'camera' | 'lens' | 'flash';
+    quantity: number;
+    title: string;
+    items: string[];
+    enabled?: boolean;
+}
+
 export interface PageSection {
+    equipment?: EquipmentGroup[];
     id: string;
     type: SectionType;
     label?: string;
@@ -348,7 +359,7 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, onDuplica
                         <GripVertical className="w-5 h-5" />
                     </button>
                     <span className="text-sm font-medium text-white uppercase tracking-wider">
-                        {section.type === 'document_download' ? 'Dokument do pobrania' : section.type.replace('_', ' ')}
+                        {section.type === 'document_download' ? 'Dokument do pobrania' : section.type === 'photographer_kit' ? 'Fotograf i sprzęt' : section.type.replace('_', ' ')}
                     </span>
                     <div className="flex items-center gap-1 border-l border-zinc-700 ml-4 pl-4">
                         <button
@@ -377,6 +388,7 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, onDuplica
             </div>
 
             <div className="p-4 space-y-4">
+                {section.type === 'photographer_kit' && <PhotographerKitEditor section={section} onUpdate={onUpdate} chooseImage={() => openMediaPicker(section.id, { target: 'single' })} />}
                 {['faq', 'public_packages', 'city_seo', 'city_inquiry'].includes(section.type) && <CityCmsSectionEditor section={section} onUpdate={onUpdate} chooseImage={() => openMediaPicker(section.id, { target: 'single' })} />}
                 {['hero', 'image_text', 'document_download'].includes(section.type) && <label className="block text-xs text-zinc-400">ALT zdjęcia<input aria-label={`ALT zdjęcia ${section.id}`} value={section.imageAlt || ''} onChange={event => onUpdate(section.id, { imageAlt: event.target.value })} className="mt-2 w-full rounded border border-zinc-700 bg-zinc-800 p-3 text-white" /></label>}
                 {section.type === 'hero' && <div className="grid gap-3 sm:grid-cols-2">
@@ -4525,6 +4537,7 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
             <div className="flex gap-2 flex-wrap">
                 {(['faq', 'public_packages', 'city_seo', 'city_inquiry'] as const).map((type, i) => <button type="button" key={type} onClick={() => addSection(type)} className="rounded border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm text-white">{['FAQ', 'Aktualne pakiety', 'SEO miasta / Open Graph', 'Zapytanie miejskie'][i]}</button>)}
                 <button type="button" onClick={() => addSection('document_download')} className="rounded border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm text-white">Dokument do pobrania</button>
+                <button type="button" onClick={() => addSection('photographer_kit')} className="rounded border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm text-white">Fotograf i sprzęt</button>
                 <button onClick={() => addSection('hero_parallax')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm text-white transition-colors">
                     <ImageIcon className="w-4 h-4" /> Zdjęcie Parallax
                 </button>

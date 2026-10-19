@@ -10,13 +10,23 @@ export function validateDocumentSections(value: unknown): string | null {
     if (!Array.isArray(sections) || sections.length > 100) return 'Nieprawidłowa lista modułów.';
     for (const section of sections) {
         if (!section || typeof section !== 'object') return 'Nieprawidłowy moduł.';
-        if (section.type !== 'document_download') continue;
+        if (!['document_download','photographer_kit'].includes(section.type)) continue;
         const data = section.data || section;
         for (const field of ['title', 'subtitle', 'description', 'tag', 'content', 'label', 'imageAlt', 'buttonText']) {
             if (data[field] !== undefined && (typeof data[field] !== 'string' || data[field].length > 10000)) return 'Nieprawidłowa treść modułu dokumentu.';
         }
         for (const field of ['image', 'buttonLink']) {
             if (data[field] && !documentUrl(data[field])) return 'Adres pliku lub podglądu musi prowadzić do tej strony albo używać HTTPS.';
+        }
+        if (section.type === 'photographer_kit') {
+            if (data.equipment !== undefined && (!Array.isArray(data.equipment) || data.equipment.length > 12)) return 'Nieprawidłowa lista sprzętu.';
+            for (const group of data.equipment || []) {
+                if (!group || typeof group !== 'object' || typeof group.id !== 'string' || !['camera','lens','flash'].includes(group.kind)
+                    || !Number.isInteger(group.quantity) || group.quantity < 1 || group.quantity > 99
+                    || typeof group.title !== 'string' || group.title.length > 120
+                    || !Array.isArray(group.items) || group.items.length > 20
+                    || group.items.some((item: unknown) => typeof item !== 'string' || item.length > 240)) return 'Uzupełnij prawidłowo rodzaj, liczbę i modele sprzętu.';
+            }
         }
     }
     return null;

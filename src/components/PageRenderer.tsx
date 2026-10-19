@@ -11,6 +11,7 @@
  */
 import React from 'react';
 import DocumentDownload from '@/components/sections/DocumentDownload';
+import PhotographerKit from '@/components/sections/PhotographerKit';
 import { PageSection } from '@/components/admin/PageBuilder';
 import ParallaxSection from '@/components/ParallaxSection';
 import Link from 'next/link';
@@ -92,6 +93,8 @@ export default function PageRenderer({ sections, publicPackages = [], city, city
                 }
 
                 switch (section.type) {
+                    case 'photographer_kit':
+                        return <PhotographerKit key={section.id} data={data} />;
                     case 'document_download':
                         return <DocumentDownload key={section.id} data={data} />;
                     case 'faq':
