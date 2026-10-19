@@ -1,6 +1,8 @@
 import type { PageSection } from '@/components/admin/PageBuilder';
 import { documentUrl } from '@/lib/documentDownload';
-import styles from './DocumentDownload.module.css';
+import React from 'react';
+
+const styles = {section: 'document-download-section',paper: 'document-download-paper',grid: 'document-download-grid',copy: 'document-download-copy',eyebrow: 'document-download-eyebrow',title: 'document-download-title',subtitle: 'document-download-subtitle',description: 'document-download-description',download: 'document-download-download',details: 'document-download-details',preview: 'document-download-preview'};
 
 /** A CMS module for sharing an existing document, without copying its prices. */
 export default function DocumentDownload({ data }: { data: PageSection }) {
