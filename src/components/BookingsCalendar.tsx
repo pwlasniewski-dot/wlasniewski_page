@@ -293,7 +293,7 @@ export default function BookingsCalendar({
     );
 }
 
-function BookingRow({ b, showDate, onClick }: { b: CalendarBooking; showDate?: boolean; onClick?: () => void }) {
+export function BookingRow({ b, showDate, onClick }: { b: CalendarBooking; showDate?: boolean; onClick?: () => void }) {
     const colors = STATUS_COLORS[b.status] || STATUS_COLORS.pending;
     const label = STATUS_LABELS[b.status] || b.status;
     return (
@@ -305,7 +305,7 @@ function BookingRow({ b, showDate, onClick }: { b: CalendarBooking; showDate?: b
                 <div className="flex items-center gap-2 mb-1">
                     {showDate && (
                         <span className="text-xs font-semibold text-zinc-500">
-                            {new Date(b.date).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' })}
+                            {new Date(b.date).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Warsaw' })}
                         </span>
                     )}
                     {b.start_time && (
@@ -322,7 +322,7 @@ function BookingRow({ b, showDate, onClick }: { b: CalendarBooking; showDate?: b
                     <User className="w-3.5 h-3.5 text-zinc-400" />{b.client_name}
                 </div>
                 <div className="text-xs text-zinc-600 truncate">
-                    {b.service} \u00b7 {b.package}
+                    {b.service}{b.package ? ` · ${b.package}` : ''}
                     {(b.venue_city || b.venue_place) && (
                         <span className="ml-2 inline-flex items-center gap-1 text-zinc-500">
                             <MapPin className="w-3 h-3" />{[b.venue_place, b.venue_city].filter(Boolean).join(', ')}
