@@ -43,9 +43,10 @@
 [functions."cleanup-booking-payment-holds"]
   schedule = "*/15 * * * *"
 
-# Expire only the new operational portal diagnostics after 30 days, in bounded batches.
+# Expire diagnostics in bounded batches alongside the existing payment cleanup.
+# Sharing minute :15 avoids a separate extension of the database wake window.
 [functions."cleanup-portal-diagnostics"]
-  schedule = "17 * * * *"
+  schedule = "15 * * * *"
 
 # Cache headers for static assets
 [[headers]]

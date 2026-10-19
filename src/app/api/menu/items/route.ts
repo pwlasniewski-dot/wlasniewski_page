@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from '@/lib/db/prisma';
 import { requireAdminAuth, withAdminAuth } from "@/lib/auth/middleware";
 import { z } from 'zod';
+import { revalidateTag } from 'next/cache';
 
 const menuTypeSchema = z.enum(['b2c', 'b2b']);
 const menuUrlSchema = z.string().trim().max(500).refine(
@@ -130,6 +131,7 @@ export async function POST(request: NextRequest) {
                 },
             });
 
+            revalidateTag('public-menu');
             return NextResponse.json(menuItem);
         } catch (error) {
             console.error("Error creating menu item:", error);
@@ -164,6 +166,7 @@ export async function PUT(request: NextRequest) {
                 },
             });
 
+            revalidateTag('public-menu');
             return NextResponse.json(menuItem);
         } catch (error) {
             console.error("Error updating menu item:", error);
@@ -188,6 +191,7 @@ export async function DELETE(request: NextRequest) {
             if (existing) {
                 await prisma.menuItem.deleteMany({ where: { parent_id: numericId } });
                 await prisma.menuItem.delete({ where: { id: numericId } });
+                revalidateTag('public-menu');
                 return NextResponse.json({ success: true });
             }
 
@@ -195,6 +199,7 @@ export async function DELETE(request: NextRequest) {
             const page = await prisma.page.findUnique({ where: { id: numericId } });
             if (page) {
                 await prisma.page.update({ where: { id: numericId }, data: { is_in_menu: false } });
+                revalidateTag('public-menu');
                 return NextResponse.json({ success: true, fallback: true });
             }
 

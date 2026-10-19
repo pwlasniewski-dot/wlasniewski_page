@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Calendar as CalendarIcon, Users, Download, Filter, X } from 'lucide-react';
+import AddCalendarBooking from '@/components/admin/AddCalendarBooking';
 import BookingsCalendar, { CalendarBooking } from '@/components/BookingsCalendar';
 
 type Photographer = {
@@ -23,6 +24,7 @@ export default function AdminCalendarPage() {
     const [photographers, setPhotographers] = useState<Photographer[]>([]);
     const [photographerFilter, setPhotographerFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
     const [selected, setSelected] = useState<CalendarBooking | null>(null);
 
@@ -33,6 +35,7 @@ export default function AdminCalendarPage() {
             return;
         }
         setLoading(true);
+        setError('');
         try {
             const params = new URLSearchParams();
             if (statusFilter !== 'all') params.set('status', statusFilter);
@@ -47,11 +50,12 @@ export default function AdminCalendarPage() {
                 router.replace('/admin/login');
                 return;
             }
+            if (!bRes.ok || !pRes.ok) throw new Error('Nie udało się wczytać kalendarza. Spróbuj ponownie.');
             const bData = await bRes.json();
             const pData = await pRes.json();
             // Mapuj events na CalendarBooking shape (kalendarz oczekuje service/package zamiast title)
             type RawEvent = {
-                id: string; source: 'booking' | 'offer' | 'challenge' | 'contract'; source_id: number;
+                id: string; source: 'booking' | 'offer' | 'challenge' | 'contract' | 'workshop'; source_id: number;
                 date: string; start_time: string | null; end_time: string | null;
                 title: string; client_name: string;
                 venue: string | null; status: string;
@@ -61,6 +65,7 @@ export default function AdminCalendarPage() {
             };
             let events: CalendarBooking[] = (bData.events || []).map((e: RawEvent) => ({
                 id: e.id,
+                source_id: e.source_id,
                 service: e.title.split(' — ')[0] || e.title,
                 package: e.title.split(' — ')[1] || '',
                 date: e.date,
@@ -81,6 +86,8 @@ export default function AdminCalendarPage() {
             if (photographerFilter !== 'all') events = events.filter(e => String(e.photographer_id) === photographerFilter);
             setBookings(events);
             setPhotographers(pData.photographers || []);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Błąd połączenia.');
         } finally {
             setLoading(false);
         }
@@ -120,6 +127,7 @@ export default function AdminCalendarPage() {
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
+                        <AddCalendarBooking onCreated={fetchAll} />
                         <Link
                             href="/admin/bookings"
                             className="px-3 py-2 rounded-lg bg-white border border-zinc-200 text-sm font-semibold text-zinc-700 hover:border-amber-400"
@@ -175,6 +183,7 @@ export default function AdminCalendarPage() {
                     </span>
                 </div>
 
+                {error && <p role="alert" className="mb-3 text-red-700">{error} <button onClick={fetchAll} className="underline">Ponów</button></p>}
                 <BookingsCalendar bookings={bookings} onSelectBooking={setSelected} />
 
                 {selected && (
@@ -199,13 +208,16 @@ function BookingDetailModal({
         }
         setSaving(true);
         try {
-            await fetch(`/api/bookings?id=${booking.id}`, {
+            const response = await fetch(`/api/bookings?id=${booking.source_id ?? booking.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ status }),
             });
+            if (!response.ok) throw new Error('Nie udało się zmienić statusu.');
             onChanged();
             onClose();
+        } catch (e) {
+            alert(e instanceof Error ? e.message : 'Błąd połączenia.');
         } finally {
             setSaving(false);
         }
@@ -215,6 +227,7 @@ function BookingDetailModal({
         booking: { label: 'Rezerwacja', color: 'bg-rose-100 text-rose-800' },
         offer: { label: 'Oferta handlowa', color: 'bg-amber-100 text-amber-800' },
         challenge: { label: 'Foto-wyzwanie', color: 'bg-violet-100 text-violet-800' },
+        workshop: { label: 'Warsztat', color: 'bg-indigo-100 text-indigo-800' },
         contract: { label: 'Umowa', color: 'bg-emerald-100 text-emerald-800' },
     };
     const srcInfo = sourceLabels[booking.source || 'booking'];

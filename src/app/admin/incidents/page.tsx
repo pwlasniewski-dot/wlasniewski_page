@@ -116,11 +116,17 @@ export default function AdminIncidentsPage() {
     }, [loadCrmSnapshot, loadIncidents]);
 
     useEffect(() => {
-        const refreshId = window.setInterval(() => {
+        const refreshVisible = () => {
+            if (document.visibilityState !== 'visible') return;
             void loadIncidents();
             void loadCrmSnapshot();
-        }, 60_000);
-        return () => window.clearInterval(refreshId);
+        };
+        const refreshId = window.setInterval(refreshVisible, 60_000);
+        document.addEventListener('visibilitychange', refreshVisible);
+        return () => {
+            window.clearInterval(refreshId);
+            document.removeEventListener('visibilitychange', refreshVisible);
+        };
     }, [loadCrmSnapshot, loadIncidents]);
 
     const changeStatus = async (id: string, action: 'acknowledge' | 'resolve') => {

@@ -1,3 +1,7 @@
+## 2026-10-19 — ograniczenie powtarzanych odczytów (draft)
+
+Menu korzysta z krótkiego cache, unieważnianego po zapisie w istniejących edytorach menu, strony i poradnika. Promocje i parametry płatności z publicznego API pozostają odczytywane na bieżąco; równoległe komponenty współdzielą pojedyncze żądanie bez utrwalania odpowiedzi. Karta panelu Incydenty/Foto-Match odświeża się po powrocie, a w tle nie wysyła pollingu. Zwolnienie blokady rezerwacji nadal wymaga istniejącej weryfikacji PayU; wiek rezerwacji sam nie zwalnia terminu. Harmonogram weryfikacji co 15 minut nie został zmieniony.
+
 ## 2026-10-12 — galerie strony dronowej
 
 Prezentacja portfolio opiera się na pojedynczych zdjęciach bez wbudowanych napisów. Desktop łączy duże kadry w mozaikę, karuzelę i pełną panoramę z tekstem. Na telefonie zdjęcia zmieniają proporcje, zachowują podpisy i otwierają pełny podgląd. Kolejność, treści oraz kadrowanie pozostają edytowalne w tym samym panelu. Utworzone wcześniej kolaże pozostają jako pliki biblioteki. Szablon całości ma wspólną typografię, krótszy pas zastosowań i spójne sekcje oferty; ceny nie są przepisywane do elementów dekoracyjnych.
@@ -1332,3 +1336,12 @@ Media: tworzenie folderu używa pola tekstowego w panelu zamiast systemowego pro
 ## 2026-09-22 — dostępność publicznych stron SEO
 
 Strona główna i landingi miast odczytują tę samą ofertę, opinie oraz konfigurację co dotychczas, ale publiczna warstwa marketingowa może przechować wynik maksymalnie 60 sekund dla ceny i 5 minut dla pozostałych danych. Rezerwacja i checkout nie korzystają z tego cache i ponownie weryfikują aktualną cenę. Zapis oferty unieważnia cache. Historyczne adresy `/fotografia-slubna` i `/portfolio/wedding` kierują trwale do `/slub`. Sitemap preferuje jawne wpisy `/slub`, `/sesja-rodzinna` i `/blog` nad starszymi duplikatami CMS.
+
+## Kalendarz administratora — ręczne terminy (2026-10-19)
+
+- Pulpit `/admin/dashboard` pokazuje istniejący kalendarz miesiąca przed statystykami. Dane są pobierane dla widocznego miesiąca i sąsiednich dni siatki, bez cyklicznego odpytywania. Zmiana miesiąca i poprawny zapis odświeżają widok.
+- Przycisk **Dodaj termin** na pulpicie oraz `/admin/bookings/calendar` otwiera ten sam formularz ręcznej rezerwacji sesji uzgodnionej z klientem. Wymagane: imię i nazwisko, e-mail, usługa, data, godziny tego samego dnia i ustalona cena w pełnych złotych. Opcjonalne: pakiet, telefon, miejsce i notatki.
+- `POST /api/admin/calendar-events` wymaga autoryzacji administratora. Zapisuje w istniejącym modelu `Booking` status `confirmed` i źródło `admin_calendar`; nie tworzy drugiego rejestru ani zamówienia, nie uruchamia płatności i nie wysyła wiadomości. Potwierdzenie terminu nie oznacza wpłaty.
+- Endpoint odrzuca niepoprawne typy, daty, godziny, długości tekstów i ceny. Sprawdza kolizje z blokującymi rezerwacjami, w tym nocną rezerwacją poprzedniego dnia; blokada transakcyjna `booking:YYYY-MM-DD` jest zgodna z checkout. Konflikt lub ponowiony identyczny zapis zwraca 409.
+- Formularz przy błędzie zachowuje wprowadzone dane; po sukcesie odświeża wspólny kalendarz. Zmiana statusu w szczegółach używa liczbowego `source_id`. Widoki zachowują czytelny status i kwotę zaliczki.
+- Weryfikacja lokalna: `tests/qa/admin-calendar.cjs` i `tests/unit/admin-calendar-ui.test.ts`; wyniki i ograniczenia w `docs/QA_ADMIN_CALENDAR_2026-10-19.md`.

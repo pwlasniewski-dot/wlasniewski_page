@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import prisma from '@/lib/db/prisma';
 import { withAdminAuth } from '@/lib/auth/middleware';
@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
             },
             select: { updated_at: true },
         });
+        revalidateTag('public-menu');
         revalidatePath('/jak-sie-ubrac');
         revalidatePath('/sitemap.xml');
         return NextResponse.json({ success: true, data, settings: value, updatedAt: page.updated_at });

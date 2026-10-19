@@ -191,8 +191,15 @@ function HealthCheckWidget() {
             } finally { setLoading(false); }
         };
         load();
-        const t = setInterval(load, 60_000);
-        return () => clearInterval(t);
+        const refreshVisible = () => {
+            if (document.visibilityState === 'visible') void load();
+        };
+        const t = setInterval(refreshVisible, 60_000);
+        document.addEventListener('visibilitychange', refreshVisible);
+        return () => {
+            clearInterval(t);
+            document.removeEventListener('visibilitychange', refreshVisible);
+        };
     }, []);
 
     if (loading) return null;

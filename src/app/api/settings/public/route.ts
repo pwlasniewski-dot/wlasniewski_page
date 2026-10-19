@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
         }
 
         const now = new Date();
-        const [publicPromoCandidates, reviewLink, profileLink, b2bFooterConfig, footerConfig, challenge, photoFunnelConfig] = await Promise.all([
+        const [publicPromoCandidates, publicValues, challenge] = await Promise.all([
             prisma.promoCode.findMany({
                 where: {
                     is_active: true,
@@ -29,13 +29,18 @@ export async function GET(request: NextRequest) {
                 orderBy: { created_at: 'desc' },
                 take: 10,
             }),
-            getSetting('gbp_review_link'),
-            getSetting('gbp_profile_url'),
-            getSetting('b2b_footer_config'),
-            getSetting('footer_config'),
+            prisma.setting.findMany({
+                where: { setting_key: { in: ['gbp_review_link', 'gbp_profile_url', 'b2b_footer_config', 'footer_config', PHOTO_FUNNEL_SETTING_KEY] } },
+                select: { setting_key: true, setting_value: true },
+            }),
             getChallengeSettings(),
-            getSetting(PHOTO_FUNNEL_SETTING_KEY),
         ]);
+        const values = new Map(publicValues.map(row => [row.setting_key, row.setting_value]));
+        const reviewLink = values.get('gbp_review_link');
+        const profileLink = values.get('gbp_profile_url');
+        const b2bFooterConfig = values.get('b2b_footer_config');
+        const footerConfig = values.get('footer_config');
+        const photoFunnelConfig = values.get(PHOTO_FUNNEL_SETTING_KEY);
         const availablePublicPromos = publicPromoCandidates.filter(code => code.max_usage === null || code.usage_count < code.max_usage);
         const galleryPromo = availablePublicPromos.find(code => code.show_in_gallery) || null;
         const bannerPromo = availablePublicPromos.find(code => code.show_in_banner) || null;
@@ -109,18 +114,15 @@ export async function GET(request: NextRequest) {
     }
 }
 
-async function getSetting(key: string) {
-    const setting = await prisma.setting.findUnique({
-        where: { setting_key: key }
-    });
-    return setting?.setting_value;
-}
-
 async function getChallengeSettings() {
-    const enabled = await prisma.challengeSetting.findUnique({ where: { setting_key: 'module_enabled' } });
-    const fomo = await prisma.challengeSetting.findUnique({ where: { setting_key: 'fomo_countdown_hours' } });
+    const rows = await prisma.challengeSetting.findMany({
+        where: { setting_key: { in: ['module_enabled', 'fomo_countdown_hours'] } },
+        select: { setting_key: true, setting_value: true },
+    });
+    const values = new Map(rows.map(row => [row.setting_key, row.setting_value]));
+    const fomo = values.get('fomo_countdown_hours');
     return {
-        module_enabled: enabled?.setting_value === 'true',
-        fomo_hours: fomo?.setting_value ? Number(fomo.setting_value) : 24
+        module_enabled: values.get('module_enabled') === 'true',
+        fomo_hours: fomo ? Number(fomo) : 24,
     };
 }
