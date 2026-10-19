@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import BookingsCalendar, { BookingRow, CalendarBooking } from '@/components/BookingsCalendar';
+import GoogleCalendarSync from '@/components/admin/GoogleCalendarSync';
 import AddCalendarBooking from '@/components/admin/AddCalendarBooking';
 
 type Event = Omit<CalendarBooking, 'service' | 'package'> & { title: string; venue: string | null };
@@ -43,6 +44,7 @@ export default function DashboardCalendarWidget() {
             <h2 className="text-lg font-medium text-white">Kalendarz sesji</h2>
             <div className="flex flex-wrap items-center gap-3"><AddCalendarBooking onCreated={reload} /><Link href="/admin/bookings/calendar" className="text-sm text-gold-400">Pełny kalendarz i filtry →</Link></div>
         </div>
+        <GoogleCalendarSync revision={revision} />
         {loading && <p role="status" className="mb-2 text-sm text-zinc-400">Wczytywanie terminów…</p>}
         {error && <p role="alert" className="mb-2 text-sm text-red-300">{error} <button onClick={reload} className="underline">Ponów</button></p>}
         <BookingsCalendar bookings={events} onMonthChange={changeMonth} onSelectBooking={selectEvent} />

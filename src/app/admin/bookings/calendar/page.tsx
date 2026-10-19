@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Calendar as CalendarIcon, Users, Download, Filter, X } from 'lucide-react';
+import GoogleCalendarSync from '@/components/admin/GoogleCalendarSync';
 import AddCalendarBooking from '@/components/admin/AddCalendarBooking';
 import BookingsCalendar, { CalendarBooking } from '@/components/BookingsCalendar';
 
@@ -26,6 +27,7 @@ export default function AdminCalendarPage() {
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
+    const [revision, setRevision] = useState(0);
     const [selected, setSelected] = useState<CalendarBooking | null>(null);
 
     const fetchAll = useCallback(async () => {
@@ -95,6 +97,8 @@ export default function AdminCalendarPage() {
 
     useEffect(() => { fetchAll(); }, [fetchAll]);
 
+    const onBookingChanged = () => { setRevision(value => value + 1); void fetchAll(); };
+
     const downloadIcs = () => {
         const token = localStorage.getItem('admin_token');
         if (!token) return;
@@ -123,11 +127,11 @@ export default function AdminCalendarPage() {
                             <CalendarIcon className="w-7 h-7 text-rose-500" /> Kalendarz rezerwacji
                         </h1>
                         <p className="text-sm text-zinc-500 mt-1">
-                            Wszystkie sesje w jednym miejscu. Eksport do Google Calendar / Apple Calendar.
+                            Wszystkie sesje w jednym miejscu. Synchronizacja z Google Calendar.
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        <AddCalendarBooking onCreated={fetchAll} />
+                        <AddCalendarBooking onCreated={onBookingChanged} />
                         <Link
                             href="/admin/bookings"
                             className="px-3 py-2 rounded-lg bg-white border border-zinc-200 text-sm font-semibold text-zinc-700 hover:border-amber-400"
@@ -148,6 +152,8 @@ export default function AdminCalendarPage() {
                         </button>
                     </div>
                 </div>
+
+                <GoogleCalendarSync revision={revision} tone="light" />
 
                 {/* Filters */}
                 <div className="bg-white rounded-xl border border-zinc-200 p-3 mb-4 flex flex-wrap gap-2 items-center">
@@ -187,7 +193,7 @@ export default function AdminCalendarPage() {
                 <BookingsCalendar bookings={bookings} onSelectBooking={setSelected} />
 
                 {selected && (
-                    <BookingDetailModal booking={selected} onClose={() => setSelected(null)} onChanged={fetchAll} />
+                    <BookingDetailModal booking={selected} onClose={() => setSelected(null)} onChanged={onBookingChanged} />
                 )}
             </div>
         </div>

@@ -2340,3 +2340,32 @@ model StyleGuideFaq {
   @@index([category])
   @@map("style_guide_faqs")
 }
+
+// OAuth secrets are isolated from CMS settings and never returned by settings APIs.
+model GoogleCalendarIntegration {
+  id Int @id @default(1)
+  account_id String?
+  email String?
+  refresh_token String?
+  connected Boolean @default(false)
+  revision Int @default(1)
+  synced_revision Int @default(0)
+  lease_token String?
+  lease_until DateTime?
+  last_sync_at DateTime?
+  last_error String?
+  stats Json?
+  @@map("google_calendar_integration")
+}
+
+model GoogleCalendarEventMap {
+  account_id String
+  source_key String
+  event_id String
+  event_date String
+  content_hash String
+  cancelled Boolean @default(false)
+  @@id([account_id, source_key])
+  @@unique([account_id, event_id])
+  @@map("google_calendar_event_maps")
+}
