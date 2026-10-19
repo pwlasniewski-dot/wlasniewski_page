@@ -104,3 +104,9 @@
     Content-Disposition = 'attachment; filename="oferta-zakonczenie-8-klasy-2027.pdf"'
     X-Robots-Tag = "noindex, nofollow, noarchive"
     Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/oferty/klasa8-2027-a7k4m9q2.webp"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    Cache-Control = "public, max-age=0, must-revalidate"

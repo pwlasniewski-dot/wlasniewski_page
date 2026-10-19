@@ -55,6 +55,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                     AND: [
                         { NOT: { slug: { startsWith: 'b2b' } } },
                         { NOT: { page_type: 'b2b' } },
+                          { NOT: { page_type: 'document' } },
                     ],
                 },
                 select: { slug: true, page_type: true, updated_at: true },

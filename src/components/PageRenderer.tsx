@@ -10,6 +10,7 @@
  * 4. Dodając nowy typ sekcji, pamiętaj o dodaniu go tutaj (switch) ORAZ w PageBuilder.tsx.
  */
 import React from 'react';
+import DocumentDownload from '@/components/sections/DocumentDownload';
 import { PageSection } from '@/components/admin/PageBuilder';
 import ParallaxSection from '@/components/ParallaxSection';
 import Link from 'next/link';
@@ -91,6 +92,8 @@ export default function PageRenderer({ sections, publicPackages = [], city, city
                 }
 
                 switch (section.type) {
+                    case 'document_download':
+                        return <DocumentDownload key={section.id} data={data} />;
                     case 'faq':
                         return <CmsFaqSection key={section.id} data={{ ...data, id: section.id, type: section.type }} />;
                     case 'public_packages':

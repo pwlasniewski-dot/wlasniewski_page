@@ -487,6 +487,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                 {/* Basic Info */}
                 <div data-focus-target="h1" className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
                     <h2 className="text-lg font-semibold text-white">Podstawowe informacje</h2>
+                    {formData.page_type === 'document' && <p className="text-sm text-gold-400">Dokument udostępniany linkiem. Strona nie pojawia się w menu ani mapie witryny i ma oznaczenie noindex. Każdy, kto otrzyma link, może ją otworzyć.</p>}
 
                     <div>
                         <label className="block text-sm text-zinc-400 mb-1">Tytuł</label>

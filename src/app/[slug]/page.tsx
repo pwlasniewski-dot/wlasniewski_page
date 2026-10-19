@@ -294,6 +294,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     return {
         title: page.meta_title || page.title,
+        ...(page.page_type === 'document' ? { robots: { index: false, follow: false, nocache: true } } : {}),
         description: page.meta_description,
         keywords: page.meta_keywords,
         alternates: {
@@ -363,6 +364,10 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
     }
 
     const hasVisiblePrimaryHeading = hasServerRenderedPrimaryHeading(sections);
+    // Unlisted document pages use the existing CMS, with no automatic sales or SEO blocks.
+    if (page.page_type === 'document') {
+        return <main><PageRenderer sections={sections} /></main>;
+    }
     const isEditorialService = ['sesja', 'sesja-rodzinna'].includes(page!.slug.toLowerCase()) || sections.some((section) => {
         const sectionData = section.data && typeof section.data === 'object' ? section.data : section;
         return sectionData.pageStyle === 'editorial';

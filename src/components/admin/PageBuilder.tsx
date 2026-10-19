@@ -14,7 +14,7 @@ import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 import CityCmsSectionEditor from './CityCmsSectionEditor';
 
-export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'stories_grid' | 'chronological_gallery' | 'floating_button' | 'pointcloud_hero' | 'pointcloud_viewer' | 'pointcloud_services' | 'pointcloud_showcase' | 'pointcloud_tech' | 'photo_cube_3d' | 'nphoto_albums_showcase' | 'active_promotions' | 'faq' | 'public_packages' | 'city_seo' | 'city_inquiry';
+export type SectionType = 'document_download' | 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'stories_grid' | 'chronological_gallery' | 'floating_button' | 'pointcloud_hero' | 'pointcloud_viewer' | 'pointcloud_services' | 'pointcloud_showcase' | 'pointcloud_tech' | 'photo_cube_3d' | 'nphoto_albums_showcase' | 'active_promotions' | 'faq' | 'public_packages' | 'city_seo' | 'city_inquiry';
 
 export interface SliderSlide {
     id: string;
@@ -348,7 +348,7 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, onDuplica
                         <GripVertical className="w-5 h-5" />
                     </button>
                     <span className="text-sm font-medium text-white uppercase tracking-wider">
-                        {section.type.replace('_', ' ')}
+                        {section.type === 'document_download' ? 'Dokument do pobrania' : section.type.replace('_', ' ')}
                     </span>
                     <div className="flex items-center gap-1 border-l border-zinc-700 ml-4 pl-4">
                         <button
@@ -378,7 +378,7 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, onDuplica
 
             <div className="p-4 space-y-4">
                 {['faq', 'public_packages', 'city_seo', 'city_inquiry'].includes(section.type) && <CityCmsSectionEditor section={section} onUpdate={onUpdate} chooseImage={() => openMediaPicker(section.id, { target: 'single' })} />}
-                {['hero', 'image_text'].includes(section.type) && <label className="block text-xs text-zinc-400">ALT zdjęcia<input aria-label={`ALT zdjęcia ${section.id}`} value={section.imageAlt || ''} onChange={event => onUpdate(section.id, { imageAlt: event.target.value })} className="mt-2 w-full rounded border border-zinc-700 bg-zinc-800 p-3 text-white" /></label>}
+                {['hero', 'image_text', 'document_download'].includes(section.type) && <label className="block text-xs text-zinc-400">ALT zdjęcia<input aria-label={`ALT zdjęcia ${section.id}`} value={section.imageAlt || ''} onChange={event => onUpdate(section.id, { imageAlt: event.target.value })} className="mt-2 w-full rounded border border-zinc-700 bg-zinc-800 p-3 text-white" /></label>}
                 {section.type === 'hero' && <div className="grid gap-3 sm:grid-cols-2">
                     <label className="text-xs text-zinc-400">Wariant hero<select value={section.pageStyle || ''} onChange={event => onUpdate(section.id, { pageStyle: event.target.value === 'editorial' ? 'editorial' : undefined })} className="mt-2 w-full rounded bg-zinc-800 p-3 text-white"><option value="">Klasyczny</option><option value="editorial">Redakcyjny</option></select></label>
                     <label className="text-xs text-zinc-400">Główny nagłówek H1<input type="checkbox" checked={section.isPrimaryHeading || false} onChange={event => onUpdate(section.id, { isPrimaryHeading: event.target.checked })} className="ml-3" /></label>
@@ -972,12 +972,12 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, onDuplica
                     </div>
                 )}
 
-                {/* HERO */}
-                {section.type === 'hero' && (
+                {/* HERO / DOCUMENT */}
+                {(section.type === 'hero' || section.type === 'document_download') && (
                     <div className="space-y-4">
                         {/* Background Image */}
                         <div>
-                            <label className="block text-xs text-zinc-400 mb-2">Zdjęcie tła</label>
+                            <label className="block text-xs text-zinc-400 mb-2">{section.type === 'document_download' ? 'Podgląd dokumentu' : 'Zdjęcie tła'}</label>
                             <div className="flex gap-3">
                                 {section.image && (
                                     <div className="relative w-24 h-24 rounded border border-zinc-700 overflow-hidden bg-zinc-800">
@@ -1061,6 +1061,14 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, onDuplica
                         </div>
                     </div>
                 )}
+
+                {section.type === 'document_download' && <div className="space-y-4">
+                    <label className="block text-xs text-zinc-400">Informacja o pliku<textarea value={section.content || ''} onChange={e => onUpdate(section.id, { content: e.target.value })} className="mt-2 w-full rounded bg-zinc-800 p-3 text-white" /></label>
+                    <label className="block text-xs text-zinc-400">Podpis podglądu<input value={section.label || ''} onChange={e => onUpdate(section.id, { label: e.target.value })} className="mt-2 w-full rounded bg-zinc-800 p-3 text-white" /></label>
+                    <label className="block text-xs text-zinc-400">Adres obrazu podglądu<input value={section.image || ''} onChange={e => onUpdate(section.id, { image: e.target.value })} className="mt-2 w-full rounded bg-zinc-800 p-3 text-white" /></label>
+                    <label className="block text-xs text-zinc-400">Wygląd<select value={section.sectionTone || 'dark'} onChange={e => onUpdate(section.id, { sectionTone: e.target.value === 'paper' ? 'paper' : 'dark' })} className="mt-2 w-full rounded bg-zinc-800 p-3 text-white"><option value="dark">Butelkowa zieleń</option><option value="paper">Jasny papier</option></select></label>
+                    <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" checked={section.isPrimaryHeading !== false} onChange={e => onUpdate(section.id, { isPrimaryHeading: e.target.checked })} />Główny nagłówek strony</label>
+                </div>}
 
                 {/* CONTACT / CTA */}
                 {section.type === 'contact' && (
@@ -4516,6 +4524,7 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
             {pageType !== 'b2b' && pageType !== 'dron' && (
             <div className="flex gap-2 flex-wrap">
                 {(['faq', 'public_packages', 'city_seo', 'city_inquiry'] as const).map((type, i) => <button type="button" key={type} onClick={() => addSection(type)} className="rounded border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm text-white">{['FAQ', 'Aktualne pakiety', 'SEO miasta / Open Graph', 'Zapytanie miejskie'][i]}</button>)}
+                <button type="button" onClick={() => addSection('document_download')} className="rounded border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm text-white">Dokument do pobrania</button>
                 <button onClick={() => addSection('hero_parallax')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm text-white transition-colors">
                     <ImageIcon className="w-4 h-4" /> Zdjęcie Parallax
                 </button>

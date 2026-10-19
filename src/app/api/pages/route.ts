@@ -6,6 +6,7 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { validateDronePhotographyConfig } from '@/lib/dronePhotographyOffer';
 import { validateAeroPageSections } from '@/lib/aeroanaliza/page-validation';
 import { cityDefinition, validateCitySections } from '@/lib/cityLanding';
+import { validateDocumentSections } from '@/lib/documentDownload';
 
 async function preservePagePublicationBestEffort(page: {
     slug: string;
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
             const page = await prisma.page.findUnique({ where: { id: parseInt(id) } });
             if (!page) return NextResponse.json({ error: 'Page not found' }, { status: 404 });
             // Hide unpublished pages from public (return 404 instead of 401 to prevent side-channel)
-            if (!isAdmin && !page.is_published) return NextResponse.json({ error: 'Page not found' }, { status: 404 });
+            if (!isAdmin && (!page.is_published || page.page_type === 'document')) return NextResponse.json({ error: 'Page not found' }, { status: 404 });
             return NextResponse.json({ success: true, page });
         }
         // If slug param exists (even if empty string), search for specific page (case-insensitive)
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: true, page });
         } else {
             // No params - return all pages
-            const where = isAdmin ? {} : { is_published: true };
+            const where = isAdmin ? {} : { is_published: true, NOT: { page_type: 'document' } };
             const pages = await prisma.page.findMany({ where });
             return NextResponse.json({ success: true, pages });
         }
@@ -80,6 +81,10 @@ export async function POST(request: NextRequest) {
             const existingTarget = id && Number.isInteger(Number(id))
                 ? await prisma.page.findUnique({ where: { id: Number(id) }, select: { slug: true, page_type: true } })
                 : null;
+            if (page_type === 'document' || existingTarget?.page_type === 'document') {
+                const documentError = validateDocumentSections(sections || '[]');
+                if (documentError) return NextResponse.json({ error: documentError }, { status: 400 });
+            }
             if (existingTarget?.page_type === 'city_landing' || cityDefinition(existingTarget?.slug || '')
                 || page_type === 'city_landing' || cityDefinition(slug || '')) {
                 const validation = validateCitySections(sections);
@@ -108,7 +113,7 @@ export async function POST(request: NextRequest) {
                         page_type: page_type || 'regular',
                         content: content || '',
                         is_published,
-                        is_in_menu: is_in_menu ?? undefined,
+                        is_in_menu: page_type === 'document' ? false : is_in_menu ?? undefined,
                         menu_order: menu_order ?? undefined,
                         menu_title: menu_title ?? undefined,
                         parent_page_id: parent_page_id ?? undefined,
@@ -151,7 +156,7 @@ export async function POST(request: NextRequest) {
                             page_type: page_type || 'regular',
                             content: content || '',
                             is_published: is_published || false,
-                            is_in_menu: is_in_menu || false,
+                            is_in_menu: page_type === 'document' ? false : is_in_menu || false,
                             menu_order: menu_order || 0,
                             menu_title: menu_title || title,
                             parent_page_id: parent_page_id || null, // Ensure this is acceptable by Prisma
