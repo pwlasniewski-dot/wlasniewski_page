@@ -200,43 +200,53 @@ export default function RezerwacjaPage() {
 
     // Load service types on mount
     useEffect(() => {
+        let cancelled = false;
+        const query = new URLSearchParams(window.location.search);
+        const requestedDrone = query.get('service')?.toLowerCase() === 'dron';
+        // Optional drone data must not hold the photography catalogue hostage.
+        const catalogPromise = fetch('/api/booking/drone-catalog')
+            .then(async response => response.ok ? await response.json() as DroneCatalog : null)
+            .catch(() => null);
+        const makeDroneService = (catalog: DroneCatalog | null): ServiceType | null => {
+            const standaloneDronePackages = (catalog?.packages || [])
+                .filter(item => item.active !== false && item.bookingMode !== 'addon')
+                .map((item, index): Package => ({
+                    id: -1000 - index,
+                    service_id: -100,
+                    name: item.name,
+                    description: `<p>${item.summary}</p><p>${item.delivery}</p>`,
+                    scopeLines: dronePackageScopeLines(item),
+                    hours: Math.max(1, item.durationHours || 1),
+                    price: item.price * 100,
+                    subtitle: item.shortName,
+                    features: item.features.join('\n'),
+                    order: index,
+                    blocks_entire_day: item.blocksEntireDay === true,
+                    is_active: true,
+                    source: 'drone_cms',
+                    slug: item.slug,
+                    pricePrefix: item.pricePrefix,
+                }));
+            const droneService: ServiceType | null = standaloneDronePackages.length ? {
+                id: -100,
+                name: 'Dron',
+                description: 'Zdjęcia i film z powietrza jako osobne zlecenie',
+                is_active: true,
+                packages: standaloneDronePackages,
+            } : null;
+            return droneService;
+        };
         const loadServices = async () => {
             try {
-                const [res, droneRes] = await Promise.all([
-                    fetch(getApiUrl('service-types')),
-                    fetch('/api/booking/drone-catalog'),
-                ]);
+                const res = await fetch(getApiUrl('service-types'));
                 if (res.ok) {
                     const data = await res.json();
-                    const catalog: DroneCatalog | null = droneRes.ok ? await droneRes.json() : null;
-                    setDroneCatalog(catalog);
                     const databaseServices = (data.serviceTypes || []).filter((s: ServiceType) => s.is_active);
-                    const standaloneDronePackages = (catalog?.packages || [])
-                        .filter(item => item.active !== false && item.bookingMode !== 'addon')
-                        .map((item, index): Package => ({
-                            id: -1000 - index,
-                            service_id: -100,
-                            name: item.name,
-                            description: `<p>${item.summary}</p><p>${item.delivery}</p>`,
-                            scopeLines: dronePackageScopeLines(item),
-                            hours: Math.max(1, item.durationHours || 1),
-                            price: item.price * 100,
-                            subtitle: item.shortName,
-                            features: item.features.join('\n'),
-                            order: index,
-                            blocks_entire_day: item.blocksEntireDay === true,
-                            is_active: true,
-                            source: 'drone_cms',
-                            slug: item.slug,
-                            pricePrefix: item.pricePrefix,
-                        }));
-                    const droneService: ServiceType | null = standaloneDronePackages.length ? {
-                        id: -100,
-                        name: 'Dron',
-                        description: 'Zdjęcia i film z powietrza jako osobne zlecenie',
-                        is_active: true,
-                        packages: standaloneDronePackages,
-                    } : null;
+                    const waitForDrone = requestedDrone || databaseServices.length === 0;
+                    const catalog = waitForDrone ? await catalogPromise : null;
+                    if (cancelled) return;
+                    setDroneCatalog(catalog);
+                    const droneService = makeDroneService(catalog);
                     const active = droneService ? [...databaseServices, droneService] : databaseServices;
                     setServiceTypes(active);
                     if (active.length > 0 && !service) {
@@ -254,7 +264,22 @@ export default function RezerwacjaPage() {
                         const requestedAddon = query.get('dron');
                         if (requestedAddon && catalog?.packages.some(pkg => pkg.slug === requestedAddon)) setSelectedDroneAddonSlug(requestedAddon);
                         trackBookingEvent('booking_view', { service: selected.name, source: query.get('source') || 'direct' });
-                        await trackEvent('booking_view', { ...bookingSelection(selected, preselectedPackage || null), package_count: active.reduce((sum: number, item: ServiceType) => sum + item.packages.filter(pkg => pkg.is_active).length, 0) });
+                        void trackEvent('booking_view', { ...bookingSelection(selected, preselectedPackage || null), package_count: active.reduce((sum: number, item: ServiceType) => sum + item.packages.filter(pkg => pkg.is_active).length, 0) });
+                    }
+                    if (!waitForDrone) {
+                        void catalogPromise.then(lateCatalog => {
+                            if (cancelled || !lateCatalog) return;
+                            setDroneCatalog(lateCatalog);
+                            const lateDroneService = makeDroneService(lateCatalog);
+                            if (lateDroneService) {
+                                setServiceTypes([...databaseServices, lateDroneService]);
+                            }
+                            const requestedAddon = new URLSearchParams(window.location.search).get('dron');
+                            if (requestedAddon && lateCatalog.packages.some(pkg => pkg.slug === requestedAddon)) {
+                                setSelectedDroneAddonSlug(requestedAddon);
+                            }
+                            // Keep the customer's current service, package and date.
+                        });
                     }
                     if (active.length === 0) {
                         void trackEvent('service_load_result', { status: 'error', area: 'services', http_status: res.status, package_count: 0, reason_code: 'no_active_services' });
@@ -314,6 +339,7 @@ export default function RezerwacjaPage() {
             }
         };
         loadPage();
+        return () => { cancelled = true; };
     }, []);
 
     // Load available hours when package and date are selected

@@ -17,10 +17,10 @@ const mocks: Record<string, string> = {
 const bundle = build({
   stdin: { contents: `
     import React, {act} from 'react'; import {createRoot} from 'react-dom/client';
-    import BookingPage from './src/app/rezerwacja/page'; import {AnalyticsTracker} from './src/hooks/useAnalytics';
+    import BookingPage from './src/app/rezerwacja/page'; import CityLeadForm from './src/components/CityLeadForm'; import {AnalyticsTracker} from './src/hooks/useAnalytics';
     window.IS_REACT_ACT_ENVIRONMENT=true; window.__qaAct=act;
     window.__qaRoot=createRoot(document.getElementById('root'));
-    window.__qaMount=()=>window.__qaRoot.render(<><AnalyticsTracker/><BookingPage/></>);
+    window.__qaMount=()=>window.__qaRoot.render(<><AnalyticsTracker/>{window.__qaMode === "inquiry" ? <CityLeadForm/> : <BookingPage/>}</>);
   `, loader: 'tsx', resolveDir: process.cwd() },
   bundle: true, write: false, platform: 'browser', format: 'iife', jsx: 'automatic',
   define: { 'process.env.NODE_ENV': '"development"', 'process.env.STRAPI_API_URL': '""', 'process.env.NEXT_PUBLIC_STRAPI_API_URL': '""' },
@@ -38,17 +38,24 @@ const services = [{ id: 2, name: 'Sesja', is_active: true, packages: [
   { id: 21, service_id: 2, name: 'Rodzinna', hours: 1, price: 54000, order: 2, is_active: true, promotion },
 ] }];
 
-async function harness(options: { consent?: string; excluded?: boolean } = {}) {
+async function harness(options: { consent?: string; excluded?: boolean; analytics?: 'pending' | 'error'; catalog?: 'pending' | 'error'; query?: string; mode?: 'inquiry'; contactError?: boolean; servicesPending?: boolean } = {}) {
   const errors: string[] = [];
   const vc = new VirtualConsole();
   vc.on('jsdomError', (error: Error) => errors.push(error.message));
   const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
-    url: 'https://wlasniewski.pl/rezerwacja', runScripts: 'dangerously', virtualConsole: vc,
+    url: 'https://wlasniewski.pl/rezerwacja' + (options.query || ''), runScripts: 'dangerously', virtualConsole: vc,
   });
   const win = dom.window as any;
   win.MessageChannel = class { port1: { onmessage: (() => void) | null } = { onmessage: null }; port2 = { postMessage: () => setTimeout(() => this.port1.onmessage?.(), 0) }; };
   win.alert = () => {};
   win.__qaCart = [];
+  win.__qaMode = options.mode;
+  const conversions: unknown[][] = [];
+  win.gtag = (...args: unknown[]) => conversions.push(args);
+  let resolveCatalog!: (response: Response) => void;
+  let resolveServices!: (response: Response) => void;
+  const pendingServices = new Promise<Response>(resolve => { resolveServices = resolve; });
+  const pendingCatalog = new Promise<Response>(resolve => { resolveCatalog = resolve; });
   win.localStorage.setItem('cookie_consent', options.consent ?? 'accepted');
   if (options.excluded) win.localStorage.setItem('analytics_exclude', 'true');
   const events: Array<{ event_type: string; metadata: Record<string, any> }> = [];
@@ -57,9 +64,15 @@ async function harness(options: { consent?: string; excluded?: boolean } = {}) {
   win.fetch = async (url: string, init: RequestInit = {}) => {
     if (url === '/api/analytics/v2/track') {
       events.push(JSON.parse(String(init.body)).event);
+      if (options.analytics === 'pending') return new Promise(() => {});
+      if (options.analytics === 'error') throw new Error('analytics offline');
       return json({ ok: true });
     }
+    if (url === '/api/service-types' && options.servicesPending) return pendingServices;
     if (url === '/api/service-types') return json({ serviceTypes: services });
+    if (url === '/api/contact') return options.contactError ? new Response('{}', { status: 500 }) : json({ inquiryId: 123 });
+    if (url === '/api/booking/drone-catalog' && options.catalog === 'pending') return pendingCatalog;
+    if (url === '/api/booking/drone-catalog' && options.catalog === 'error') throw new Error('catalog offline');
     if (url === '/api/booking/drone-catalog') return json({ packages: [], areas: [], booking: { goalLabel: 'Cel', goalOptions: [] } });
     if (url === '/api/settings/public') return json({ settings: {} });
     if (url.startsWith('/api/pages?')) return json({ success: false });
@@ -109,7 +122,9 @@ async function harness(options: { consent?: string; excluded?: boolean } = {}) {
     return dateISO;
   };
   await flush(() => win.__qaMount());
-  return { win, events, errors, flush, element, click, fill, chooseSlot,
+  return { win, events, errors, flush, element, click, fill, chooseSlot, conversions,
+    resolveServices: () => flush(() => resolveServices(json({ serviceTypes: services }))),
+    resolveCatalog: (catalog: unknown) => flush(() => resolveCatalog(json(catalog))),
     setCodeResult: (value: typeof codeResult) => { codeResult = value; },
     close: async () => { await flush(() => win.__qaRoot.unmount()); dom.window.close(); },
   };
@@ -200,5 +215,83 @@ test('consent withdrawal stops installed listeners and arbitrary button labels n
     await qa.fill('email', 'private@example.test');
     await qa.click('[data-analytics="add_to_cart"]');
     assert.equal(qa.events.length, count);
+  } finally { await qa.close(); }
+});
+
+const droneFixture = { packages: [{ slug: 'film', name: 'Film dron', shortName: 'Film', price: 500, summary: 'Film', delivery: 'Online', features: ['Film'], bookingMode: 'both', eligibleServices: ['Sesja'], active: true }], areas: [], booking: { goalLabel: 'Cel', goalOptions: [] } };
+
+for (const analytics of ['pending', 'error'] as const) {
+  test(`booking remains usable with ${analytics} analytics and pending drone catalogue`, async () => {
+    const qa = await harness({ analytics, catalog: 'pending' });
+    try {
+      assert.doesNotMatch(qa.win.document.body.textContent, /Ładowanie usług/);
+      await qa.click('[data-analytics="package_select"]');
+      const before = qa.win.document.body.textContent;
+      assert.match(before, /Klasyczna/);
+      await qa.resolveCatalog(droneFixture);
+      assert.ok(qa.win.document.querySelector('[data-analytics="package_select"][aria-pressed="true"]'), 'late drone catalogue retains selected photography package');
+      assert.match(qa.win.document.body.textContent, /Klasyczna/);
+    } finally { await qa.close(); }
+  });
+}
+test('failed drone catalogue does not remove photography packages', async () => {
+  const qa = await harness({ catalog: 'error' });
+  try { assert.ok(qa.win.document.querySelector('[data-analytics="package_select"]')); }
+  finally { await qa.close(); }
+});
+test('drone URL still preselects requested package when its catalogue arrives', async () => {
+  const qa = await harness({ catalog: 'pending', query: '?service=Dron&pakiet=film' });
+  try {
+    await qa.resolveCatalog(droneFixture);
+    assert.match(qa.win.document.body.textContent, /Film dron/);
+    assert.ok(qa.win.document.querySelector('[data-analytics="package_select"][aria-pressed="true"]'));
+  } finally { await qa.close(); }
+});
+for (const options of [{ analytics: 'pending' }, { analytics: 'error' }, { consent: 'rejected', analytics: 'pending' }, { contactError: true, analytics: 'pending' }] as const) {
+  test(`inquiry feedback with ${JSON.stringify(options)}`, async () => {
+    const qa = await harness({ mode: 'inquiry', ...options });
+    try {
+      for (const [id, value] of [['lead-name', 'QA Test'], ['lead-phone', '123456789']]) {
+        await qa.flush(() => {
+          const input = qa.element('#' + id);
+          Object.getOwnPropertyDescriptor(qa.win.HTMLInputElement.prototype, 'value')!.set!.call(input, value);
+          input.dispatchEvent(new qa.win.Event('input', { bubbles: true }));
+        });
+      }
+      await qa.flush(() => qa.element('form').dispatchEvent(new qa.win.Event('submit', { bubbles: true, cancelable: true })));
+      const ads = qa.conversions.filter(args => args[1] === 'conversion');
+      if ('contactError' in options) {
+        assert.equal(ads.length, 0);
+        assert.equal(qa.element('button[type="submit"]').disabled, false);
+        assert.match(qa.element('button[type="submit"]').textContent, /Spróbuj wysłać ponownie/);
+        assert.doesNotMatch(qa.win.document.body.textContent, /Zapytanie zostało zapisane/);
+      } else {
+        assert.equal(qa.element('button[type="submit"]').disabled, true, 'success disables resubmission despite stalled analytics');
+        assert.match(qa.element('button[type="submit"]').textContent, /wysłan/i);
+        assert.equal(ads.length, 'consent' in options ? 0 : 1);
+      }
+    } finally { await qa.close(); }
+  });
+}
+
+test('fast drone catalogue survives slower photography response', async () => {
+  const qa = await harness({ servicesPending: true, catalog: 'pending' });
+  try {
+    await qa.resolveCatalog(droneFixture);
+    await qa.resolveServices();
+    assert.equal(qa.win.document.querySelectorAll('[data-analytics="service_select"]').length, 2);
+    assert.ok(qa.win.document.querySelector('[data-analytics="package_select"]'));
+  } finally { await qa.close(); }
+});
+test('late drone catalogue does not restore URL add-on after a manual service choice', async () => {
+  const qa = await harness({ catalog: 'pending', query: '?service=Sesja&dron=film' });
+  try {
+    await qa.click('[data-analytics="service_select"]');
+    await qa.click('[data-analytics="package_select"]');
+    await qa.resolveCatalog(droneFixture);
+    assert.equal(new URL(qa.win.location.href).searchParams.get('dron'), null);
+    assert.match(qa.element('[data-analytics="drone_addon_remove"]').className, /bg-\[#8d7f6d\]/);
+    assert.match(qa.element('[data-analytics="drone_addon_select"]').className, /bg-white/);
+    assert.ok(qa.win.document.querySelector('[data-analytics="package_select"][aria-pressed="true"]'));
   } finally { await qa.close(); }
 });

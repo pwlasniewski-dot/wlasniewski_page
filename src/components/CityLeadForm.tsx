@@ -165,7 +165,7 @@ export default function CityLeadForm({
             const result = await response.json().catch(() => null);
             if (!response.ok || !result?.inquiryId) throw new Error('contact_failed');
 
-            await trackEvent('photo_inquiry_submitted', {
+            void trackEvent('photo_inquiry_submitted', {
                 ...analyticsMetadata(),
                 inquiry_id: result.inquiryId,
             });

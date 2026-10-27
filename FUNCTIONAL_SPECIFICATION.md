@@ -1,3 +1,11 @@
+## 2026-10-27 — niezależność formularzy od analityki (draft)
+
+Rezerwacja pokazuje pakiety fotograficzne bez czekania na odpowiedź analityki ani dodatkowy katalog drona. Późny katalog rozszerza istniejącą ofertę bez resetowania wybranego pakietu; bezpośredni link do Dronu zachowuje wybór z URL. Potwierdzenie zapytania i pomiar Ads następują po otrzymaniu inquiryId, niezależnie od czasu odpowiedzi wewnętrznej analityki. Zgody i walidacja pozostają bez zmian.
+
+Mapa istniejącego procesu: strona oferty → `src/components/CityLeadForm.tsx` → `src/app/api/contact/route.ts` → Inquiry (bez płatności) → `src/app/api/inquiries/route.ts` → `src/app/admin/inquiries/page.tsx`. Rezerwacja: `src/app/rezerwacja/page.tsx` → service-types / booking/drone-catalog → ServiceType/Package i konfiguracja CMS drona → `src/context/CartContext.tsx` → `src/app/checkout/page.tsx` → istniejący Booking/PayU → konto klienta i Rezerwacje → Zamówienia. Nie dodano nowego formularza, endpointu, modelu ani procesu płatności.
+
+Odbiór lokalny obejmuje prawdziwe komponenty React z atrapami API w jsdom: opóźnioną i odrzuconą analitykę, opóźniony/odrzucony katalog, obie kolejności pobierania, preselect Dronu, zachowanie pakietu, sukces/błąd Inquiry oraz odmowę zgody. Nie zastępuje to testu zapisu w produkcyjnym CRM, diagnostyki Google Tag Assistant ani pomiaru czasu w przeglądarce na wdrożeniu.
+
 ## 2026-10-19 — ograniczenie powtarzanych odczytów (draft)
 
 Menu korzysta z krótkiego cache, unieważnianego po zapisie w istniejących edytorach menu, strony i poradnika. Promocje i parametry płatności z publicznego API pozostają odczytywane na bieżąco; równoległe komponenty współdzielą pojedyncze żądanie bez utrwalania odpowiedzi. Karta panelu Incydenty/Foto-Match odświeża się po powrocie, a w tle nie wysyła pollingu. Zwolnienie blokady rezerwacji nadal wymaga istniejącej weryfikacji PayU; wiek rezerwacji sam nie zwalnia terminu. Harmonogram weryfikacji co 15 minut nie został zmieniony.
